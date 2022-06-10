@@ -1,9 +1,36 @@
 use crate::errors::GameError;
+use crate::board::Board;
+
+use std::{collections::HashMap, fmt::Display};
+
+
+pub type RotationState = u8;
+pub type RotationLocation = [[Mino; 4]; 4];
+
+const PIECE_LOCATIONS: [RotationLocation; 7] = [L_ROTATIONS; 7];
+
+const L_ROTATIONS: RotationLocation = [
+    [Mino(1, 1), Mino(0, -1), Mino(0, 0), Mino(0, 1)],
+    [Mino(-1, 1), Mino(1, 0), Mino(0, 0), Mino(-1, 0)],
+    [Mino(-1, -1), Mino(0, 1), Mino(0, 0), Mino(0, -1)],
+    [Mino(1, -1), Mino(-1, 0), Mino(0, 0), Mino(1, 0)]
+];
+
+
+pub enum Piece {
+    I,
+    O,
+    T,
+    L,
+    J,
+    S,
+    Z,
+}
 
 pub struct Placement {
 
-    piece_type: char,
-    rotation_state: i8,
+    piece_type: Piece,
+    rotation_state: RotationState,
     center: Point
 
 }
@@ -13,6 +40,11 @@ impl Placement {
     pub fn to_list(&self) -> [Point; 4] {
         unimplemented!()
     }
+
+    pub fn move_by_vector(&mut self) {
+
+    }
+
 }
 
 pub struct Point {
@@ -20,18 +52,27 @@ pub struct Point {
     pub col: usize
 }
 
-impl Point {
-    pub fn add(&mut self, row: usize, col: usize) -> Result<Self, GameError> {
-        self.row += row;
-        self.col += col;
+pub struct MoveVector(i8, i8);
 
-        todo!()
-    }
+struct Mino(i8, i8);
 
-    pub fn sub(&mut self, row: usize, col: usize) -> Result<Self, GameError> {
-        self.col -= row;
-        self.col -= col;
+impl MoveVector {
 
-        todo!()
+    fn add_to_point(&self, other: Point) -> Result<Point, GameError> {
+        let row = self.row + other.row as i8;
+        let col = self.row + other.col as i8;
+
+        if row < 0 || col < 0 {
+            return Err(GameError::NotInBounds);
+        }
+
+        let row = row as usize;
+        let col = col as usize;
+
+        if !Board::in_bounds(row, col) {
+            return Err(GameError::NotInBounds);
+        }
+
+        Ok(Point {row, col})
     }
 }

@@ -84,16 +84,16 @@ impl Board {
         *self.heights_for_each_column.iter().min().unwrap()
     }
 
-    pub fn col_in_bounds(&self, col: usize) -> bool {
-        col < self.width
+    pub fn col_in_bounds(col: usize) -> bool {
+        col < BOARD_WIDTH
     }
 
-    pub fn row_in_bounds(&self, row: usize) -> bool {
-        row < self.height
+    pub fn row_in_bounds(row: usize) -> bool {
+        row < BOARD_HEIGHT
     }
 
-    pub fn in_bounds(&self, row: usize, col: usize) -> bool {
-        self.col_in_bounds(col) && self.row_in_bounds(row)
+    pub fn in_bounds(row: usize, col: usize) -> bool {
+        Board::col_in_bounds(col) && Board::row_in_bounds(row)
     }
 
     pub fn new() -> Self {
