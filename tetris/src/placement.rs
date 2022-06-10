@@ -113,9 +113,9 @@ impl Placement {
     }
 
     #[allow(unused)]
-    pub fn new(center: Point) -> Self {
+    pub fn new(piece_type: Piece) -> Self {
         Self {
-            center,
+            piece_type,
             ..Default::default()
         }
     }
