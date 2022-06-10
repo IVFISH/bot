@@ -1,11 +1,12 @@
 use std::fmt::{Display, Formatter};
+use std::collections::VecDeque;
 use crate::Placement;
 use crate::placement::piece_data::Piece;
 
 pub struct PieceQueue {
     min_queue_length: usize,
 
-    queue: Vec<Piece>,
+    queue: VecDeque<Piece>,
     randomizer: RNG,
 
     // starts with seed
@@ -29,31 +30,38 @@ impl Default for PieceQueue {
     fn default() -> Self {
         Self {
             min_queue_length: 6,
-            queue: vec![],
+            queue: VecDeque::new(),
             randomizer: RNG::SevenBag,
             num: 1,
             a: 16807,
-            m: 2147483647
+            m: 2147483647,
         }
     }
 }
 
 impl PieceQueue {
-
     #[allow(unused)]
-    pub fn new(randomizer: RNG) -> Self {
+    pub fn new(seed: usize) -> Self {
         Self {
+            num: seed,
+            ..Default::default()
+        }
+    }
+
+    pub fn new_alt_randomizer(seed: usize, randomizer: RNG) -> Self {
+        Self {
+            num: seed,
             randomizer,
             ..Default::default()
         }
     }
 
     pub fn next(&mut self) -> Piece {
-        let out = self.queue.pop().unwrap();
-
         if self.queue.len() < self.min_queue_length {
             self.next_bag();
         }
+
+        let out = self.queue.pop_front().unwrap();
 
         out
     }
@@ -70,12 +78,6 @@ impl PieceQueue {
             RNG::Pairs => self.pairs(),
             RNG::Mayhem => self.total_mayhem()
         }
-    }
-
-    fn next_num(&mut self) -> usize {
-        self.num = self.a * self.num % self.m;
-
-        (self.num - 1) / self.m
     }
 
     fn seven_bag(&mut self) {
@@ -100,17 +102,25 @@ impl PieceQueue {
         unimplemented!()
     }
 
+    fn next_num(&mut self) -> f32 {
+        self.num = self.a * self.num % self.m;
+
+        let out = (self.num - 1) as f32 / self.m as f32;
+        println!("{}", self.num);
+        out
+    }
+
     fn shuffle_seven(&mut self, mut arr: [Piece; 7]) -> [Piece; 7] {
-        for i in (0..7).rev() {
-            let r = self.next_num() * (i + 1);
+        for i in (1..7).rev() {
+            let r = (self.next_num() * (i as f32 + 1.0)) as usize;
             (arr[i], arr[r]) = (arr[r], arr[i])
         }
         arr
     }
 
     fn shuffle_fourteen(&mut self, mut arr: [Piece; 14]) -> [Piece; 14] {
-        for i in (0..14).rev() {
-            let r = self.next_num() * (i + 1);
+        for i in (1..14).rev() {
+            let r = (self.next_num() * (i as f32 + 1.0)) as usize;
             (arr[i], arr[r]) = (arr[r], arr[i])
         }
         arr
@@ -125,4 +135,46 @@ pub enum RNG {
     Classic,
     Pairs,
     Mayhem,
+}
+
+#[cfg(test)]
+mod piece_queue_tests {
+    use super::*;
+
+
+    #[test]
+    fn test_seven_bag() {
+        let mut queue = PieceQueue::default();
+        let bag = queue.shuffle_seven([0, 1, 2, 3, 4, 5, 6]);
+
+        for piece in 0..7 {
+            assert!(bag.contains(&piece));
+        }
+
+        for _ in 0..10 {
+            let new_bag = queue.shuffle_seven([0, 1, 2, 3, 4, 5, 6]);
+            assert_ne!(bag, new_bag);
+        }
+    }
+
+    #[test]
+    fn test_match_with_osk() {
+        let mut queue = PieceQueue::new(15);
+        // ITOSLJZS JOTZLIL
+        let osk_queue =
+            [4, 6, 2, 3, 1, 5, 0, 3, 5, 2, 6, 0, 1, 4];
+
+        for piece in osk_queue {
+            assert_eq!(queue.next(), piece);
+        }
+
+        let mut queue = PieceQueue::new(7000);
+        // TSJOLIZ ITLSJZO
+        let osk_queue =
+            [6, 3, 5, 2, 1, 4, 0, 4, 6, 1, 3, 5, 0, 2];
+
+        for piece in osk_queue {
+            assert_eq!(queue.next(), piece);
+        }
+    }
 }
