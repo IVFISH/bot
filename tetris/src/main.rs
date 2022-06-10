@@ -1,5 +1,6 @@
 mod board;
 mod placement;
+mod errors;
 
 use board::Board;
 

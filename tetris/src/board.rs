@@ -63,9 +63,16 @@ impl Board {
         }
     }
 
-    pub fn set_piece(&self, piece: Placement, update_heights: bool) {
-        let locations = piece.to_list();
-        unimplemented!()
+    pub fn set_piece(&mut self, piece: Placement, update_heights: bool) {
+        for location in piece.to_list() {
+            self.add(location.row, location.col, update_heights);
+        }
+    }
+
+    pub fn remove_piece(&mut self, piece: Placement, update_heights: bool) {
+        for location in piece.to_list() {
+            self.remove(location.row, location.col, update_heights);
+        }
     }
 
     pub fn max_filled_height(&self) -> usize {
@@ -94,8 +101,12 @@ impl Board {
     }
 
     pub fn check_collision(&self, piece: Placement) -> bool {
-        let locations = piece.to_list();
-        unimplemented!()
+        for location in piece.to_list() {
+            if self.get(location.row, location.col) {
+                return true;
+            }
+        }
+        false
     }
 
     pub fn check_grounded(&self, piece: Placement) -> bool {
@@ -104,7 +115,7 @@ impl Board {
     }
 
     pub fn all_clear(&self) -> bool {
-        unimplemented!()
+        !self.get_row(0).contains(&true)
     }
 
     pub fn clear(&mut self) {

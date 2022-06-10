@@ -1,3 +1,5 @@
+use crate::errors::GameError;
+
 pub struct Placement {
 
     piece_type: char,
@@ -14,6 +16,22 @@ impl Placement {
 }
 
 pub struct Point {
-    row: i8,
-    col: i8
+    pub row: usize,
+    pub col: usize
+}
+
+impl Point {
+    pub fn add(&mut self, row: usize, col: usize) -> Result<Self, GameError> {
+        self.row += row;
+        self.col += col;
+
+        todo!()
+    }
+
+    pub fn sub(&mut self, row: usize, col: usize) -> Result<Self, GameError> {
+        self.col -= row;
+        self.col -= col;
+
+        todo!()
+    }
 }
