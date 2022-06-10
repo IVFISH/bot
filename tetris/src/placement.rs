@@ -3,81 +3,59 @@ use crate::board::Board;
 
 use std::{collections::HashMap, fmt::Display};
 use std::convert::TryInto;
+use std::fmt::Formatter;
+use itertools::Itertools;
 
-pub const PIECE_SIZE: usize = 4;
-
-pub type RotationState = usize;
-pub type RotationDirection = usize;
-
-pub type RotationLocation = [[Mino; PIECE_SIZE]; 4];
-
-pub type Piece = usize;
-
-const PIECE_ROTATIONS: [RotationLocation; 7] =
-    [Z_ROTATIONS, L_ROTATIONS, O_ROTATIONS, S_ROTATIONS, I_ROTATIONS, J_ROTATIONS, T_ROTATIONS];
-
-const Z_ROTATIONS: RotationLocation = [
-    [Mino(1, -1), Mino(1, 0), Mino(0, 0), Mino(0, 1)],
-    [Mino(1, 1), Mino(0, 1), Mino(0, 0), Mino(-1, 0)],
-    [Mino(-1, 1), Mino(-1, 0), Mino(0, 0), Mino(0, -1)],
-    [Mino(-1, -1), Mino(0, -1), Mino(0, 0), Mino(1, 0)]
-];
-
-
-const L_ROTATIONS: RotationLocation = [
-    [Mino(1, 1), Mino(0, -1), Mino(0, 0), Mino(0, 1)],
-    [Mino(-1, 1), Mino(1, 0), Mino(0, 0), Mino(-1, 0)],
-    [Mino(-1, -1), Mino(0, 1), Mino(0, 0), Mino(0, -1)],
-    [Mino(1, -1), Mino(-1, 0), Mino(0, 0), Mino(1, 0)]
-];
-
-const O_ROTATIONS: RotationLocation = [
-    [Mino(1, 0), Mino(1, 1), Mino(0, 0), Mino(0, 1)],
-    [Mino(0, 1), Mino(-1, 1), Mino(0, 0), Mino(-1, 0)],
-    [Mino(-1, 0), Mino(-1, -1), Mino(0, 0), Mino(0, -1)],
-    [Mino(0, -1), Mino(1, -1), Mino(0, 0), Mino(1, 0)]
-];
-
-const S_ROTATIONS: RotationLocation = [
-    [Mino(1, 0), Mino(1, 1), Mino(0, -1), Mino(0, 0)],
-    [Mino(0, 1), Mino(-1, 1), Mino(1, 0), Mino(0, 0)],
-    [Mino(-1, 0), Mino(-1, -1), Mino(0, 1), Mino(0, 0)],
-    [Mino(0, -1), Mino(1, -1), Mino(-1, 0), Mino(0, 0)]
-];
-
-const I_ROTATIONS: RotationLocation = [
-    [Mino(0, -1), Mino(0, 0), Mino(0, 1), Mino(0, 2)],
-    [Mino(1, 0), Mino(0, 0), Mino(-1, 0), Mino(-2, 0)],
-    [Mino(0, 1), Mino(0, 0), Mino(0, -1), Mino(0, -2)],
-    [Mino(-1, 0), Mino(0, 0), Mino(1, 0), Mino(2, 0)]
-];
-
-const J_ROTATIONS: RotationLocation = [
-    [Mino(1, -1), Mino(0, -1), Mino(0, 0), Mino(0, 1)],
-    [Mino(1, 1), Mino(1, 0), Mino(0, 0), Mino(-1, 0)],
-    [Mino(-1, 1), Mino(0, 1), Mino(0, 0), Mino(0, -1)],
-    [Mino(-1, -1), Mino(-1, 0), Mino(0, 0), Mino(1, 0)]
-];
-
-const T_ROTATIONS: RotationLocation = [
-    [Mino(1, 0), Mino(0, -1), Mino(0, 0), Mino(0, 1)],
-    [Mino(0, 1), Mino(1, 0), Mino(0, 0), Mino(-1, 0)],
-    [Mino(-1, 0), Mino(0, 1), Mino(0, 0), Mino(0, -1)],
-    [Mino(0, -1), Mino(-1, 0), Mino(0, 0), Mino(1, 0)]
-];
+use piece_data::*;
+use piece_data::rotation::*;
+use piece_data::offset::*;
 
 pub struct Placement {
-
     pub piece_type: Piece,
     pub rotation_state: RotationState,
-    pub center: Point
-
+    pub center: Point,
 }
 
+impl Default for Placement {
+    fn default() -> Self {
+
+        Self {
+            piece_type: 0,
+            rotation_state: 0,
+            center: Point {row: SPAWN_ROW, col: SPAWN_COL},
+        }
+    }
+}
+
+impl Display for Placement {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let locations = &PIECE_ROTATIONS[self.piece_type][self.rotation_state];
+
+        let size: i8;
+
+        if self.piece_type == 4 {
+            size = 5;
+        } else {
+            size = 3;
+        }
+        let half_size = size / 2;
+
+        for row in (0..size).rev() {
+            for col in 0..size {
+                let p = Mino(row - half_size, col - half_size);
+                if locations.contains(&p) {
+                    write!(f, "■ ")?
+                } else { write!(f, "□ ")? }
+            }
+            write!(f, "\n")?
+        }
+        Ok(())
+    }
+}
+
+
 impl Placement {
-
-    pub fn abs_locations(&self) -> [Point; PIECE_SIZE]{
-
+    pub fn abs_locations(&self) -> [Point; PIECE_SIZE] {
         let out: [Point; PIECE_SIZE] =
 
             PIECE_ROTATIONS[self.piece_type][self.rotation_state]
@@ -90,13 +68,12 @@ impl Placement {
                 .unwrap_or_else(|v: Vec<Point>| panic!("crash and burn"));
 
         out
-
     }
 
     pub fn move_by_vector(&mut self, v: MoveVector) -> bool {
-         if let Ok(p) = v.add_to_point(&self.center) {
-             self.center = p;
-             return true;
+        if let Ok(p) = v.add_to_point(&self.center) {
+            self.center = p;
+            return true;
         }
         return false;
     }
@@ -119,21 +96,40 @@ impl Placement {
 
     pub fn rotate(&mut self, direction: RotationDirection) {
         self.rotation_state = (self.rotation_state + direction) % PIECE_SIZE;
+    //  TODO: apply an offset to the center
     }
 
+    pub fn rotate_cw(&mut self) {
+        self.rotate(1);
+    }
 
+    pub fn rotate_180(&mut self) {
+        self.rotate(2);
+    }
+
+    pub fn rotate_ccw(&mut self) {
+        self.rotate(3);
+    }
+
+    #[allow(unused)]
+    pub fn new(center: Point) -> Self {
+        Self {
+            center,
+            ..Default::default()
+        }
+    }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Point {
     pub row: usize,
-    pub col: usize
+    pub col: usize,
 }
 
 pub struct MoveVector(i8, i8);
 
-#[derive(Debug)]
-struct Mino(i8, i8);
+#[derive(Debug, PartialEq)]
+pub struct Mino(i8, i8);
 
 impl Mino {
     fn add(&self, other: &Point) -> Result<Point, GameError> {
@@ -151,12 +147,11 @@ impl Mino {
             return Err(GameError::NotInBounds);
         }
 
-        Ok(Point {row, col})
+        Ok(Point { row, col })
     }
 }
 
 impl MoveVector {
-
     fn add_to_point(&self, other: &Point) -> Result<Point, GameError> {
         let row = self.0 + other.row as i8;
         let col = self.1 + other.col as i8;
@@ -172,6 +167,176 @@ impl MoveVector {
             return Err(GameError::NotInBounds);
         }
 
-        Ok(Point {row, col})
+        Ok(Point { row, col })
+    }
+}
+
+pub mod piece_data {
+    use super::*;
+
+    pub const PIECE_SIZE: usize = 4;
+    pub const SPAWN_ROW: usize = 21;
+    pub const SPAWN_COL: usize = 4;
+
+    pub type Piece = usize;
+
+    pub mod rotation {
+        use super::*;
+
+        pub type RotationState = usize;
+        pub type RotationDirection = usize;
+        pub type RotationLocations = [[Mino; PIECE_SIZE]; 4];
+
+        pub const PIECE_ROTATIONS: [RotationLocations; 7] = [Z_ROTATIONS, L_ROTATIONS, O_ROTATIONS,
+            S_ROTATIONS, I_ROTATIONS, J_ROTATIONS, T_ROTATIONS];
+
+        const Z_ROTATIONS: RotationLocations = [
+            [Mino(1, -1), Mino(1, 0), Mino(0, 0), Mino(0, 1)],
+            [Mino(1, 1), Mino(0, 1), Mino(0, 0), Mino(-1, 0)],
+            [Mino(-1, 1), Mino(-1, 0), Mino(0, 0), Mino(0, -1)],
+            [Mino(-1, -1), Mino(0, -1), Mino(0, 0), Mino(1, 0)]
+        ];
+
+
+        const L_ROTATIONS: RotationLocations = [
+            [Mino(1, 1), Mino(0, -1), Mino(0, 0), Mino(0, 1)],
+            [Mino(-1, 1), Mino(1, 0), Mino(0, 0), Mino(-1, 0)],
+            [Mino(-1, -1), Mino(0, 1), Mino(0, 0), Mino(0, -1)],
+            [Mino(1, -1), Mino(-1, 0), Mino(0, 0), Mino(1, 0)]
+        ];
+
+        const O_ROTATIONS: RotationLocations = [
+            [Mino(1, 0), Mino(1, 1), Mino(0, 0), Mino(0, 1)],
+            [Mino(0, 1), Mino(-1, 1), Mino(0, 0), Mino(-1, 0)],
+            [Mino(-1, 0), Mino(-1, -1), Mino(0, 0), Mino(0, -1)],
+            [Mino(0, -1), Mino(1, -1), Mino(0, 0), Mino(1, 0)]
+        ];
+
+        const S_ROTATIONS: RotationLocations = [
+            [Mino(1, 0), Mino(1, 1), Mino(0, -1), Mino(0, 0)],
+            [Mino(0, 1), Mino(-1, 1), Mino(1, 0), Mino(0, 0)],
+            [Mino(-1, 0), Mino(-1, -1), Mino(0, 1), Mino(0, 0)],
+            [Mino(0, -1), Mino(1, -1), Mino(-1, 0), Mino(0, 0)]
+        ];
+
+        const I_ROTATIONS: RotationLocations = [
+            [Mino(0, -1), Mino(0, 0), Mino(0, 1), Mino(0, 2)],
+            [Mino(1, 0), Mino(0, 0), Mino(-1, 0), Mino(-2, 0)],
+            [Mino(0, 1), Mino(0, 0), Mino(0, -1), Mino(0, -2)],
+            [Mino(-1, 0), Mino(0, 0), Mino(1, 0), Mino(2, 0)]
+        ];
+
+        const J_ROTATIONS: RotationLocations = [
+            [Mino(1, -1), Mino(0, -1), Mino(0, 0), Mino(0, 1)],
+            [Mino(1, 1), Mino(1, 0), Mino(0, 0), Mino(-1, 0)],
+            [Mino(-1, 1), Mino(0, 1), Mino(0, 0), Mino(0, -1)],
+            [Mino(-1, -1), Mino(-1, 0), Mino(0, 0), Mino(1, 0)]
+        ];
+
+        const T_ROTATIONS: RotationLocations = [
+            [Mino(1, 0), Mino(0, -1), Mino(0, 0), Mino(0, 1)],
+            [Mino(0, 1), Mino(1, 0), Mino(0, 0), Mino(-1, 0)],
+            [Mino(-1, 0), Mino(0, 1), Mino(0, 0), Mino(0, -1)],
+            [Mino(0, -1), Mino(-1, 0), Mino(0, 0), Mino(1, 0)]
+        ];
+    }
+
+    pub mod offset {
+        use super::*;
+
+        pub type Offset = MoveVector;
+        pub type OffsetVectors = [[Offset; 4]; 4];
+
+        // TODO
+
+        // pub const THREE_OFFSETS: OffsetVectors = [
+        //
+        // ];
+        //
+        // pub const FIVE_OFFSETS: OffsetVectors = [
+        //
+        // ];
+
+    }
+}
+
+#[cfg(test)]
+mod piece_tests {
+    use super::*;
+
+
+    #[test]
+    fn test_abs_locations() {
+        let mut piece = create_preset_t();
+        let locations = piece.abs_locations();
+
+        assert!(locations.contains(&Point { row: 2, col: 2 }));
+        assert!(locations.contains(&Point { row: 3, col: 2 }));
+        assert!(locations.contains(&Point { row: 2, col: 3 }));
+
+        assert!(!locations.contains(&Point { row: 2, col: 4 }));
+
+        let mut piece = create_preset_i();
+        let locations = piece.abs_locations();
+
+        assert!(locations.contains(&Point { row: 4, col: 6 }));
+        assert!(!locations.contains(&Point { row: 2, col: 4 }));
+    }
+
+    #[test]
+    fn test_rotate() {
+        let mut piece = create_preset_i();
+        piece.rotate_cw();
+
+        let locations = piece.abs_locations();
+
+        assert_eq!(piece.rotation_state, 3);
+
+        piece.rotate_180();
+
+        assert_eq!(piece.rotation_state, 1);
+    }
+
+    #[test]
+    fn test_move() {
+        let mut piece = create_preset_s();
+    }
+
+
+    #[test]
+    #[should_panic]
+    fn test_negative_center() {
+        let piece = Placement {
+            piece_type: 2,
+            rotation_state: 5,
+            center: Point { row: 0, col: 0 },
+        };
+
+        piece.abs_locations();
+    }
+
+
+    fn create_preset_i() -> Placement {
+        Placement {
+            piece_type: 4,
+            rotation_state: 2,
+            center: Point { row: 4, col: 6 },
+        }
+    }
+
+    fn create_preset_s() -> Placement {
+        Placement {
+            piece_type: 3,
+            rotation_state: 1,
+            center: Point { row: 15, col: 5 },
+        }
+    }
+
+    fn create_preset_t() -> Placement {
+        Placement {
+            piece_type: 6,
+            rotation_state: 0,
+            center: Point { row: 2, col: 2 },
+        }
     }
 }

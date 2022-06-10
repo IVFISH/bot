@@ -2,12 +2,12 @@ use std::fmt::{Formatter, Result, Display};
 
 use std::cmp::max;
 
-use crate::placement::Placement;
+use crate::placement::{Placement, Point};
 
 
 
 const BOARD_WIDTH: usize = 10;
-const BOARD_HEIGHT: usize = 20;
+const BOARD_HEIGHT: usize = 40;
 
 pub struct Board {
         width: usize,
@@ -80,7 +80,6 @@ impl Board {
     }
 
     pub fn min_filled_height(&self) -> usize {
-        println!("{:?}", self.heights_for_each_column);
         *self.heights_for_each_column.iter().min().unwrap()
     }
 
@@ -172,7 +171,7 @@ impl Default for Board {
 impl Display for Board {
 
     fn fmt(&self, f: &mut Formatter) -> Result {
-        for row in (0..self.height as usize).rev() {
+        for row in (0..self.height / 2 as usize).rev() {
             for col in 0..self.width as usize {
                 if self.get(row, col) {
                     write!(f, "■ ")?
@@ -193,13 +192,13 @@ mod board_tests {
     #[test]
     fn in_bounds() {
         let board = Board::new();
-        assert!(!board.row_in_bounds(BOARD_HEIGHT));
-        assert!(board.row_in_bounds(5));
+        assert!(!Board::row_in_bounds(BOARD_HEIGHT));
+        assert!(Board::row_in_bounds(5));
 
-        assert!(!board.col_in_bounds(BOARD_WIDTH));
-        assert!(board.col_in_bounds(5));
+        assert!(!Board::col_in_bounds(BOARD_WIDTH));
+        assert!(Board::col_in_bounds(5));
 
-        assert!(board.in_bounds(1, 1));
+        assert!(Board::in_bounds(1, 1));
 
     }
 
@@ -244,6 +243,18 @@ mod board_tests {
         assert_eq!(board.min_filled_height(), 0);
     }
 
+    #[test]
+    fn set_piece() {
+        let mut board = Board::new();
+        let piece = create_preset_piece();
+        board.set_piece(piece, true);
+
+        assert!(board.get(2, 3));
+        assert!(board.get(2, 1));
+        assert!(!board.get(4, 3));
+
+    }
+
     fn create_preset_board() -> Board {
         let mut board = Board::new();
 
@@ -254,6 +265,14 @@ mod board_tests {
 
         board
 
+    }
+
+    fn create_preset_piece() -> Placement {
+        Placement {
+            piece_type: 4,
+            rotation_state: 2,
+            center: Point { row: 2, col: 2 }
+        }
     }
 
 }
