@@ -19,6 +19,22 @@ pub struct Board {
 
 impl Board {
 
+    pub fn add(&mut self, row: usize, col: usize, update_heights: bool) {
+        self.arr[row][col] = true;
+
+        if update_heights {
+            self.update_height_add(col, row);
+        }
+    }
+
+    pub fn remove(&mut self, row: usize, col: usize, update_heights: bool) {
+        self.arr[row][col] = false;
+
+        if update_heights {
+            self.update_height_remove(col)
+        }
+    }
+
     pub fn get(&self, row: usize, col: usize) -> bool {
         self.arr[row][col]
     }
@@ -27,36 +43,29 @@ impl Board {
         self.arr[row]
     }
 
-    pub fn set_row(&mut self, row: usize, new_row: [bool; BOARD_WIDTH]) {
+    pub fn set_row(&mut self, row: usize, new_row: [bool; BOARD_WIDTH], update_heights: bool) {
         self.arr[row] = new_row;
-    }
-
-    pub fn set_piece(&self, piece: Placement) {
-        let locations = piece.to_list();
-        unimplemented!()
-    }
-
-    pub fn add(&mut self, row: usize, col: usize, update_heights: bool) {
-        self.arr[row][col] = true;
 
         if update_heights {
-            let height = self.heights_for_each_column[col];
-            self.heights_for_each_column[col] = max(height, row);
-        }
-    }
-
-    pub fn remove(&mut self, row: usize, col: usize, update_heights: bool) {
-        self.arr[row][col] = false;
-
-        if update_heights {
-
-            for row in (0..self.heights_for_each_column[col]).rev() {
-                if self.get(row, col) {
-                    self.heights_for_each_column[col] = row;
-                    break;
-                }
+            for column in 0..self.width {
+                self.update_height_add(column, row);
             }
         }
+    }
+
+    pub fn remove_row(&mut self, row: usize, update_heights: bool) {
+        self.arr[row] = [false; BOARD_WIDTH];
+
+        if update_heights {
+            for column in 0..self.width {
+                self.update_height_remove(column);
+            }
+        }
+    }
+
+    pub fn set_piece(&self, piece: Placement, update_heights: bool) {
+        let locations = piece.to_list();
+        unimplemented!()
     }
 
     pub fn max_filled_height(&self) -> usize {
@@ -64,6 +73,7 @@ impl Board {
     }
 
     pub fn min_filled_height(&self) -> usize {
+        println!("{:?}", self.heights_for_each_column);
         *self.heights_for_each_column.iter().min().unwrap()
     }
 
@@ -117,6 +127,22 @@ impl Board {
 
     fn full_row(&self, row: usize) -> bool {
         unimplemented!()
+    }
+
+    fn update_height_add(&mut self, col: usize, new: usize) {
+        let height = self.heights_for_each_column[col];
+        self.heights_for_each_column[col] = max(height, new + 1);
+    }
+
+    fn update_height_remove(&mut self, col: usize) {
+        for row in (0..self.heights_for_each_column[col]).rev() {
+            if self.get(row, col) {
+                self.heights_for_each_column[col] = row + 1;
+                break;
+            }
+        }
+
+        self.heights_for_each_column[col] = 0;
     }
 }
 
@@ -189,10 +215,22 @@ mod board_tests {
     #[test]
     fn max_height() {
         let mut board = create_preset_board();
-        assert_eq!(board.max_filled_height(), 5);
+        assert_eq!(board.max_filled_height(), 6);
 
         board.remove(5, 1, true);
-        assert_eq!(board.max_filled_height(), 3);
+        assert_eq!(board.max_filled_height(), 4);
+    }
+
+    #[test]
+    fn min_height() {
+        let mut board = create_preset_board();
+        assert_eq!(board.min_filled_height(), 0);
+
+        board.set_row(0, [true; BOARD_WIDTH], true);
+        assert_eq!(board.min_filled_height(), 1);
+
+        board.remove_row(0, true);
+        assert_eq!(board.min_filled_height(), 0);
     }
 
     fn create_preset_board() -> Board {
