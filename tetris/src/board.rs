@@ -64,13 +64,13 @@ impl Board {
     }
 
     pub fn set_piece(&mut self, piece: Placement, update_heights: bool) {
-        for location in piece.to_list() {
+        for location in piece.abs_locations() {
             self.add(location.row, location.col, update_heights);
         }
     }
 
     pub fn remove_piece(&mut self, piece: Placement, update_heights: bool) {
-        for location in piece.to_list() {
+        for location in piece.abs_locations() {
             self.remove(location.row, location.col, update_heights);
         }
     }
@@ -101,7 +101,7 @@ impl Board {
     }
 
     pub fn check_collision(&self, piece: Placement) -> bool {
-        for location in piece.to_list() {
+        for location in piece.abs_locations() {
             if self.get(location.row, location.col) {
                 return true;
             }
@@ -110,7 +110,7 @@ impl Board {
     }
 
     pub fn check_grounded(&self, piece: Placement) -> bool {
-        let locations = piece.to_list();
+        let locations = piece.abs_locations();
         unimplemented!()
     }
 
