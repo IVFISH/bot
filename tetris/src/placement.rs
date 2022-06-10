@@ -18,11 +18,10 @@ pub struct Placement {
 
 impl Default for Placement {
     fn default() -> Self {
-
         Self {
             piece_type: 0,
             rotation_state: 0,
-            center: Point {row: SPAWN_ROW, col: SPAWN_COL},
+            center: Point { row: SPAWN_ROW, col: SPAWN_COL },
         }
     }
 }
@@ -55,6 +54,7 @@ impl Display for Placement {
 
 
 impl Placement {
+
     pub fn abs_locations(&self) -> [Point; PIECE_SIZE] {
         let out: [Point; PIECE_SIZE] =
 
@@ -70,7 +70,7 @@ impl Placement {
         out
     }
 
-    pub fn move_by_vector(&mut self, v: MoveVector) -> bool {
+    fn move_by_vector(&mut self, v: MoveVector) -> bool {
         if let Ok(p) = v.add_to_point(&self.center) {
             self.center = p;
             return true;
@@ -90,13 +90,14 @@ impl Placement {
         self.move_by_vector(MoveVector(-1, 0))
     }
 
-    fn up(&mut self) -> bool {
+    pub fn up(&mut self) -> bool {
         self.move_by_vector(MoveVector(1, 0))
     }
 
     pub fn rotate(&mut self, direction: RotationDirection) {
         self.rotation_state = (self.rotation_state + direction) % PIECE_SIZE;
-    //  TODO: apply an offset to the center
+
+    //     TODO: do offsets
     }
 
     pub fn rotate_cw(&mut self) {
@@ -126,8 +127,6 @@ pub struct Point {
     pub col: usize,
 }
 
-pub struct MoveVector(i8, i8);
-
 #[derive(Debug, PartialEq)]
 pub struct Mino(i8, i8);
 
@@ -150,6 +149,9 @@ impl Mino {
         Ok(Point { row, col })
     }
 }
+
+#[derive(Debug, Copy, Clone)]
+pub struct MoveVector(i8, i8);
 
 impl MoveVector {
     fn add_to_point(&self, other: &Point) -> Result<Point, GameError> {
@@ -175,6 +177,7 @@ pub mod piece_data {
     use super::*;
 
     pub const PIECE_SIZE: usize = 4;
+    pub const NUM_ROTATE_STATES: usize = 4;
     pub const SPAWN_ROW: usize = 21;
     pub const SPAWN_COL: usize = 4;
 
@@ -185,7 +188,7 @@ pub mod piece_data {
 
         pub type RotationState = usize;
         pub type RotationDirection = usize;
-        pub type RotationLocations = [[Mino; PIECE_SIZE]; 4];
+        pub type RotationLocations = [[Mino; PIECE_SIZE]; NUM_ROTATE_STATES];
 
         pub const PIECE_ROTATIONS: [RotationLocations; 7] = [Z_ROTATIONS, L_ROTATIONS, O_ROTATIONS,
             S_ROTATIONS, I_ROTATIONS, J_ROTATIONS, T_ROTATIONS];
@@ -244,19 +247,75 @@ pub mod piece_data {
     pub mod offset {
         use super::*;
 
-        pub type Offset = MoveVector;
-        pub type OffsetVectors = [[Offset; 4]; 4];
+        pub const THREE_OFFSETS: [[[MoveVector; 5]; 2]; NUM_ROTATE_STATES] = [
+            THREE_OFFSET_ZERO, THREE_OFFSET_ONE, THREE_OFFSET_TWO, THREE_OFFSET_THREE
+        ];
 
-        // TODO
+        pub const THREE_180_OFFSETS: [[MoveVector; 6]; NUM_ROTATE_STATES] = [
+            [MoveVector(0, 0), MoveVector(1, 0), MoveVector(1, 1), MoveVector(1, -1), MoveVector(0, 1), MoveVector(0, -1)],
+            [MoveVector(0, 0), MoveVector(0, 1), MoveVector(2, 1), MoveVector(1, 1), MoveVector(2, 0), MoveVector(-1, 0)],
+            [MoveVector(0, 0), MoveVector(-1, 0), MoveVector(-1, -1), MoveVector(-1, 1), MoveVector(0, -1), MoveVector(0, 1)],
+            [MoveVector(0, 0), MoveVector(0, -1), MoveVector(2, -1), MoveVector(1, -1), MoveVector(2, 0), MoveVector(-1, 0)],
+        ];
 
-        // pub const THREE_OFFSETS: OffsetVectors = [
-        //
-        // ];
-        //
-        // pub const FIVE_OFFSETS: OffsetVectors = [
-        //
-        // ];
+        pub const FIVE_OFFSETS: [[[MoveVector; 5]; 2]; NUM_ROTATE_STATES] = [
+            FIVE_OFFSET_ZERO, FIVE_OFFSET_ONE, FIVE_OFFSET_TWO, FIVE_OFFSET_FIVE
+        ];
 
+        pub const FIVE_180_OFFSETS: [[MoveVector; 2]; NUM_ROTATE_STATES] = [
+            [MoveVector(-1, 1), MoveVector(0, 1)],
+            [MoveVector(-1, -1), MoveVector(-1, 0)],
+            [MoveVector(1, -1), MoveVector(0, -1)],
+            [MoveVector(1, 1), MoveVector(1, 0)]
+        ];
+
+        pub const O_OFFSETS: [[MoveVector; 3]; NUM_ROTATE_STATES] = [
+            [MoveVector(1, 0), MoveVector(1, 1), MoveVector(0, 1)],
+            [MoveVector(0, 1), MoveVector(-1, 1), MoveVector(-1, 0)],
+            [MoveVector(-1, 0), MoveVector(-1, -1), MoveVector(0, -1)],
+            [MoveVector(0, -1), MoveVector(1, -1), MoveVector(1, 0)
+            ]
+        ];
+
+        const THREE_OFFSET_ZERO: [[MoveVector; 5]; 2] = [
+            [MoveVector(0, 0), MoveVector(0, -1), MoveVector(1, -1), MoveVector(-2, 0), MoveVector(-2, -1)],
+            [MoveVector(0, 0), MoveVector(0, 1), MoveVector(1, 1), MoveVector(-2, 0), MoveVector(-2, 1)],
+        ];
+
+        const THREE_OFFSET_ONE: [[MoveVector; 5]; 2] = [
+            [MoveVector(0, 0), MoveVector(0, 1), MoveVector(-1, 1), MoveVector(2, 0), MoveVector(2, 1)],
+            [MoveVector(0, 0), MoveVector(0, 1), MoveVector(-1, 1), MoveVector(2, 0), MoveVector(2, 1)],
+        ];
+
+        const THREE_OFFSET_TWO: [[MoveVector; 5]; 2] = [
+            [MoveVector(0, 0), MoveVector(0, 1), MoveVector(1, 1), MoveVector(-2, 0), MoveVector(-2, 1)],
+            [MoveVector(0, 0), MoveVector(0, -1), MoveVector(1, -1), MoveVector(-2, 0), MoveVector(-2, -1)],
+        ];
+
+        const THREE_OFFSET_THREE: [[MoveVector; 5]; 2] = [
+            [MoveVector(0, 0), MoveVector(0, -1), MoveVector(-1, -1), MoveVector(2, 0), MoveVector(2, -1)],
+            [MoveVector(0, 0), MoveVector(0, -1), MoveVector(-1, -1), MoveVector(2, 0), MoveVector(2, -1)],
+        ];
+
+        const FIVE_OFFSET_ZERO: [[MoveVector; 5]; 2] = [
+            [MoveVector(0, 1), MoveVector(0, 2), MoveVector(0, -1), MoveVector(-1, -1), MoveVector(2, 2)],
+            [MoveVector(-1, 0), MoveVector(-1, -1), MoveVector(-1, 2), MoveVector(-2, 2), MoveVector(2, -1)]
+        ];
+
+        const FIVE_OFFSET_ONE: [[MoveVector; 5]; 2] = [
+            [MoveVector(-1, 0), MoveVector(-1, -1), MoveVector(-1, 2), MoveVector(1, -1), MoveVector(-2, 2)],
+            [MoveVector(0, -1), MoveVector(0, -2), MoveVector(0, 1), MoveVector(-2, -2), MoveVector(1, 1)]
+        ];
+
+        const FIVE_OFFSET_TWO: [[MoveVector; 5]; 2] = [
+            [MoveVector(0, -1), MoveVector(0, 1), MoveVector(0, -2), MoveVector(1, 1), MoveVector(-2, -2)],
+            [MoveVector(1, 0), MoveVector(1, -2), MoveVector(1, 1), MoveVector(2, -2), MoveVector(-1, 1)]
+        ];
+
+        const FIVE_OFFSET_FIVE: [[MoveVector; 5]; 2] = [
+            [MoveVector(1, 0), MoveVector(1, 1), MoveVector(1, -2), MoveVector(-1, 1), MoveVector(2, -2)],
+            [MoveVector(0, 1), MoveVector(0, 2), MoveVector(0, -1), MoveVector(2, 2), MoveVector(-1, -1)]
+        ];
     }
 }
 
@@ -267,6 +326,8 @@ mod piece_tests {
 
     #[test]
     fn test_abs_locations() {
+        // TODO: FIX TESTS WITH OFFSETS LATER
+
         let mut piece = create_preset_t();
         let locations = piece.abs_locations();
 

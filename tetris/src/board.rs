@@ -99,7 +99,7 @@ impl Board {
         Default::default()
     }
 
-    pub fn check_collision(&self, piece: Placement) -> bool {
+    pub fn check_collision(&self, piece: &Placement) -> bool {
         for location in piece.abs_locations() {
             if self.get(location.row, location.col) {
                 return true;
@@ -108,9 +108,24 @@ impl Board {
         false
     }
 
-    pub fn check_grounded(&self, piece: Placement) -> bool {
-        let locations = piece.abs_locations();
-        unimplemented!()
+    pub fn check_piece_in_bounds(&self, piece: &Placement) -> bool {
+        piece.abs_locations()
+            .iter()
+            .all(
+                |loc| Board::in_bounds(loc.row, loc.col)
+            )
+    }
+
+    pub fn check_valid_placement(&self, piece: &Placement) -> bool {
+        !self.check_collision(piece) && self.check_piece_in_bounds(piece)
+    }
+
+    pub fn check_grounded(&self, piece: &mut Placement) -> bool {
+        piece.down();
+        let out = self.check_valid_placement(piece);
+        piece.up();
+
+        out
     }
 
     pub fn all_clear(&self) -> bool {
