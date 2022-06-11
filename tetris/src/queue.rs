@@ -20,7 +20,7 @@ pub struct PieceQueue {
 impl Display for PieceQueue {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         for piece in 0..self.min_queue_length {
-            write!(f, "{} ", self.queue[piece])?;
+            write!(f, "{} ", PieceQueue::int_to_piece(self.queue[piece]))?;
         }
         Ok(())
     }
@@ -48,6 +48,11 @@ impl PieceQueue {
         }
     }
 
+    fn int_to_piece(piece: Piece) -> String {
+        let arr = ["Z", "L", "O", "S", "I", "J", "T"];
+        arr[piece].to_owned()
+    }
+
     pub fn new_alt_randomizer(seed: usize, randomizer: RNG) -> Self {
         Self {
             num: seed,
@@ -57,7 +62,7 @@ impl PieceQueue {
     }
 
     pub fn next(&mut self) -> Piece {
-        if self.queue.len() < self.min_queue_length {
+        if self.queue.len() < self.min_queue_length + 1 {
             self.next_bag();
         }
 
@@ -106,7 +111,6 @@ impl PieceQueue {
         self.num = self.a * self.num % self.m;
 
         let out = (self.num - 1) as f32 / self.m as f32;
-        println!("{}", self.num);
         out
     }
 
@@ -128,6 +132,12 @@ impl PieceQueue {
 }
 
 pub struct GarbageQueue {}
+
+impl Default for GarbageQueue {
+    fn default() -> Self {
+        Self {}
+    }
+}
 
 pub enum RNG {
     SevenBag,

@@ -55,22 +55,35 @@ impl Display for Placement {
 
 impl Placement {
 
-    pub fn abs_locations(&self) -> [Point; PIECE_SIZE] {
-        let out: [Point; PIECE_SIZE] =
-
-            PIECE_ROTATIONS[self.piece_type][self.rotation_state]
-                .iter()
-                .map(
-                    |x| x.add(&self.center).unwrap()
-                )
-                .collect::<Vec<Point>>()
-                .try_into()
-                .unwrap_or_else(|v: Vec<Point>| panic!("crash and burn"));
-
-        out
+    pub fn get_size(&self) -> usize {
+        return if self.piece_type == 4 {
+            5
+        } else {
+            3
+        }
     }
 
-    fn move_by_vector(&mut self, v: MoveVector) -> bool {
+    pub fn abs_locations(&self) -> Result<[Point; PIECE_SIZE], GameError> {
+        // errors if theres a negative index
+        // TODO: REFACTOR
+
+        let rotation_locations = &PIECE_ROTATIONS[self.piece_type][self.rotation_state];
+        let mut out = [Point::default(); PIECE_SIZE];
+
+        for i in 0..PIECE_SIZE {
+            let added = rotation_locations[i].add(&self.center);
+            if let Ok(add) = added {
+                out[i] = add;
+            } else {
+                return Err(GameError::NotInBounds);
+            }
+        }
+
+        Ok(out)
+
+    }
+
+    pub fn move_by_vector(&mut self, v: MoveVector) -> bool {
         if let Ok(p) = v.add_to_point(&self.center) {
             self.center = p;
             return true;
@@ -78,38 +91,8 @@ impl Placement {
         return false;
     }
 
-    pub fn left(&mut self) -> bool {
-        self.move_by_vector(MoveVector(0, -1))
-    }
-
-    pub fn right(&mut self) -> bool {
-        self.move_by_vector(MoveVector(0, 1))
-    }
-
-    pub fn down(&mut self) -> bool {
-        self.move_by_vector(MoveVector(-1, 0))
-    }
-
-    pub fn up(&mut self) -> bool {
-        self.move_by_vector(MoveVector(1, 0))
-    }
-
     pub fn rotate(&mut self, direction: RotationDirection) {
         self.rotation_state = (self.rotation_state + direction) % PIECE_SIZE;
-
-    //     TODO: do offsets
-    }
-
-    pub fn rotate_cw(&mut self) {
-        self.rotate(1);
-    }
-
-    pub fn rotate_180(&mut self) {
-        self.rotate(2);
-    }
-
-    pub fn rotate_ccw(&mut self) {
-        self.rotate(3);
     }
 
     #[allow(unused)]
@@ -127,6 +110,15 @@ pub struct Point {
     pub col: usize,
 }
 
+impl Default for Point {
+    fn default() -> Self {
+        Self {
+            row: 0,
+            col: 0
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub struct Mino(i8, i8);
 
@@ -142,7 +134,7 @@ impl Mino {
         let row = row as usize;
         let col = col as usize;
 
-        if !Board::in_bounds(row, col) {
+        if Board::in_bounds(row, col).is_err() {
             return Err(GameError::NotInBounds);
         }
 
@@ -151,7 +143,7 @@ impl Mino {
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct MoveVector(i8, i8);
+pub struct MoveVector(pub i8, pub i8);
 
 impl MoveVector {
     fn add_to_point(&self, other: &Point) -> Result<Point, GameError> {
@@ -165,11 +157,15 @@ impl MoveVector {
         let row = row as usize;
         let col = col as usize;
 
-        if !Board::in_bounds(row, col) {
+        if Board::in_bounds(row, col).is_err() {
             return Err(GameError::NotInBounds);
         }
 
         Ok(Point { row, col })
+    }
+
+    pub fn negative(&self) -> Self {
+        Self(-self.0, -self.1)
     }
 }
 
@@ -259,7 +255,7 @@ pub mod piece_data {
         ];
 
         pub const FIVE_OFFSETS: [[[MoveVector; 5]; 2]; NUM_ROTATE_STATES] = [
-            FIVE_OFFSET_ZERO, FIVE_OFFSET_ONE, FIVE_OFFSET_TWO, FIVE_OFFSET_FIVE
+            FIVE_OFFSET_ZERO, FIVE_OFFSET_ONE, FIVE_OFFSET_TWO, FIVE_OFFSET_THREE
         ];
 
         pub const FIVE_180_OFFSETS: [[MoveVector; 2]; NUM_ROTATE_STATES] = [
@@ -312,7 +308,7 @@ pub mod piece_data {
             [MoveVector(1, 0), MoveVector(1, -2), MoveVector(1, 1), MoveVector(2, -2), MoveVector(-1, 1)]
         ];
 
-        const FIVE_OFFSET_FIVE: [[MoveVector; 5]; 2] = [
+        const FIVE_OFFSET_THREE: [[MoveVector; 5]; 2] = [
             [MoveVector(1, 0), MoveVector(1, 1), MoveVector(1, -2), MoveVector(-1, 1), MoveVector(2, -2)],
             [MoveVector(0, 1), MoveVector(0, 2), MoveVector(0, -1), MoveVector(2, 2), MoveVector(-1, -1)]
         ];
@@ -329,31 +325,43 @@ mod piece_tests {
         // TODO: FIX TESTS WITH OFFSETS LATER
 
         let mut piece = create_preset_t();
-        let locations = piece.abs_locations();
+        if let Ok(locations) = piece.abs_locations() {
+            assert!(locations.contains(&Point { row: 2, col: 2 }));
+            assert!(locations.contains(&Point { row: 3, col: 2 }));
+            assert!(locations.contains(&Point { row: 2, col: 3 }));
 
-        assert!(locations.contains(&Point { row: 2, col: 2 }));
-        assert!(locations.contains(&Point { row: 3, col: 2 }));
-        assert!(locations.contains(&Point { row: 2, col: 3 }));
-
-        assert!(!locations.contains(&Point { row: 2, col: 4 }));
+            assert!(!locations.contains(&Point { row: 2, col: 4 }));
+        } else {
+            assert!(false)
+        }
 
         let mut piece = create_preset_i();
-        let locations = piece.abs_locations();
+        if let Ok(locations) = piece.abs_locations() {
+            assert!(locations.contains(&Point { row: 4, col: 6 }));
+            assert!(!locations.contains(&Point { row: 2, col: 4 }));
+        } else {
+            assert!(false)
+        }
 
-        assert!(locations.contains(&Point { row: 4, col: 6 }));
-        assert!(!locations.contains(&Point { row: 2, col: 4 }));
+        let mut piece = Placement {
+            piece_type: 0,
+            rotation_state: 0,
+            center: Point { row: 0, col: 0 },
+        };
+
+        assert!(piece.abs_locations().is_err());
     }
 
     #[test]
     fn test_rotate() {
         let mut piece = create_preset_i();
-        piece.rotate_cw();
+        piece.rotate(1);
 
         let locations = piece.abs_locations();
 
         assert_eq!(piece.rotation_state, 3);
 
-        piece.rotate_180();
+        piece.rotate(2);
 
         assert_eq!(piece.rotation_state, 1);
     }
@@ -365,15 +373,14 @@ mod piece_tests {
 
 
     #[test]
-    #[should_panic]
     fn test_negative_center() {
         let piece = Placement {
             piece_type: 2,
-            rotation_state: 5,
+            rotation_state: 3,
             center: Point { row: 0, col: 0 },
         };
 
-        piece.abs_locations();
+        assert!(piece.abs_locations().is_err());
     }
 
 

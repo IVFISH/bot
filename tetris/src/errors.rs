@@ -4,6 +4,7 @@ use std::fmt::{Display, Formatter};
 #[derive(Debug)]
 pub enum GameError {
     NotInBounds,
+    Collision,
     TopOut
 }
 

@@ -1,6 +1,8 @@
-use std::fmt::{Formatter, Result, Display};
+use std::fmt::{Formatter, Display};
 
 use std::cmp::max;
+use crate::errors::GameError;
+use crate::MoveVector;
 
 use crate::placement::{Placement, Point};
 
@@ -63,14 +65,15 @@ impl Board {
         }
     }
 
-    pub fn set_piece(&mut self, piece: Placement, update_heights: bool) {
-        for location in piece.abs_locations() {
+    pub fn set_piece(&mut self, piece: &Placement, update_heights: bool) {
+
+        for location in piece.abs_locations().unwrap() {
             self.add(location.row, location.col, update_heights);
         }
     }
 
-    pub fn remove_piece(&mut self, piece: Placement, update_heights: bool) {
-        for location in piece.abs_locations() {
+    pub fn remove_piece(&mut self, piece: &Placement, update_heights: bool) {
+        for location in piece.abs_locations().unwrap() {
             self.remove(location.row, location.col, update_heights);
         }
     }
@@ -83,49 +86,75 @@ impl Board {
         *self.heights_for_each_column.iter().min().unwrap()
     }
 
-    pub fn col_in_bounds(col: usize) -> bool {
-        col < BOARD_WIDTH
+    pub fn col_in_bounds(col: usize) -> Result<(), GameError> {
+        if col < BOARD_WIDTH {
+            Ok(())
+        } else {
+            Err(GameError::NotInBounds)
+        }
     }
 
-    pub fn row_in_bounds(row: usize) -> bool {
-        row < BOARD_HEIGHT
+    pub fn row_in_bounds(row: usize) -> Result<(), GameError> {
+        if row < BOARD_HEIGHT {
+            Ok(())
+        } else {
+            Err(GameError::NotInBounds)
+        }
     }
 
-    pub fn in_bounds(row: usize, col: usize) -> bool {
-        Board::col_in_bounds(col) && Board::row_in_bounds(row)
+    pub fn in_bounds(row: usize, col: usize) -> Result<(), GameError> {
+        Board::col_in_bounds(col)?;
+        Board::row_in_bounds(row)?;
+
+        Ok(())
     }
 
     pub fn new() -> Self {
         Default::default()
     }
 
-    pub fn check_collision(&self, piece: &Placement) -> bool {
-        for location in piece.abs_locations() {
+    pub fn check_collision(&self, piece: &Placement) -> Result<(), GameError> {
+        let locations = piece.abs_locations()?;
+        for location in locations {
             if self.get(location.row, location.col) {
-                return true;
+                return Err(GameError::Collision);
             }
         }
-        false
+        Ok(())
     }
 
-    pub fn check_piece_in_bounds(&self, piece: &Placement) -> bool {
-        piece.abs_locations()
+    pub fn check_piece_in_bounds(&self, piece: &Placement) -> Result<(), GameError> {
+
+        let locations = piece.abs_locations()?;
+
+        let in_bounds = locations
             .iter()
             .all(
-                |loc| Board::in_bounds(loc.row, loc.col)
-            )
+                |loc| Board::in_bounds(loc.row, loc.col).is_ok()
+            );
+
+        if !in_bounds {
+            return Err(GameError::NotInBounds);
+        }
+
+        Ok(())
     }
 
-    pub fn check_valid_placement(&self, piece: &Placement) -> bool {
-        !self.check_collision(piece) && self.check_piece_in_bounds(piece)
+    pub fn check_valid_placement(&self, piece: &Placement) -> Result<(), GameError> {
+        self.check_piece_in_bounds(piece)?;
+        self.check_collision(piece)?;
+        Ok(())
     }
 
-    pub fn check_grounded(&self, piece: &mut Placement) -> bool {
-        piece.down();
-        let out = self.check_valid_placement(piece);
-        piece.up();
+    pub fn check_grounded(&self, piece: &mut Placement) -> Result<(), GameError> {
+        piece.move_by_vector(MoveVector(-1, 0));
 
-        out
+        if let Err(e) = self.check_valid_placement(piece) {
+            piece.move_by_vector(MoveVector(1, 0));
+            return Err(e);
+        }
+        piece.move_by_vector(MoveVector(1, 0));
+        Ok(())
     }
 
     pub fn all_clear(&self) -> bool {
@@ -185,8 +214,8 @@ impl Default for Board {
 
 impl Display for Board {
 
-    fn fmt(&self, f: &mut Formatter) -> Result {
-        for row in (0..self.height / 2 as usize).rev() {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        for row in (0..self.height / 2 + 3).rev() {
             for col in 0..self.width as usize {
                 if self.get(row, col) {
                     write!(f, "■ ")?
@@ -207,13 +236,13 @@ mod board_tests {
     #[test]
     fn in_bounds() {
         let board = Board::new();
-        assert!(!Board::row_in_bounds(BOARD_HEIGHT));
-        assert!(Board::row_in_bounds(5));
+        assert!(Board::row_in_bounds(BOARD_HEIGHT).is_err());
+        assert!(Board::row_in_bounds(5).is_ok());
 
-        assert!(!Board::col_in_bounds(BOARD_WIDTH));
-        assert!(Board::col_in_bounds(5));
+        assert!(Board::col_in_bounds(BOARD_WIDTH).is_err());
+        assert!(Board::col_in_bounds(5).is_ok());
 
-        assert!(Board::in_bounds(1, 1));
+        assert!(Board::in_bounds(1, 1).is_ok());
 
     }
 
