@@ -90,7 +90,7 @@ impl Placement {
     }
 
     pub fn rotate(&mut self, direction: RotationDirection) {
-        self.rotation_state = (self.rotation_state + direction) % PIECE_SIZE;
+        self.rotation_state = (self.rotation_state + direction) % NUM_ROTATE_STATES;
     }
 
     #[allow(unused)]

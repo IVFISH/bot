@@ -43,7 +43,6 @@ impl Default for PieceQueue {
 }
 
 impl PieceQueue {
-    #[allow(unused)]
     pub fn new(optional_seed: Option<usize>) -> Self {
 
         let num = optional_seed.unwrap_or_else(|| rand::thread_rng().gen_range(0..2147483646));
@@ -137,13 +136,14 @@ impl PieceQueue {
     }
 }
 
+#[derive(PartialEq)]
 pub struct GarbageItem {
     pub amt: usize,
     pub col: usize,
 }
 
 impl GarbageItem {
-    pub(crate) fn new(amt: usize) -> Self {
+    pub fn new(amt: usize) -> Self {
         let rand_in_10 = rand::thread_rng().gen_range(0..10);
 
         Self {
@@ -208,5 +208,25 @@ mod piece_queue_tests {
         for piece in osk_queue {
             assert_eq!(queue.next(), piece);
         }
+    }
+}
+
+#[cfg(test)]
+mod garbage_item_test {
+    use super::*;
+
+    #[test]
+    fn test_random() {
+        const N: usize = 10;
+        let mut arr = vec![];
+        for _ in 0..N {
+            arr.push(GarbageItem::new(1));
+        }
+
+        // checks that not everything is the same
+        assert!(!arr.windows(2).all(|w| w[0] == w[1]));
+
+
+
     }
 }

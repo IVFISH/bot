@@ -1,3 +1,5 @@
+extern crate core;
+
 mod board;
 mod placement;
 mod errors;
@@ -11,21 +13,8 @@ use crate::placement::{MoveVector, Placement, Point};
 
 fn main() {
 
-    let mut game = Game::new(Some(2));
+    let mut game = Game::new(None);
 
-    println!("{}", game);
-
-    game.piece_soft_drop();
-    game.set_piece();
-
-    println!("{}", game);
-
-    for _ in 0..3 {
-        game.piece_right();
-    }
-    game.piece_rotate_ccw();
-
-    game.set_piece();
     println!("{}", game);
 
 }

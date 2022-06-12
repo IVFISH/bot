@@ -227,7 +227,7 @@ impl Board {
         if piece.abs_locations()
             .unwrap()
             .iter()
-            .any(
+            .all(
                 |x| x.row >= max_height) {
             return Err(GameError::TopOut);
         }
