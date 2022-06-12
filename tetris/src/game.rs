@@ -6,6 +6,7 @@ use crate::queue::*;
 use crate::board::*;
 use crate::errors::GameError;
 use crate::placement::piece_data::offset::{FIVE_OFFSETS, THREE_OFFSETS, FIVE_180_OFFSETS, THREE_180_OFFSETS, O_OFFSETS};
+use crate::placement::piece_data::Piece;
 
 use crate::placement::piece_data::rotation::{RotationDirection, RotationState};
 
@@ -20,7 +21,7 @@ pub struct Game {
     pub game_data: GameData,
 
     pub active_piece: Placement,
-    pub hold_piece: Option<Placement>,
+    pub hold_piece: Option<Piece>,
 }
 
 impl Display for Game {
@@ -159,6 +160,15 @@ impl Game {
         self.rotate_with_kick(3, self.get_kicks(3))
     }
 
+    pub fn piece_hard_drop(&mut self) -> Result<(), GameError> {
+        self.piece_soft_drop();
+        self.set_piece()?;
+
+        // TODO: update game stats here probably
+
+        Ok(())
+    }
+
     pub fn add_garbage(&mut self, amt: usize, update_heights: bool) {
         self.board.add_garbage(GarbageItem::new(amt), update_heights);
     }
@@ -167,7 +177,20 @@ impl Game {
         unimplemented!()
     }
 
-    pub fn hold(&mut self) {}
+    pub fn hold(&mut self) {
+        // TODO: refactor maybe
+
+        let first_hold = self.hold_piece.is_none();
+        let active_type = self.active_piece.piece_type;
+
+        if first_hold {
+            self.active_piece = Placement::new(self.piece_queue.next());
+        } else {
+            self.active_piece = Placement::new(self.hold_piece.unwrap());
+        }
+
+        self.hold_piece = Some(active_type);
+    }
 
     fn manual_set_queue(&mut self, new_queue: VecDeque<usize>) {
         self.piece_queue.manual_queue_set(new_queue)
@@ -305,11 +328,32 @@ mod game_tests {
                    [Point { row: 20, col: 3 }, Point { row: 21, col: 5 }, Point { row: 21, col: 4 }, Point { row: 21, col: 3 }]);
     }
 
-    fn test_hold() {}
+    #[test]
+    fn test_hold() {
+        let mut game = Game::new(Some(1337));
+        // OISTLJZ
+
+        println!("{}", game);
+        assert_eq!(game.active_piece.piece_type, 2);
+        assert!(game.hold_piece.is_none());
+        game.hold();
+        println!("{}", game);
+        assert_eq!(game.active_piece.piece_type, 4);
+        assert_eq!(game.hold_piece.unwrap(), 2);
+
+        game.piece_soft_drop();
+        game.set_piece().expect("crash and burn");
+
+        println!("{}", game);
+
+        game.hold();
+        assert_eq!(game.hold_piece.unwrap(), 3);
+        assert_eq!(game.active_piece.piece_type, 2);
+
+    }
 
     #[test]
     fn test_wall_kick() {
-        println!("aaa");
         let mut game = Game::new(Some(1336));
         // TLJSO
 
@@ -346,6 +390,21 @@ mod game_tests {
 
         assert_eq!(game.active_piece.abs_locations().unwrap(),
                    [Point { row: 1, col: 4 }, Point { row: 2, col: 3 }, Point { row: 1, col: 3 }, Point { row: 0, col: 3 }]);
+    }
+
+    #[test]
+    fn test_hard_drop() {
+
+        let mut game = Game::new(Some(1337));
+
+        game.piece_hard_drop();
+        game.piece_hard_drop();
+
+        assert_eq!(game.active_piece.piece_type, 3);
+        game.piece_soft_drop();
+
+        assert_eq!(game.active_piece.abs_locations().unwrap(),
+                   [Point { row: 4, col: 4 }, Point { row: 4, col: 5 }, Point { row: 3, col: 3 }, Point { row: 3, col: 4 }]);
     }
 
     #[test]
@@ -1197,5 +1256,33 @@ mod game_tests {
 
     }
 
-    fn test_add_garbage() {}
+    #[test]
+    fn test_add_garbage() {
+
+        let mut game = Game::new(Some(1337));
+
+        game.piece_soft_drop();
+        game.set_piece();
+
+        game.add_garbage(3, false);
+
+        // testing if stuff moves up properly
+        for location in [Point { row: 4, col: 4 }, Point { row: 4, col: 5 }, Point { row: 3, col: 4 }, Point { row: 3, col: 5 }] {
+            assert!(game.board.get(location.row, location.col));
+        }
+
+        let mut counter = 0;
+
+        for row in 0..3 {
+            for col in 0..10 {
+                if game.board.get(row, col) {
+                    counter += 1;
+                }
+            }
+        }
+
+        assert_eq!(counter, 27);
+
+        // assumes garbage is in a random column. this is tested in garbage item
+    }
 }
