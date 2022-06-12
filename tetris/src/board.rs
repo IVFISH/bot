@@ -263,6 +263,24 @@ impl Board {
 
         self.heights_for_each_column[col] = 0;
     }
+
+    pub fn to_string(&self, active_piece: &Placement) -> String {
+        let mut out = String::new();
+
+        let locations = active_piece.abs_locations().unwrap();
+        for row in (0..self.height / 2 + 3).rev() {
+            for col in 0..self.width {
+                if self.get(row, col) || locations.contains(&Point {row, col}) {
+                    out.push_str("■ ");
+                } else {
+                    out.push_str("□ ");
+                }
+            }
+            out.push_str("\n");
+        }
+
+        out
+    }
 }
 
 impl Default for Board {
@@ -279,7 +297,7 @@ impl Default for Board {
 impl Display for Board {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         for row in (0..self.height / 2 + 3).rev() {
-            for col in 0..self.width as usize {
+            for col in 0..self.width {
                 if self.get(row, col) {
                     write!(f, "■ ")?
                 } else { write!(f, "□ ")? }

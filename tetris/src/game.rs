@@ -8,6 +8,7 @@ use crate::placement::piece_data::offset::{FIVE_OFFSETS, THREE_OFFSETS, FIVE_180
 use crate::placement::piece_data::rotation::{RotationDirection, RotationState};
 
 
+#[derive(Default)]
 pub struct Game {
     board: Board,
 
@@ -20,26 +21,9 @@ pub struct Game {
     pub hold_piece: Option<Placement>,
 }
 
-impl Default for Game {
-    fn default() -> Self {
-        let mut out = Self {
-            board: Default::default(),
-            piece_queue: Default::default(),
-            garbage_queue: Default::default(),
-            game_data: Default::default(),
-
-            active_piece: Default::default(),
-            hold_piece: None,
-        };
-
-        out.active_piece = Placement::new(out.piece_queue.next());
-        out
-    }
-}
-
 impl Display for Game {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.board)?;
+        write!(f, "{}", self.board.to_string(&self.active_piece))?;
         write!(f, "Queue: {}", self.piece_queue)?;
 
         Ok(())
@@ -47,6 +31,18 @@ impl Display for Game {
 }
 
 impl Game {
+    #[allow(unused)]
+    pub fn new(seed: Option<usize>) -> Self {
+
+        let mut out = Self {
+            piece_queue: PieceQueue::new(seed),
+            ..Default::default()
+        };
+
+        out.active_piece = Placement::new(out.piece_queue.next());
+        out
+    }
+
     pub fn set_piece(&mut self) {
         self.board.set_piece(&self.active_piece, true);
         self.active_piece = Placement::new(self.piece_queue.next());
@@ -70,11 +66,33 @@ impl Game {
         self.safe_move_active_piece_by_vector(MoveVector(0, 1))
     }
 
-    pub fn piece_down(&mut self) -> bool {
+    pub fn piece_das_left(&mut self) {
+        while self.piece_left() {
+            // this is intended wheeee
+        }
+    }
+
+    pub fn piece_das_right(&mut self) {
+        while self.piece_right() {
+            // this is intended wheeee
+        }
+    }
+
+    pub fn piece_soft_drop(&mut self) -> bool {
+        let out = self.piece_down();
+
+        while self.piece_down() {
+            // this is intended wheeee
+        }
+
+        out
+    }
+
+    fn piece_down(&mut self) -> bool {
         self.safe_move_active_piece_by_vector(MoveVector(-1, 0))
     }
 
-    pub fn piece_up(&mut self) -> bool {
+    fn piece_up(&mut self) -> bool {
         self.safe_move_active_piece_by_vector(MoveVector(1, 0))
     }
 
@@ -131,8 +149,8 @@ impl Game {
         self.rotate_with_kick(3, self.get_kicks(3))
     }
 
-    fn add_garbage(&self) {
-        unimplemented!()
+    fn add_garbage(&mut self, amt: usize, update_heights: bool) {
+        self.board.add_garbage(GarbageItem::new(amt), update_heights);
     }
 
     fn reset(&mut self) {

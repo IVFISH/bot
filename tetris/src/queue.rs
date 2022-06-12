@@ -44,9 +44,12 @@ impl Default for PieceQueue {
 
 impl PieceQueue {
     #[allow(unused)]
-    pub fn new(seed: usize) -> Self {
+    pub fn new(optional_seed: Option<usize>) -> Self {
+
+        let num = optional_seed.unwrap_or_else(|| rand::thread_rng().gen_range(0..2147483646));
+
         Self {
-            num: seed,
+            num,
             ..Default::default()
         }
     }
@@ -140,7 +143,7 @@ pub struct GarbageItem {
 }
 
 impl GarbageItem {
-    fn new(amt: usize) -> Self {
+    pub(crate) fn new(amt: usize) -> Self {
         let rand_in_10 = rand::thread_rng().gen_range(0..10);
 
         Self {
@@ -188,7 +191,7 @@ mod piece_queue_tests {
 
     #[test]
     fn test_match_with_osk() {
-        let mut queue = PieceQueue::new(15);
+        let mut queue = PieceQueue::new(Some(15));
         // ITOSLJZS JOTZLIL
         let osk_queue =
             [4, 6, 2, 3, 1, 5, 0, 3, 5, 2, 6, 0, 1, 4];
@@ -197,7 +200,7 @@ mod piece_queue_tests {
             assert_eq!(queue.next(), piece);
         }
 
-        let mut queue = PieceQueue::new(7000);
+        let mut queue = PieceQueue::new(Some(7000));
         // TSJOLIZ ITLSJZO
         let osk_queue =
             [6, 3, 5, 2, 1, 4, 0, 4, 6, 1, 3, 5, 0, 2];

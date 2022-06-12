@@ -11,13 +11,11 @@ use crate::placement::{MoveVector, Placement, Point};
 
 fn main() {
 
-    let mut game = Game::default();
+    let mut game = Game::new(Some(2));
 
     println!("{}", game);
 
-    for _ in 0..15 {
-        game.piece_down();
-    }
+    game.piece_soft_drop();
     game.set_piece();
 
     println!("{}", game);
