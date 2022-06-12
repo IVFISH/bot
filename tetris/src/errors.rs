@@ -5,7 +5,7 @@ use std::fmt::{Display, Formatter};
 pub enum GameError {
     NotInBounds,
     Collision,
-    TopOut
+    TopOut,
 }
 
 impl Display for GameError {

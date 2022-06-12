@@ -54,18 +54,17 @@ impl Display for Placement {
 
 
 impl Placement {
-
     pub fn get_size(&self) -> usize {
         return if self.piece_type == 4 {
             5
         } else {
             3
-        }
+        };
     }
 
     pub fn abs_locations(&self) -> Result<[Point; PIECE_SIZE], GameError> {
         // errors if theres a negative index
-        // TODO: REFACTOR
+        // TODO: REFACTOR, can use filter_map/map_err maybe
 
         let rotation_locations = &PIECE_ROTATIONS[self.piece_type][self.rotation_state];
         let mut out = [Point::default(); PIECE_SIZE];
@@ -80,7 +79,6 @@ impl Placement {
         }
 
         Ok(out)
-
     }
 
     pub fn move_by_vector(&mut self, v: MoveVector) -> bool {
@@ -114,7 +112,7 @@ impl Default for Point {
     fn default() -> Self {
         Self {
             row: 0,
-            col: 0
+            col: 0,
         }
     }
 }

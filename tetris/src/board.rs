@@ -5,22 +5,21 @@ use crate::errors::GameError;
 use crate::MoveVector;
 
 use crate::placement::{Placement, Point};
-
+use crate::queue::GarbageItem;
 
 
 const BOARD_WIDTH: usize = 10;
 const BOARD_HEIGHT: usize = 40;
 
 pub struct Board {
-        width: usize,
-        height: usize,
+    width: usize,
+    height: usize,
 
-        arr: [[bool; BOARD_WIDTH]; BOARD_HEIGHT],
-        heights_for_each_column: [usize; BOARD_WIDTH],
-    }
+    arr: [[bool; BOARD_WIDTH]; BOARD_HEIGHT],
+    heights_for_each_column: [usize; BOARD_WIDTH],
+}
 
 impl Board {
-
     pub fn add(&mut self, row: usize, col: usize, update_heights: bool) {
         self.arr[row][col] = true;
 
@@ -66,7 +65,6 @@ impl Board {
     }
 
     pub fn set_piece(&mut self, piece: &Placement, update_heights: bool) {
-
         for location in piece.abs_locations().unwrap() {
             self.add(location.row, location.col, update_heights);
         }
@@ -124,7 +122,6 @@ impl Board {
     }
 
     pub fn check_piece_in_bounds(&self, piece: &Placement) -> Result<(), GameError> {
-
         let locations = piece.abs_locations()?;
 
         let in_bounds = locations
@@ -164,23 +161,91 @@ impl Board {
     pub fn clear(&mut self) {
         self.heights_for_each_column = [0; BOARD_WIDTH];
         self.arr = [[false; BOARD_WIDTH]; BOARD_HEIGHT];
-
     }
 
-    pub fn add_garbage(&self) {
+    pub fn add_garbage(&mut self, garbage: GarbageItem, update_heights: bool) {
+        // iterate downwards
+        for row in (0..self.max_filled_height()).rev() {
+            // move each row up
+            self.set_row(row + garbage.amt, self.get_row(row), false);
+        }
 
+        // adding garbage
+        for row in 0..garbage.amt {
+            self.set_row(row, [true; 10], false);
+
+            // making a hole at the column
+            self.remove(row, garbage.col, false);
+        }
+
+        if update_heights {
+            self.add_to_heights(garbage.amt);
+        }
     }
 
-    pub fn clear_lines(&self) -> u8 {
-        unimplemented!()
+    pub fn clear_lines(&mut self, update_heights: bool) -> usize {
+        let full_rows = self.all_full_rows();
+        let num_full_rows = self.all_full_rows().len();
+        let highest = self.max_filled_height();
+
+        for row in full_rows {
+            self.remove_row(row, false);
+
+            for r in row..highest {
+                self.set_row(r, self.get_row(r + 1), false);
+            }
+        }
+
+        if update_heights {
+            self.sub_to_heights(num_full_rows);
+        }
+
+        num_full_rows
     }
 
-    pub fn top_out(&self) -> bool {
-        unimplemented!()
+    fn add_to_heights(&mut self, amt: usize) {
+        for col in 0..self.width {
+            self.heights_for_each_column[col] += amt;
+        }
+    }
+
+    fn sub_to_heights(&mut self, amt: usize) {
+        for col in 0..self.width {
+            self.heights_for_each_column[col] -= amt;
+        }
+    }
+
+    pub fn top_out(&mut self, piece: &Placement, next: &Placement, max_height: usize) -> Result<(), GameError> {
+        self.set_piece(piece, false);
+
+        if self.check_collision(next).is_err() {
+            return Err(GameError::TopOut);
+        }
+
+        self.remove_piece(piece, false);
+
+        if piece.abs_locations()
+            .unwrap()
+            .iter()
+            .any(
+                |x| x.row >= max_height) {
+            return Err(GameError::TopOut);
+        }
+
+        Ok(())
     }
 
     fn full_row(&self, row: usize) -> bool {
-        unimplemented!()
+        self.arr[row].iter().all(|x| *x)
+    }
+
+    fn all_full_rows(&self) -> Vec<usize> {
+        (0..self.max_filled_height())
+            .into_iter()
+            .filter(
+                |x| self.full_row(*x)
+            )
+            .collect()
     }
 
     fn update_height_add(&mut self, col: usize, new: usize) {
@@ -201,7 +266,6 @@ impl Board {
 }
 
 impl Default for Board {
-
     fn default() -> Self {
         Self {
             width: BOARD_WIDTH,
@@ -213,14 +277,12 @@ impl Default for Board {
 }
 
 impl Display for Board {
-
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         for row in (0..self.height / 2 + 3).rev() {
             for col in 0..self.width as usize {
                 if self.get(row, col) {
                     write!(f, "■ ")?
-                } 
-                else { write!(f, "□ ")? }
+                } else { write!(f, "□ ")? }
             }
             write!(f, "\n")?
         }
@@ -243,7 +305,6 @@ mod board_tests {
         assert!(Board::col_in_bounds(5).is_ok());
 
         assert!(Board::in_bounds(1, 1).is_ok());
-
     }
 
     #[test]
@@ -254,7 +315,6 @@ mod board_tests {
         assert!(board.get(5, 1));
         assert!(!board.get(3, 4));
         assert!(!board.get(12, 5));
-
     }
 
     #[test]
@@ -291,12 +351,11 @@ mod board_tests {
     fn set_piece() {
         let mut board = Board::new();
         let piece = create_preset_piece();
-        board.set_piece(piece, true);
+        board.set_piece(&piece, true);
 
         assert!(board.get(2, 3));
         assert!(board.get(2, 1));
         assert!(!board.get(4, 3));
-
     }
 
     fn create_preset_board() -> Board {
@@ -308,15 +367,13 @@ mod board_tests {
         board.add(3, 7, true);
 
         board
-
     }
 
     fn create_preset_piece() -> Placement {
         Placement {
             piece_type: 4,
             rotation_state: 2,
-            center: Point { row: 2, col: 2 }
+            center: Point { row: 2, col: 2 },
         }
     }
-
 }

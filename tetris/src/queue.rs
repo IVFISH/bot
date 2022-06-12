@@ -1,5 +1,8 @@
 use std::fmt::{Display, Formatter};
 use std::collections::VecDeque;
+
+use rand::Rng;
+
 use crate::Placement;
 use crate::placement::piece_data::Piece;
 
@@ -128,6 +131,22 @@ impl PieceQueue {
             (arr[i], arr[r]) = (arr[r], arr[i])
         }
         arr
+    }
+}
+
+pub struct GarbageItem {
+    pub amt: usize,
+    pub col: usize,
+}
+
+impl GarbageItem {
+    fn new(amt: usize) -> Self {
+        let rand_in_10 = rand::thread_rng().gen_range(0..10);
+
+        Self {
+            amt,
+            col: rand_in_10,
+        }
     }
 }
 
