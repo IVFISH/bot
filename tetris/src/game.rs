@@ -45,6 +45,14 @@ impl Game {
         out
     }
 
+    pub fn valid_location_for_active(&self) -> bool {
+        self.board.check_valid_location(&self.active_piece).is_ok()
+    }
+
+    pub fn valid_placement_for_active(&mut self) -> bool {
+        self.board.check_valid_placement(&mut self.active_piece).is_ok()
+    }
+
     pub fn set_piece(&mut self, update_heights: bool) -> Result<(), GameError> {
         self.board.top_out(&self.active_piece, &Placement::new(self.piece_queue.peek()), 20)?;
 
@@ -61,7 +69,7 @@ impl Game {
         }
 
         // checks if rest of piece is invalid
-        let safe = self.board.check_valid_placement(&self.active_piece).is_ok();
+        let safe = self.board.check_valid_location(&self.active_piece).is_ok();
 
         if !safe {
             self.active_piece.move_by_vector(v.negative());
@@ -113,7 +121,7 @@ impl Game {
 
         for index in 0..kicks.len() {
             if self.active_piece.move_by_vector(kicks[index]) {
-                if self.board.check_valid_placement(&self.active_piece).is_ok() {
+                if self.board.check_valid_location(&self.active_piece).is_ok() {
                     return true;
                 } else {
                     self.active_piece.move_by_vector(kicks[index].negative());

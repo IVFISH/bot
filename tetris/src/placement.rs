@@ -10,6 +10,7 @@ use piece_data::*;
 use piece_data::rotation::*;
 use piece_data::offset::*;
 
+#[derive(PartialEq, Copy, Clone)]
 pub struct Placement {
     pub piece_type: Piece,
     pub rotation_state: RotationState,
@@ -87,6 +88,10 @@ impl Placement {
             return true;
         }
         return false;
+    }
+
+    pub fn move_center_to_column(&mut self, col: usize) {
+        self.center.col = col;
     }
 
     pub fn rotate(&mut self, direction: RotationDirection) {

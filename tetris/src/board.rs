@@ -137,7 +137,7 @@ impl Board {
         Ok(())
     }
 
-    pub fn check_valid_placement(&self, piece: &Placement) -> Result<(), GameError> {
+    pub fn check_valid_location(&self, piece: &Placement) -> Result<(), GameError> {
         self.check_piece_in_bounds(piece)?;
         self.check_collision(piece)?;
         Ok(())
@@ -151,6 +151,12 @@ impl Board {
             return Err(e);
         }
         piece.move_by_vector(MoveVector(1, 0));
+        Ok(())
+    }
+
+    pub fn check_valid_placement(&self, piece: &mut Placement) -> Result<(), GameError> {
+        self.check_valid_location(piece)?;
+        self.check_grounded(piece)?;
         Ok(())
     }
 
