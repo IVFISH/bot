@@ -3,7 +3,7 @@ use crate::board::*;
 use crate::placement::*;
 use crate::queue::*;
 use crate::board::*;
-use crate::placement::piece_data::offset::{FIVE_OFFSETS, THREE_OFFSETS, FIVE_180_OFFSETS, THREE_180_OFFSETS};
+use crate::placement::piece_data::offset::{FIVE_OFFSETS, THREE_OFFSETS, FIVE_180_OFFSETS, THREE_180_OFFSETS, O_OFFSETS};
 
 use crate::placement::piece_data::rotation::{RotationDirection, RotationState};
 
@@ -47,7 +47,6 @@ impl Display for Game {
 }
 
 impl Game {
-
     pub fn set_piece(&mut self) {
         self.board.set_piece(&self.active_piece, true);
         self.active_piece = Placement::new(self.piece_queue.next());
@@ -79,18 +78,10 @@ impl Game {
         self.safe_move_active_piece_by_vector(MoveVector(1, 0))
     }
 
-    pub fn piece_rotate_cw(&mut self) -> bool {
-        let before = self.active_piece.rotation_state;
-        self.active_piece.rotate(1);
+    fn rotate_with_kick(&mut self, dir: RotationDirection, kicks: Vec<MoveVector>) -> bool {
+        self.active_piece.rotate(dir);
 
-        let kicks;
-        if self.active_piece.get_size() == 5 {
-            kicks = FIVE_OFFSETS[before][0];
-        } else {
-            kicks = THREE_OFFSETS[before][0]
-        }
-
-        for index in 0..5 {
+        for index in 0..kicks.len() {
             if self.active_piece.move_by_vector(kicks[index]) {
                 if self.board.check_valid_placement(&self.active_piece).is_ok() {
                     return true;
@@ -100,65 +91,44 @@ impl Game {
             }
         }
 
-        self.active_piece.rotate(3);
+        // undo if cannot kick
+        self.active_piece.rotate(4 - dir);
         false
+    }
+
+    fn get_kicks(&self, dir: RotationDirection) -> Vec<MoveVector> {
+        let before = self.active_piece.rotation_state;
+
+        let kicks;
+        if self.active_piece.piece_type == 4 {  // I piece is the special child
+            if dir == 2 {
+                kicks = FIVE_180_OFFSETS[before].to_vec()
+            } else {
+                kicks = FIVE_OFFSETS[before][dir / 2].to_vec();
+            }
+        } else if self.active_piece.piece_type == 2 { // O piece is the other special child
+            kicks = O_OFFSETS[before].to_vec();
+        } else {
+            if dir == 2 {
+                kicks = THREE_180_OFFSETS[before].to_vec()
+            } else {
+                kicks = THREE_OFFSETS[before][dir / 2].to_vec();
+            }
+        }
+
+        kicks
+    }
+
+    pub fn piece_rotate_cw(&mut self) -> bool {
+        self.rotate_with_kick(1, self.get_kicks(1))
     }
 
     pub fn piece_rotate_180(&mut self) -> bool {
-        let before = self.active_piece.rotation_state;
-        self.active_piece.rotate(2);
-
-        if self.active_piece.get_size() == 5 {
-            let kicks = FIVE_180_OFFSETS[before];
-            for index in 0..2 {
-                if self.active_piece.move_by_vector(kicks[index]) {
-                    if self.board.check_valid_placement(&self.active_piece).is_ok() {
-                        return true;
-                    }
-                } else {
-                    self.active_piece.move_by_vector(kicks[index].negative());
-                }
-            }
-        } else {
-            let kicks = THREE_180_OFFSETS[before];
-            for index in 0..6 {
-                if self.active_piece.move_by_vector(kicks[index]) {
-                    if self.board.check_valid_placement(&self.active_piece).is_ok() {
-                        return true;
-                    }
-                } else {
-                    self.active_piece.move_by_vector(kicks[index].negative());
-                }
-            }
-        }
-
-        self.active_piece.rotate(2);
-        false
+        self.rotate_with_kick(2, self.get_kicks(2))
     }
 
     pub fn piece_rotate_ccw(&mut self) -> bool {
-        let before = self.active_piece.rotation_state;
-        self.active_piece.rotate(3);
-
-        let kicks;
-        if self.active_piece.get_size() == 5 {
-            kicks = FIVE_OFFSETS[before][1];
-        } else {
-            kicks = THREE_OFFSETS[before][1]
-        }
-
-        for index in 0..5 {
-            if self.active_piece.move_by_vector(kicks[index]) {
-                if self.board.check_valid_placement(&self.active_piece).is_ok() {
-                    return true;
-                }
-            } else {
-                self.active_piece.move_by_vector(kicks[index].negative());
-            }
-        }
-
-        self.active_piece.rotate(1);
-        false
+        self.rotate_with_kick(3, self.get_kicks(3))
     }
 
     fn add_garbage(&self) {
