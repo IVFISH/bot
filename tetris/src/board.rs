@@ -270,8 +270,10 @@ impl Board {
         let locations = active_piece.abs_locations().unwrap();
         for row in (0..self.height / 2 + 3).rev() {
             for col in 0..self.width {
-                if self.get(row, col) || locations.contains(&Point {row, col}) {
+                if self.get(row, col) {
                     out.push_str("■ ");
+                } else if locations.contains(&Point {row, col}) {
+                    out.push_str("⬚ ");
                 } else {
                     out.push_str("□ ");
                 }

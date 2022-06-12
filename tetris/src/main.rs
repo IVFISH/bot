@@ -12,9 +12,6 @@ use board::Board;
 use crate::placement::{MoveVector, Placement, Point};
 
 fn main() {
-
     let mut game = Game::new(None);
-
-    println!("{}", game);
 
 }

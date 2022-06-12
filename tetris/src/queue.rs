@@ -53,6 +53,10 @@ impl PieceQueue {
         }
     }
 
+    pub fn manual_queue_set(&mut self, new_queue: VecDeque<Piece>) {
+        self.queue = new_queue;
+    }
+
     fn int_to_piece(piece: Piece) -> String {
         let arr = ["Z", "L", "O", "S", "I", "J", "T"];
         arr[piece].to_owned()

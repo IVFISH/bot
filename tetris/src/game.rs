@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::fmt::{Display, Formatter};
 use crate::board::*;
 use crate::placement::*;
@@ -167,6 +168,10 @@ impl Game {
     }
 
     pub fn hold(&mut self) {}
+
+    fn manual_set_queue(&mut self, new_queue: VecDeque<usize>) {
+        self.piece_queue.manual_queue_set(new_queue)
+    }
 }
 
 pub struct GameData {
@@ -339,12 +344,856 @@ mod game_tests {
 
         println!("{} {:?}", game, game.active_piece.abs_locations());
 
-        assert!(game.active_piece.abs_locations(),
-                [Point { row: 1, col: 4 }, Point { row: 2, col: 3 }, Point { row: 1, col: 3 }, Point { row: 0, col: 3 }]);
+        assert_eq!(game.active_piece.abs_locations().unwrap(),
+                   [Point { row: 1, col: 4 }, Point { row: 2, col: 3 }, Point { row: 1, col: 3 }, Point { row: 0, col: 3 }]);
     }
 
     #[test]
     fn test_srs_jank() {
+
+        // z spin 1
+        let mut game = Game::new(None);
+        game.active_piece = Placement::new(0);
+
+        game.board.add(0, 0, false);
+        game.board.add(1, 0, false);
+        game.board.add(0, 1, false);
+        game.board.add(1, 1, false);
+        game.board.add(0, 2, false);
+        game.board.add(1, 2, false);
+        game.board.add(0, 3, false);
+        game.board.add(1, 5, false);
+        game.board.add(0, 6, false);
+        game.board.add(1, 6, false);
+        game.board.add(0, 7, false);
+        game.board.add(1, 7, false);
+        game.board.add(0, 8, false);
+        game.board.add(1, 8, false);
+        game.board.add(0, 9, false);
+        game.board.add(1, 9, false);
+
+        println!("{}", game);
+        game.piece_rotate_ccw();
+        game.piece_right();
+        game.piece_soft_drop();
+        game.piece_rotate_ccw();
+        println!("{}", game);
+
+        assert_eq!(game.active_piece.abs_locations().unwrap(),
+                   [Point { row: 0, col: 5 }, Point { row: 0, col: 4 }, Point { row: 1, col: 4 }, Point { row: 1, col: 3 }]);
+
+        // z spin 2
+        let mut game = Game::new(None);
+        game.active_piece = Placement::new(0);
+
+        game.board.add(0, 0, false);
+        game.board.add(1, 0, false);
+        game.board.add(2, 0, false);
+        game.board.add(0, 1, false);
+        game.board.add(1, 1, false);
+        game.board.add(2, 1, false);
+        game.board.add(0, 2, false);
+        game.board.add(1, 2, false);
+        game.board.add(2, 2, false);
+        game.board.add(0, 3, false);
+        game.board.add(1, 3, false);
+        game.board.add(2, 3, false);
+        game.board.add(0, 4, false);
+        game.board.add(1, 6, false);
+        game.board.add(2, 6, false);
+        game.board.add(0, 7, false);
+        game.board.add(1, 7, false);
+        game.board.add(2, 7, false);
+        game.board.add(0, 8, false);
+        game.board.add(1, 8, false);
+        game.board.add(2, 8, false);
+        game.board.add(0, 9, false);
+        game.board.add(1, 9, false);
+        game.board.add(2, 9, false);
+
+        println!("{}", game);
+        game.piece_soft_drop();
+        game.piece_rotate_cw();
+        game.piece_rotate_cw();
+        println!("{}", game);
+
+        assert_eq!([Point { row: 0, col: 6 }, Point { row: 0, col: 5 }, Point { row: 1, col: 5 }, Point { row: 1, col: 4 }],
+                   game.active_piece.abs_locations().unwrap());
+
+        // s spin 1
+        let mut game = Game::new(None);
+        game.active_piece = Placement::new(3);
+
+        game.board.add(0, 0, false);
+        game.board.add(1, 0, false);
+        game.board.add(0, 1, false);
+        game.board.add(1, 1, false);
+        game.board.add(0, 2, false);
+        game.board.add(1, 2, false);
+        game.board.add(0, 3, false);
+        game.board.add(1, 3, false);
+        game.board.add(1, 4, false);
+        game.board.add(0, 6, false);
+        game.board.add(0, 7, false);
+        game.board.add(1, 7, false);
+        game.board.add(0, 8, false);
+        game.board.add(1, 8, false);
+        game.board.add(0, 9, false);
+        game.board.add(1, 9, false);
+
+        println!("{}", game);
+        game.piece_rotate_cw();
+        game.piece_soft_drop();
+        game.piece_rotate_cw();
+        println!("{}", game);
+
+        assert_eq!([Point { row: 0, col: 5 }, Point { row: 0, col: 4 }, Point { row: 1, col: 6 }, Point { row: 1, col: 5 }],
+                   game.active_piece.abs_locations().unwrap());
+
+        // s spin 2
+        let mut game = Game::new(None);
+        game.active_piece = Placement::new(3);
+
+        game.board.add(0, 0, false);
+        game.board.add(1, 0, false);
+        game.board.add(2, 0, false);
+        game.board.add(0, 1, false);
+        game.board.add(1, 1, false);
+        game.board.add(2, 1, false);
+        game.board.add(0, 2, false);
+        game.board.add(1, 2, false);
+        game.board.add(2, 2, false);
+        game.board.add(1, 3, false);
+        game.board.add(2, 3, false);
+        game.board.add(0, 5, false);
+        game.board.add(0, 6, false);
+        game.board.add(1, 6, false);
+        game.board.add(2, 6, false);
+        game.board.add(0, 7, false);
+        game.board.add(1, 7, false);
+        game.board.add(2, 7, false);
+        game.board.add(0, 8, false);
+        game.board.add(1, 8, false);
+        game.board.add(2, 8, false);
+        game.board.add(0, 9, false);
+        game.board.add(1, 9, false);
+        game.board.add(2, 9, false);
+
+        println!("{}", game);
+        game.piece_rotate_ccw();
+        game.piece_right();
+        game.piece_soft_drop();
+        game.piece_rotate_ccw();
+        println!("{}", game);
+
+        assert_eq!([Point { row: 0, col: 4 }, Point { row: 0, col: 3 }, Point { row: 1, col: 5 }, Point { row: 1, col: 4 }],
+                   game.active_piece.abs_locations().unwrap());
+
+        // l spin 1
+        let mut game = Game::new(None);
+        game.active_piece = Placement::new(1);
+
+        game.board.add(0, 0, false);
+        game.board.add(1, 0, false);
+        game.board.add(2, 0, false);
+        game.board.add(0, 1, false);
+        game.board.add(1, 1, false);
+        game.board.add(2, 1, false);
+        game.board.add(0, 2, false);
+        game.board.add(1, 2, false);
+        game.board.add(2, 2, false);
+        game.board.add(2, 3, false);
+        game.board.add(0, 4, false);
+        game.board.add(0, 5, false);
+        game.board.add(0, 6, false);
+        game.board.add(1, 6, false);
+        game.board.add(2, 6, false);
+        game.board.add(0, 7, false);
+        game.board.add(1, 7, false);
+        game.board.add(2, 7, false);
+        game.board.add(0, 8, false);
+        game.board.add(1, 8, false);
+        game.board.add(2, 8, false);
+        game.board.add(0, 9, false);
+        game.board.add(1, 9, false);
+        game.board.add(2, 9, false);
+
+        println!("{}", game);
+        game.piece_rotate_ccw();
+        game.piece_right();
+        game.piece_soft_drop();
+        game.piece_rotate_ccw();
+        println!("{}", game);
+
+        assert_eq!([Point { row: 0, col: 3 }, Point { row: 1, col: 5 }, Point { row: 1, col: 4 }, Point { row: 1, col: 3 }],
+                   game.active_piece.abs_locations().unwrap());
+
+        // l spin 2
+        let mut game = Game::new(None);
+        game.active_piece = Placement::new(1);
+
+        game.board.add(0, 0, false);
+        game.board.add(0, 1, false);
+        game.board.add(0, 2, false);
+        game.board.add(0, 3, false);
+        game.board.add(0, 5, false);
+        game.board.add(2, 5, false);
+        game.board.add(0, 6, false);
+        game.board.add(2, 6, false);
+        game.board.add(0, 7, false);
+        game.board.add(1, 7, false);
+        game.board.add(2, 7, false);
+        game.board.add(0, 8, false);
+        game.board.add(1, 8, false);
+        game.board.add(2, 8, false);
+        game.board.add(0, 9, false);
+        game.board.add(1, 9, false);
+        game.board.add(2, 9, false);
+
+        println!("{}", game);
+        game.piece_rotate_cw();
+        game.piece_left();
+        game.piece_soft_drop();
+        game.piece_right();
+        game.piece_rotate_cw();
+        println!("{}", game);
+
+        assert_eq!([Point { row: 0, col: 4 }, Point { row: 1, col: 6 }, Point { row: 1, col: 5 }, Point { row: 1, col: 4 }],
+                   game.active_piece.abs_locations().unwrap());
+
+        // l spin 3
+        let mut game = Game::new(None);
+        game.active_piece = Placement::new(1);
+
+        game.board.add(0, 0, false);
+        game.board.add(1, 0, false);
+        game.board.add(2, 0, false);
+        game.board.add(0, 1, false);
+        game.board.add(1, 1, false);
+        game.board.add(2, 1, false);
+        game.board.add(0, 2, false);
+        game.board.add(1, 2, false);
+        game.board.add(2, 2, false);
+        game.board.add(0, 3, false);
+        game.board.add(1, 3, false);
+        game.board.add(2, 3, false);
+        game.board.add(2, 6, false);
+        game.board.add(0, 7, false);
+        game.board.add(1, 7, false);
+        game.board.add(2, 7, false);
+        game.board.add(0, 8, false);
+        game.board.add(1, 8, false);
+        game.board.add(2, 8, false);
+        game.board.add(0, 9, false);
+        println!("{}", game);
+
+        println!("{}", game);
+        game.piece_rotate_cw();
+        game.piece_soft_drop();
+        game.piece_rotate_ccw();
+        println!("{}", game);
+
+        assert_eq!([Point { row: 1, col: 6 }, Point { row: 0, col: 4 }, Point { row: 0, col: 5 }, Point { row: 0, col: 6 }],
+                   game.active_piece.abs_locations().unwrap());
+
+        // j spin 1
+        let mut game = Game::new(None);
+        game.active_piece = Placement::new(5);
+
+        game.board.add(0, 0, false);
+        game.board.add(1, 0, false);
+        game.board.add(0, 1, false);
+        game.board.add(1, 1, false);
+        game.board.add(0, 2, false);
+        game.board.add(1, 2, false);
+        game.board.add(0, 3, false);
+        game.board.add(1, 3, false);
+        game.board.add(1, 5, false);
+        game.board.add(1, 6, false);
+        game.board.add(0, 7, false);
+        game.board.add(1, 7, false);
+        game.board.add(0, 8, false);
+        game.board.add(1, 8, false);
+        game.board.add(0, 9, false);
+        game.board.add(1, 9, false);
+
+        println!("{}", game);
+        game.piece_rotate_cw();
+        game.piece_soft_drop();
+        game.piece_rotate_ccw();
+        println!("{}", game);
+
+        assert_eq!([Point { row: 1, col: 4 }, Point { row: 0, col: 4 }, Point { row: 0, col: 5 }, Point { row: 0, col: 6 }],
+                   game.active_piece.abs_locations().unwrap());
+
+        // j spin 2
+        let mut game = Game::new(None);
+        game.active_piece = Placement::new(5);
+
+        game.board.add(0, 0, false);
+        game.board.add(1, 0, false);
+        game.board.add(2, 0, false);
+        game.board.add(0, 1, false);
+        game.board.add(1, 1, false);
+        game.board.add(2, 1, false);
+        game.board.add(0, 2, false);
+        game.board.add(1, 2, false);
+        game.board.add(2, 2, false);
+        game.board.add(0, 3, false);
+        game.board.add(1, 3, false);
+        game.board.add(2, 3, false);
+        game.board.add(0, 4, false);
+        game.board.add(0, 5, false);
+        game.board.add(2, 5, false);
+        game.board.add(2, 6, false);
+        game.board.add(0, 7, false);
+        game.board.add(1, 7, false);
+        game.board.add(2, 7, false);
+        game.board.add(0, 8, false);
+        game.board.add(1, 8, false);
+        game.board.add(2, 8, false);
+        game.board.add(0, 9, false);
+        game.board.add(1, 9, false);
+
+        println!("{}", game);
+        game.piece_rotate_cw();
+        game.piece_soft_drop();
+        game.piece_rotate_cw();
+        println!("{}", game);
+
+        assert_eq!([Point { row: 0, col: 6 }, Point { row: 1, col: 6 }, Point { row: 1, col: 5 }, Point { row: 1, col: 4 }],
+                   game.active_piece.abs_locations().unwrap());
+
+        // j spin 3
+        let mut game = Game::new(None);
+        game.active_piece = Placement::new(5);
+
+        game.board.add(0, 0, false);
+        game.board.add(1, 0, false);
+        game.board.add(2, 0, false);
+        game.board.add(0, 1, false);
+        game.board.add(1, 1, false);
+        game.board.add(2, 1, false);
+        game.board.add(0, 2, false);
+        game.board.add(1, 2, false);
+        game.board.add(2, 2, false);
+        game.board.add(0, 3, false);
+        game.board.add(2, 3, false);
+        game.board.add(0, 4, false);
+        game.board.add(0, 6, false);
+        game.board.add(1, 6, false);
+        game.board.add(2, 6, false);
+        game.board.add(0, 7, false);
+        game.board.add(1, 7, false);
+        game.board.add(2, 7, false);
+        game.board.add(0, 8, false);
+        game.board.add(1, 8, false);
+        game.board.add(2, 8, false);
+        game.board.add(0, 9, false);
+        game.board.add(1, 9, false);
+        game.board.add(2, 9, false);
+
+        println!("{}", game);
+        game.piece_rotate_ccw();
+        game.piece_right();
+        game.piece_soft_drop();
+        game.piece_rotate_ccw();
+        println!("{}", game);
+
+        assert_eq!([Point { row: 0, col: 5 }, Point { row: 1, col: 5 }, Point { row: 1, col: 4 }, Point { row: 1, col: 3 }],
+                   game.active_piece.abs_locations().unwrap());
+
+        // s spin triple 1
+        let mut game = Game::new(None);
+        game.active_piece = Placement::new(3);
+
+        game.board.add(0, 0, false);
+        game.board.add(1, 0, false);
+        game.board.add(2, 0, false);
+        game.board.add(0, 1, false);
+        game.board.add(1, 1, false);
+        game.board.add(2, 1, false);
+        game.board.add(0, 2, false);
+        game.board.add(1, 2, false);
+        game.board.add(2, 2, false);
+        game.board.add(0, 3, false);
+        game.board.add(2, 4, false);
+        game.board.add(0, 5, false);
+        game.board.add(1, 5, false);
+        game.board.add(2, 5, false);
+        game.board.add(3, 5, false);
+        game.board.add(0, 6, false);
+        game.board.add(1, 6, false);
+        game.board.add(2, 6, false);
+        game.board.add(3, 6, false);
+        game.board.add(0, 7, false);
+        game.board.add(1, 7, false);
+        game.board.add(2, 7, false);
+        game.board.add(3, 7, false);
+        game.board.add(0, 8, false);
+        game.board.add(1, 8, false);
+        game.board.add(2, 8, false);
+        game.board.add(3, 8, false);
+        game.board.add(0, 9, false);
+        game.board.add(1, 9, false);
+        game.board.add(2, 9, false);
+        game.board.add(3, 9, false);
+
+        println!("{}", game);
+        game.piece_soft_drop();
+        game.piece_rotate_ccw();
+        println!("{}", game);
+
+        assert_eq!([Point { row: 1, col: 3 }, Point { row: 2, col: 3 }, Point { row: 0, col: 4 }, Point { row: 1, col: 4 }],
+                   game.active_piece.abs_locations().unwrap());
+
+        // s spin triple 2
+        let mut game = Game::new(None);
+        game.active_piece = Placement::new(3);
+
+        game.board.add(0, 0, false);
+        game.board.add(1, 0, false);
+        game.board.add(2, 0, false);
+        game.board.add(3, 0, false);
+        game.board.add(0, 1, false);
+        game.board.add(1, 1, false);
+        game.board.add(2, 1, false);
+        game.board.add(3, 1, false);
+        game.board.add(0, 2, false);
+        game.board.add(1, 2, false);
+        game.board.add(2, 2, false);
+        game.board.add(3, 2, false);
+        game.board.add(4, 2, false);
+        game.board.add(0, 3, false);
+        game.board.add(1, 3, false);
+        game.board.add(2, 3, false);
+        game.board.add(4, 3, false);
+        game.board.add(0, 4, false);
+        game.board.add(2, 5, false);
+        game.board.add(0, 6, false);
+        game.board.add(1, 6, false);
+        game.board.add(2, 6, false);
+        game.board.add(0, 7, false);
+        game.board.add(1, 7, false);
+        game.board.add(2, 7, false);
+        game.board.add(0, 8, false);
+        game.board.add(1, 8, false);
+        game.board.add(2, 8, false);
+        game.board.add(0, 9, false);
+        game.board.add(1, 9, false);
+        game.board.add(2, 9, false);
+
+        println!("{}", game);
+        game.piece_right();
+        game.piece_soft_drop();
+        game.piece_left();
+        game.piece_rotate_cw();
+        println!("{}", game);
+
+        assert_eq!([Point { row: 1, col: 5 }, Point { row: 0, col: 5 }, Point { row: 2, col: 4 }, Point { row: 1, col: 4 }],
+                   game.active_piece.abs_locations().unwrap());
+
+        // s spin triple 3
+        let mut game = Game::new(None);
+        game.active_piece = Placement::new(3);
+
+        game.board.add(0, 0, false);
+        game.board.add(1, 0, false);
+        game.board.add(2, 0, false);
+        game.board.add(3, 0, false);
+        game.board.add(4, 0, false);
+        game.board.add(0, 1, false);
+        game.board.add(1, 1, false);
+        game.board.add(2, 1, false);
+        game.board.add(3, 1, false);
+        game.board.add(4, 1, false);
+        game.board.add(0, 2, false);
+        game.board.add(1, 2, false);
+        game.board.add(2, 2, false);
+        game.board.add(3, 2, false);
+        game.board.add(4, 2, false);
+        game.board.add(0, 3, false);
+        game.board.add(4, 3, false);
+        game.board.add(2, 4, false);
+        game.board.add(0, 5, false);
+        game.board.add(1, 5, false);
+        game.board.add(2, 5, false);
+        game.board.add(0, 6, false);
+        game.board.add(1, 6, false);
+        game.board.add(2, 6, false);
+        game.board.add(3, 6, false);
+        game.board.add(4, 6, false);
+        game.board.add(5, 6, false);
+        game.board.add(0, 7, false);
+        game.board.add(1, 7, false);
+        game.board.add(2, 7, false);
+        game.board.add(3, 7, false);
+        game.board.add(4, 7, false);
+        game.board.add(5, 7, false);
+        game.board.add(0, 8, false);
+        game.board.add(1, 8, false);
+        game.board.add(2, 8, false);
+        game.board.add(3, 8, false);
+        game.board.add(4, 8, false);
+        game.board.add(5, 8, false);
+        game.board.add(0, 9, false);
+        game.board.add(1, 9, false);
+        game.board.add(2, 9, false);
+        game.board.add(3, 9, false);
+        game.board.add(4, 9, false);
+        game.board.add(5, 9, false);
+
+        println!("{}", game);
+        game.piece_right();
+        game.piece_rotate_ccw();
+        game.piece_soft_drop();
+        game.piece_rotate_cw();
+        game.piece_rotate_cw();
+        println!("{}", game);
+
+        assert_eq!([Point { row: 1, col: 4 }, Point { row: 0, col: 4 }, Point { row: 2, col: 3 }, Point { row: 1, col: 3 }],
+                   game.active_piece.abs_locations().unwrap());
+
+        // z spin triple 1
+        let mut game = Game::new(None);
+        game.active_piece = Placement::new(0);
+
+        game.board.add(0, 0, false);
+        game.board.add(1, 0, false);
+        game.board.add(2, 0, false);
+        game.board.add(0, 1, false);
+        game.board.add(1, 1, false);
+        game.board.add(2, 1, false);
+        game.board.add(0, 2, false);
+        game.board.add(1, 2, false);
+        game.board.add(2, 2, false);
+        game.board.add(0, 3, false);
+        game.board.add(1, 3, false);
+        game.board.add(2, 3, false);
+        game.board.add(2, 4, false);
+        game.board.add(0, 5, false);
+        game.board.add(5, 5, false);
+        game.board.add(0, 6, false);
+        game.board.add(1, 6, false);
+        game.board.add(2, 6, false);
+        game.board.add(3, 6, false);
+        game.board.add(4, 6, false);
+        game.board.add(0, 7, false);
+        game.board.add(1, 7, false);
+        game.board.add(2, 7, false);
+        game.board.add(3, 7, false);
+        game.board.add(4, 7, false);
+        game.board.add(0, 8, false);
+        game.board.add(1, 8, false);
+        game.board.add(2, 8, false);
+        game.board.add(3, 8, false);
+        game.board.add(4, 8, false);
+        game.board.add(0, 9, false);
+        game.board.add(1, 9, false);
+        game.board.add(2, 9, false);
+        game.board.add(3, 9, false);
+        game.board.add(4, 9, false);
+
+        println!("{}", game);
+        game.piece_left();
+        game.piece_soft_drop();
+        game.piece_right();
+        game.piece_rotate_ccw();
+        println!("{}", game);
+
+        assert_eq!([Point { row: 0, col: 4 }, Point { row: 1, col: 4 }, Point { row: 1, col: 5 }, Point { row: 2, col: 5 }],
+                   game.active_piece.abs_locations().unwrap());
+
+        // j spin 1
+        let mut game = Game::new(None);
+        game.active_piece = Placement::new(5);
+
+        game.board.add(0, 0, false);
+        game.board.add(1, 0, false);
+        game.board.add(2, 0, false);
+        game.board.add(0, 1, false);
+        game.board.add(1, 1, false);
+        game.board.add(2, 1, false);
+        game.board.add(0, 2, false);
+        game.board.add(1, 2, false);
+        game.board.add(2, 2, false);
+        game.board.add(2, 3, false);
+        game.board.add(1, 4, false);
+        game.board.add(2, 4, false);
+
+        println!("{}", game);
+        game.piece_right();
+        game.piece_right();
+        game.piece_rotate_ccw();
+        game.piece_soft_drop();
+        game.piece_left();
+        game.piece_rotate_cw();
+        println!("{}", game);
+
+        assert_eq!([Point { row: 1, col: 3 }, Point { row: 0, col: 3 }, Point { row: 0, col: 4 }, Point { row: 0, col: 5 }],
+                   game.active_piece.abs_locations().unwrap());
+
+        // j spin triple
+        let mut game = Game::new(None);
+        game.active_piece = Placement::new(5);
+
+        game.board.add(0, 0, false);
+        game.board.add(1, 0, false);
+        game.board.add(2, 0, false);
+        game.board.add(3, 0, false);
+        game.board.add(4, 0, false);
+        game.board.add(5, 0, false);
+        game.board.add(0, 1, false);
+        game.board.add(1, 1, false);
+        game.board.add(2, 1, false);
+        game.board.add(3, 1, false);
+        game.board.add(4, 1, false);
+        game.board.add(5, 1, false);
+        game.board.add(0, 2, false);
+        game.board.add(1, 2, false);
+        game.board.add(2, 2, false);
+        game.board.add(3, 2, false);
+        game.board.add(4, 2, false);
+        game.board.add(5, 2, false);
+        game.board.add(0, 3, false);
+        game.board.add(1, 3, false);
+        game.board.add(2, 3, false);
+        game.board.add(1, 4, false);
+        game.board.add(2, 4, false);
+        game.board.add(4, 5, false);
+        game.board.add(0, 6, false);
+        game.board.add(1, 6, false);
+        game.board.add(2, 6, false);
+        game.board.add(3, 6, false);
+        game.board.add(4, 6, false);
+        game.board.add(0, 7, false);
+        game.board.add(1, 7, false);
+        game.board.add(2, 7, false);
+        game.board.add(3, 7, false);
+        game.board.add(4, 7, false);
+        game.board.add(0, 8, false);
+        game.board.add(1, 8, false);
+        game.board.add(2, 8, false);
+        game.board.add(3, 8, false);
+        game.board.add(4, 8, false);
+        game.board.add(0, 9, false);
+        game.board.add(1, 9, false);
+        game.board.add(2, 9, false);
+        game.board.add(3, 9, false);
+        game.board.add(4, 9, false);
+
+        println!("{}", game);
+        game.piece_left();
+        game.piece_rotate_cw();
+        game.piece_soft_drop();
+        game.piece_rotate_ccw();
+        game.piece_rotate_ccw();
+        println!("{}", game);
+
+        assert_eq!([Point { row: 0, col: 4 }, Point { row: 0, col: 5 }, Point { row: 1, col: 5 }, Point { row: 2, col: 5 }],
+                   game.active_piece.abs_locations().unwrap());
+
+        // l spin 180 (?)
+        let mut game = Game::new(None);
+        game.active_piece = Placement::new(1);
+
+        game.board.add(0, 0, false);
+        game.board.add(1, 0, false);
+        game.board.add(2, 0, false);
+        game.board.add(3, 0, false);
+        game.board.add(4, 0, false);
+        game.board.add(5, 0, false);
+        game.board.add(6, 0, false);
+        game.board.add(0, 1, false);
+        game.board.add(1, 1, false);
+        game.board.add(2, 1, false);
+        game.board.add(3, 1, false);
+        game.board.add(4, 1, false);
+        game.board.add(5, 1, false);
+        game.board.add(6, 1, false);
+        game.board.add(0, 2, false);
+        game.board.add(1, 2, false);
+        game.board.add(2, 2, false);
+        game.board.add(3, 2, false);
+        game.board.add(4, 2, false);
+        game.board.add(5, 2, false);
+        game.board.add(6, 2, false);
+        game.board.add(0, 3, false);
+        game.board.add(1, 3, false);
+        game.board.add(2, 3, false);
+        game.board.add(3, 3, false);
+        game.board.add(4, 3, false);
+        game.board.add(5, 3, false);
+        game.board.add(6, 3, false);
+        game.board.add(4, 4, false);
+        game.board.add(1, 5, false);
+        game.board.add(4, 5, false);
+        game.board.add(0, 6, false);
+        game.board.add(1, 6, false);
+        game.board.add(2, 6, false);
+        game.board.add(4, 6, false);
+        game.board.add(0, 7, false);
+        game.board.add(1, 7, false);
+        game.board.add(2, 7, false);
+        game.board.add(0, 8, false);
+        game.board.add(1, 8, false);
+        game.board.add(2, 8, false);
+        game.board.add(3, 8, false);
+        game.board.add(4, 8, false);
+        game.board.add(5, 8, false);
+        game.board.add(0, 9, false);
+        game.board.add(1, 9, false);
+        game.board.add(2, 9, false);
+        game.board.add(3, 9, false);
+        game.board.add(4, 9, false);
+        game.board.add(5, 9, false);
+
+        println!("{}", game);
+        game.piece_rotate_ccw();
+        game.piece_right();
+        game.piece_right();
+        game.piece_right();
+        game.piece_soft_drop();
+        game.piece_rotate_cw();
+        game.piece_rotate_180();
+        game.piece_left();
+        game.piece_rotate_ccw();
+        println!("{}", game);
+
+        assert_eq!([Point { row: 0, col: 5 }, Point { row: 2, col: 4 }, Point { row: 1, col: 4 }, Point { row: 0, col: 4 }],
+                   game.active_piece.abs_locations().unwrap());
+
+        // l spin fuckery
+        let mut game = Game::new(None);
+        game.active_piece = Placement::new(1);
+
+        game.board.clear();
+        game.board.add(0, 0, false);
+        game.board.add(1, 0, false);
+        game.board.add(2, 0, false);
+        game.board.add(3, 0, false);
+        game.board.add(4, 0, false);
+        game.board.add(5, 0, false);
+        game.board.add(6, 0, false);
+        game.board.add(7, 0, false);
+        game.board.add(8, 0, false);
+        game.board.add(9, 0, false);
+        game.board.add(10, 0, false);
+        game.board.add(11, 0, false);
+        game.board.add(12, 0, false);
+        game.board.add(13, 0, false);
+        game.board.add(14, 0, false);
+        game.board.add(4, 1, false);
+        game.board.add(5, 1, false);
+        game.board.add(6, 1, false);
+        game.board.add(7, 1, false);
+        game.board.add(8, 1, false);
+        game.board.add(9, 1, false);
+        game.board.add(10, 1, false);
+        game.board.add(11, 1, false);
+        game.board.add(12, 1, false);
+        game.board.add(14, 1, false);
+        game.board.add(1, 2, false);
+        game.board.add(2, 2, false);
+        game.board.add(5, 2, false);
+        game.board.add(6, 2, false);
+        game.board.add(7, 2, false);
+        game.board.add(8, 2, false);
+        game.board.add(9, 2, false);
+        game.board.add(0, 3, false);
+        game.board.add(1, 3, false);
+        game.board.add(6, 3, false);
+        game.board.add(7, 3, false);
+        game.board.add(8, 3, false);
+        game.board.add(9, 3, false);
+        game.board.add(11, 3, false);
+        game.board.add(12, 3, false);
+        game.board.add(0, 4, false);
+        game.board.add(1, 4, false);
+        game.board.add(3, 4, false);
+        game.board.add(4, 4, false);
+        game.board.add(6, 4, false);
+        game.board.add(9, 4, false);
+        game.board.add(12, 4, false);
+        game.board.add(0, 5, false);
+        game.board.add(1, 5, false);
+        game.board.add(2, 5, false);
+        game.board.add(3, 5, false);
+        game.board.add(4, 5, false);
+        game.board.add(12, 5, false);
+        game.board.add(0, 6, false);
+        game.board.add(1, 6, false);
+        game.board.add(2, 6, false);
+        game.board.add(3, 6, false);
+        game.board.add(4, 6, false);
+        game.board.add(5, 6, false);
+        game.board.add(6, 6, false);
+        game.board.add(7, 6, false);
+        game.board.add(9, 6, false);
+        game.board.add(10, 6, false);
+        game.board.add(11, 6, false);
+        game.board.add(12, 6, false);
+        game.board.add(0, 7, false);
+        game.board.add(1, 7, false);
+        game.board.add(2, 7, false);
+        game.board.add(3, 7, false);
+        game.board.add(4, 7, false);
+        game.board.add(5, 7, false);
+        game.board.add(6, 7, false);
+        game.board.add(7, 7, false);
+        game.board.add(9, 7, false);
+        game.board.add(10, 7, false);
+        game.board.add(11, 7, false);
+        game.board.add(12, 7, false);
+        game.board.add(0, 8, false);
+        game.board.add(1, 8, false);
+        game.board.add(2, 8, false);
+        game.board.add(3, 8, false);
+        game.board.add(4, 8, false);
+        game.board.add(5, 8, false);
+        game.board.add(6, 8, false);
+        game.board.add(7, 8, false);
+        game.board.add(8, 8, false);
+        game.board.add(9, 8, false);
+        game.board.add(10, 8, false);
+        game.board.add(11, 8, false);
+        game.board.add(12, 8, false);
+        game.board.add(0, 9, false);
+        game.board.add(1, 9, false);
+        game.board.add(2, 9, false);
+        game.board.add(3, 9, false);
+        game.board.add(4, 9, false);
+        game.board.add(5, 9, false);
+        game.board.add(6, 9, false);
+        game.board.add(7, 9, false);
+        game.board.add(8, 9, false);
+        game.board.add(9, 9, false);
+        game.board.add(10, 9, false);
+        game.board.add(11, 9, false);
+        game.board.add(12, 9, false);
+
+        println!("{}", game);
+        game.piece_soft_drop();
+        game.piece_left();
+        game.piece_left();
+        game.piece_rotate_cw();
+        game.piece_rotate_ccw();
+        game.piece_right();
+        game.piece_rotate_ccw();
+        game.piece_soft_drop();
+        game.piece_rotate_180();
+        game.piece_rotate_cw();
+        game.piece_left();
+        game.piece_rotate_cw();
+        game.piece_rotate_cw();
+        game.piece_rotate_cw();
+        game.piece_rotate_180();
+        game.piece_rotate_ccw();
+        game.piece_rotate_ccw();
+        println!("{}", game);
+
+        assert_eq!([Point { row: 0, col: 2 }, Point { row: 2, col: 1 }, Point { row: 1, col: 1 }, Point { row: 0, col: 1 }],
+                   game.active_piece.abs_locations().unwrap());
 
     }
 
