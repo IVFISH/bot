@@ -45,10 +45,10 @@ impl Game {
         out
     }
 
-    pub fn set_piece(&mut self) -> Result<(), GameError> {
+    pub fn set_piece(&mut self, update_heights: bool) -> Result<(), GameError> {
         self.board.top_out(&self.active_piece, &Placement::new(self.piece_queue.peek()), 20)?;
 
-        self.board.set_piece(&self.active_piece, true);
+        self.board.set_piece(&self.active_piece, update_heights);
         self.active_piece = Placement::new(self.piece_queue.next());
 
         Ok(())
@@ -160,9 +160,9 @@ impl Game {
         self.rotate_with_kick(3, self.get_kicks(3))
     }
 
-    pub fn piece_hard_drop(&mut self) -> Result<(), GameError> {
+    pub fn piece_hard_drop(&mut self, update_heights: bool) -> Result<(), GameError> {
         self.piece_soft_drop();
-        self.set_piece()?;
+        self.set_piece(update_heights)?;
 
         // TODO: update game stats here probably
 
@@ -257,7 +257,7 @@ mod game_tests {
         let mut game = Game::new(Some(1));
 
         game.active_piece.move_by_vector(MoveVector(-5, 0));
-        game.set_piece().expect("crash and burn");
+        game.set_piece(true).expect("crash and burn");
 
         // making sure calling next piece correctly
         assert_eq!(game.active_piece.piece_type, 5);
@@ -272,12 +272,12 @@ mod game_tests {
     fn test_top_out() {
         let mut game = Game::new(Some(1));
 
-        assert!(game.set_piece().is_err());
+        assert!(game.set_piece(true).is_err());
 
         let mut game = Game::new(None);
         game.piece_soft_drop();
 
-        assert!(game.set_piece().is_ok());
+        assert!(game.set_piece(true).is_ok());
     }
 
     #[test]
@@ -292,7 +292,7 @@ mod game_tests {
                    [Point { row: 21, col: 8 }, Point { row: 21, col: 9 }, Point { row: 20, col: 8 }, Point { row: 20, col: 9 }]);
 
         game.piece_down();
-        game.set_piece().expect("crash and burn");
+        game.set_piece(false).expect("crash and burn");
         game.piece_soft_drop();
 
         assert_eq!(game.active_piece.abs_locations().unwrap(),
@@ -320,7 +320,7 @@ mod game_tests {
                    [Point { row: 21, col: 5 }, Point { row: 22, col: 4 }, Point { row: 21, col: 4 }, Point { row: 20, col: 4 }]);
 
         game.piece_soft_drop();
-        game.set_piece().expect("crash and burn 2");
+        game.set_piece(false).expect("crash and burn 2");
 
         game.piece_rotate_180();
 
@@ -342,7 +342,7 @@ mod game_tests {
         assert_eq!(game.hold_piece.unwrap(), 2);
 
         game.piece_soft_drop();
-        game.set_piece().expect("crash and burn");
+        game.set_piece(false).expect("crash and burn");
 
         println!("{}", game);
 
@@ -367,7 +367,7 @@ mod game_tests {
 
         let mut game = Game::new(Some(1337));
         game.piece_soft_drop();
-        game.set_piece().expect("die");
+        game.set_piece(false).expect("die");
 
         // I piece
         game.piece_rotate_ccw();
@@ -397,8 +397,8 @@ mod game_tests {
 
         let mut game = Game::new(Some(1337));
 
-        game.piece_hard_drop();
-        game.piece_hard_drop();
+        game.piece_hard_drop(true).expect("die");
+        game.piece_hard_drop(true).expect("die");
 
         assert_eq!(game.active_piece.piece_type, 3);
         game.piece_soft_drop();
@@ -1262,7 +1262,7 @@ mod game_tests {
         let mut game = Game::new(Some(1337));
 
         game.piece_soft_drop();
-        game.set_piece();
+        game.set_piece(true).expect("die");
 
         game.add_garbage(3, false);
 
