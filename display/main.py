@@ -1,11 +1,9 @@
 from tkinter import *
 import asyncio
 import websockets
-import threading
 import json
 
-newInput = threading.Event()
-nextInput = None
+inputList = asyncio.Queue()
 
 
 class Tetris(Tk):
@@ -27,6 +25,7 @@ class Tetris(Tk):
     GridWidth = 32
 
     def __init__(self):
+        print("init!")
         super().__init__()
         self.title("Tetris: IVFISH")
 
@@ -34,7 +33,6 @@ class Tetris(Tk):
         self.init_display()
         self.bind("<Key>", lambda event: keyPressed(event))  # keyboard inputs
 
-        self.display()
 
     def init_display(self):
         self.geometry(f"{self.WindowX}x{self.WindowY}")
@@ -95,11 +93,12 @@ class Tetris(Tk):
         if newHold is not None:
             self.updateHold(newHold)
 
-    def display(self):
+    async def display(self):
         try:
             while self.state():
                 self.update()
                 self.update_idletasks()
+                await asyncio.sleep(0.05)
         except TclError:
             pass
 
@@ -119,22 +118,21 @@ def keyPressed(event):
     }
 
     try:
-        nextInput = keySymToCommand[event.keysym]
-        print(nextInput)
-        newInput.set()
+        inputList.put_nowait(keySymToCommand[event.keysym])
     except KeyError:
         pass
 
 
 async def handler(websocket):
-    for message in websocket:
+    print("handle")
+    async for message in websocket:
         msg = json.loads(message)
+        print(msg)
 
         if isinstance(msg, list): # board
             a.updateBoard(msg)
-            newInput.wait()
+            nextInput = await inputList.get()
             await websocket.send(nextInput)
-            newInput.clear()
 
         if isinstance(msg, int): # op codes
             pass
@@ -142,12 +140,16 @@ async def handler(websocket):
         if isinstance(msg, str): # queue
             a.updateQueue(msg)
 
+
 async def serverLoop():
     async with websockets.serve(handler, "localhost", 5678):
         await asyncio.Future()  # run forever
 
-if __name__ == "__main__":
-    server = threading.Thread(target=asyncio.run, args=(serverLoop(),))
-    server.start()
 
+if __name__ == "__main__":
     a = Tetris()
+    x = asyncio.ensure_future(a.display())
+    y = asyncio.ensure_future(serverLoop())
+
+    loop = asyncio.get_event_loop()
+    loop.run_forever()
