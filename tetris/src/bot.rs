@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use crate::game::*;
 use crate::players::*;
 use crate::placement::*;
@@ -90,10 +92,10 @@ impl Bot {
         while action(&mut self.game) {
             add_list.push(command);
 
-
             self.game.piece_soft_drop();
 
-            if Bot::new_placement(&self.game.active_piece, &used) {
+            if Bot::new_placement(&self.game.active_piece, &used) &&
+                Bot::new_placement(&self.game.active_piece, &added_used) {
                 added_moves.push(add_list.clone());
                 added_used.push(self.game.active_piece.clone());
                 continue;
@@ -140,16 +142,19 @@ impl Bot {
 
     fn add_non_trivial(&mut self, mut trivial: Vec<MoveList>, mut used_placements: Vec<Placement>)
                        -> (Vec<MoveList>, Vec<Placement>) {
-        let num_trivial = trivial.len();
+        let mut unchecked_moves = VecDeque::from(trivial.clone());
+        let mut unchecked_placements = VecDeque::from(used_placements.clone());
 
-        for index in 0..num_trivial {
-            let current = trivial.get(index).unwrap().clone();
-            self.game.active_piece = *used_placements.get(index).unwrap();
+        while !unchecked_moves.is_empty() {
+            let current = unchecked_moves.pop_front().unwrap();
+            self.game.active_piece = unchecked_placements.pop_front().unwrap();
 
             let (new_trivial, new_used_placements) =
                 self.do_undo_action(right, Command::MoveRight,
                                     &current, &used_placements);
 
+            unchecked_moves.append(&mut VecDeque::from(new_trivial.clone()));
+            unchecked_placements.append(&mut VecDeque::from(new_used_placements.clone()));
             trivial.extend(new_trivial);
             used_placements.extend(new_used_placements);
 
@@ -157,6 +162,8 @@ impl Bot {
                 self.do_undo_action(left, Command::MoveLeft,
                                     &current, &used_placements);
 
+            unchecked_moves.append(&mut VecDeque::from(new_trivial.clone()));
+            unchecked_placements.append(&mut VecDeque::from(new_used_placements.clone()));
             trivial.extend(new_trivial);
             used_placements.extend(new_used_placements);
 
@@ -164,6 +171,8 @@ impl Bot {
                 self.do_undo_action(cw, Command::RotateCW,
                                     &current, &used_placements);
 
+            unchecked_moves.append(&mut VecDeque::from(new_trivial.clone()));
+            unchecked_placements.append(&mut VecDeque::from(new_used_placements.clone()));
             trivial.extend(new_trivial);
             used_placements.extend(new_used_placements);
 
@@ -171,6 +180,8 @@ impl Bot {
                 self.do_undo_action(ccw, Command::RotateCCW,
                                     &current, &used_placements);
 
+            unchecked_moves.append(&mut VecDeque::from(new_trivial.clone()));
+            unchecked_placements.append(&mut VecDeque::from(new_used_placements.clone()));
             trivial.extend(new_trivial);
             used_placements.extend(new_used_placements);
 
@@ -178,9 +189,13 @@ impl Bot {
                 self.do_undo_action(pi, Command::Rotate180,
                                     &current, &used_placements);
 
+            unchecked_moves.append(&mut VecDeque::from(new_trivial.clone()));
+            unchecked_placements.append(&mut VecDeque::from(new_used_placements.clone()));
             trivial.extend(new_trivial);
             used_placements.extend(new_used_placements);
         }
+
+        self.game.active_piece = Placement::new(self.game.active_piece.piece_type);
 
         (trivial, used_placements)
     }
@@ -309,14 +324,21 @@ mod move_gen_tests {
         let (moves, used) = bot.find_trivial();
         let (_, placements) = bot.add_non_trivial(moves, used);
 
-        println!("{}", bot.game);
-
-        for x in &placements {
-            println!("{:?}", x.abs_locations().unwrap());
-        }
         assert!(placements.iter().
             any(|x|
-                x.abs_locations().unwrap() == [Point { row: 0, col: 3 }, Point { row: 1, col: 3 }, Point { row: 1, col: 2 }, Point { row: 2, col: 3 }]));
+                x.abs_locations().unwrap() == [Point { row: 1, col: 2 }, Point { row: 0, col: 3 }, Point { row: 1, col: 3 }, Point { row: 2, col: 3 }]));
+    }
+
+    #[test]
+    fn test_l_spin_jank() {
+        let mut bot = make_fuckery();
+
+        let (moves, used) = bot.find_trivial();
+        let (_, placements) = bot.add_non_trivial(moves, used);
+
+        assert!(placements.iter().
+            any(|x|
+                x.abs_locations().unwrap() == [Point { row: 0, col: 2 }, Point { row: 2, col: 1 }, Point { row: 1, col: 1 }, Point { row: 0, col: 1 }]));
     }
 
     fn make_z_spin_1() -> Bot {
@@ -379,6 +401,117 @@ mod move_gen_tests {
         bot.game.add(2, 9, false);
         bot.game.add(1, 9, false);
         bot.game.add(0, 9, false);
+
+        bot
+    }
+
+    fn make_fuckery() -> Bot {
+        let mut bot = Bot::new(None);
+        bot.game.active_piece = Placement::new(1);
+
+        bot.game.add(0, 0, false);
+        bot.game.add(1, 0, false);
+        bot.game.add(2, 0, false);
+        bot.game.add(3, 0, false);
+        bot.game.add(4, 0, false);
+        bot.game.add(5, 0, false);
+        bot.game.add(6, 0, false);
+        bot.game.add(7, 0, false);
+        bot.game.add(8, 0, false);
+        bot.game.add(9, 0, false);
+        bot.game.add(10, 0, false);
+        bot.game.add(11, 0, false);
+        bot.game.add(12, 0, false);
+        bot.game.add(13, 0, false);
+        bot.game.add(14, 0, false);
+        bot.game.add(4, 1, false);
+        bot.game.add(5, 1, false);
+        bot.game.add(6, 1, false);
+        bot.game.add(7, 1, false);
+        bot.game.add(8, 1, false);
+        bot.game.add(9, 1, false);
+        bot.game.add(10, 1, false);
+        bot.game.add(11, 1, false);
+        bot.game.add(12, 1, false);
+        bot.game.add(14, 1, false);
+        bot.game.add(1, 2, false);
+        bot.game.add(2, 2, false);
+        bot.game.add(5, 2, false);
+        bot.game.add(6, 2, false);
+        bot.game.add(7, 2, false);
+        bot.game.add(8, 2, false);
+        bot.game.add(9, 2, false);
+        bot.game.add(0, 3, false);
+        bot.game.add(1, 3, false);
+        bot.game.add(6, 3, false);
+        bot.game.add(7, 3, false);
+        bot.game.add(8, 3, false);
+        bot.game.add(9, 3, false);
+        bot.game.add(11, 3, false);
+        bot.game.add(12, 3, false);
+        bot.game.add(0, 4, false);
+        bot.game.add(1, 4, false);
+        bot.game.add(3, 4, false);
+        bot.game.add(4, 4, false);
+        bot.game.add(6, 4, false);
+        bot.game.add(9, 4, false);
+        bot.game.add(12, 4, false);
+        bot.game.add(0, 5, false);
+        bot.game.add(1, 5, false);
+        bot.game.add(2, 5, false);
+        bot.game.add(3, 5, false);
+        bot.game.add(4, 5, false);
+        bot.game.add(12, 5, false);
+        bot.game.add(0, 6, false);
+        bot.game.add(1, 6, false);
+        bot.game.add(2, 6, false);
+        bot.game.add(3, 6, false);
+        bot.game.add(4, 6, false);
+        bot.game.add(5, 6, false);
+        bot.game.add(6, 6, false);
+        bot.game.add(7, 6, false);
+        bot.game.add(9, 6, false);
+        bot.game.add(10, 6, false);
+        bot.game.add(11, 6, false);
+        bot.game.add(12, 6, false);
+        bot.game.add(0, 7, false);
+        bot.game.add(1, 7, false);
+        bot.game.add(2, 7, false);
+        bot.game.add(3, 7, false);
+        bot.game.add(4, 7, false);
+        bot.game.add(5, 7, false);
+        bot.game.add(6, 7, false);
+        bot.game.add(7, 7, false);
+        bot.game.add(9, 7, false);
+        bot.game.add(10, 7, false);
+        bot.game.add(11, 7, false);
+        bot.game.add(12, 7, false);
+        bot.game.add(0, 8, false);
+        bot.game.add(1, 8, false);
+        bot.game.add(2, 8, false);
+        bot.game.add(3, 8, false);
+        bot.game.add(4, 8, false);
+        bot.game.add(5, 8, false);
+        bot.game.add(6, 8, false);
+        bot.game.add(7, 8, false);
+        bot.game.add(8, 8, false);
+        bot.game.add(9, 8, false);
+        bot.game.add(10, 8, false);
+        bot.game.add(11, 8, false);
+        bot.game.add(12, 8, false);
+        bot.game.add(0, 9, false);
+        bot.game.add(1, 9, false);
+        bot.game.add(2, 9, false);
+        bot.game.add(3, 9, false);
+        bot.game.add(4, 9, false);
+        bot.game.add(5, 9, false);
+        bot.game.add(6, 9, false);
+        bot.game.add(7, 9, false);
+        bot.game.add(8, 9, false);
+        bot.game.add(9, 9, false);
+        bot.game.add(10, 9, false);
+        bot.game.add(11, 9, false);
+        bot.game.add(12, 9, false);
 
         bot
     }
