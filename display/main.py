@@ -130,16 +130,16 @@ async def handler(websocket):
     for message in websocket:
         msg = json.loads(message)
 
-        if isinstance(msg, list):
+        if isinstance(msg, list): # board
             a.updateBoard(msg)
             newInput.wait()
             await websocket.send(nextInput)
             newInput.clear()
 
-        if isinstance(msg, int):
+        if isinstance(msg, int): # op codes
             pass
 
-        if isinstance(msg, str):
+        if isinstance(msg, str): # queue
             a.updateQueue(msg)
 
 async def serverLoop():
