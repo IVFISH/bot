@@ -1,17 +1,23 @@
-from gui import Tetris
-from tkinter import TclError
+from game import Tetris
+
+import json
+import threading
+import asyncio
+import websockets
 
 
-def main():
-    gui = Tetris()
+async def handler(websocket):
+    async for message in websocket:
+        print(message)
 
-    try:
-        while gui.state():
-            gui.update()
-            gui.update_idletasks()
-    except TclError:
-        pass
+
+async def main():
+    display = threading.Thread(target=Tetris, kwargs={})
+    display.start()
+
+    async with websockets.serve(handler, "localhost", 23512):
+        await asyncio.Future()  # run forever
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
