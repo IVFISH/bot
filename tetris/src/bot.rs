@@ -75,6 +75,9 @@ impl Bot {
         let mut trivial_placements = Vec::new();
 
         let rotations = [Command::None, Command::RotateCW, Command::Rotate180, Command::RotateCCW];
+
+        let row = self.game.active_piece.center.row;
+
         for rotation in rotations {
             self.game.active_piece.move_center_to_column(0);
             for col in 0..10 {
@@ -85,6 +88,7 @@ impl Bot {
 
                     self.game.piece_soft_drop();
                     trivial_placements.push(self.game.active_piece.clone());
+                    self.game.active_piece.center.row = row;
                 }
 
                 self.game.active_piece.move_by_vector(MoveVector(0, 1));
@@ -102,13 +106,12 @@ impl Bot {
         let num_trivial = trivial.len();
 
         for index in 0..num_trivial {
-            let placement = used_placements.get(index).unwrap();
+            let placement = used_placements.get(index).unwrap().clone();
 
-            self.game.active_piece = *placement;
+            self.game.active_piece = placement;
             let row = self.game.active_piece.center.row;
-            let col = self.game.active_piece.center.col;
 
-            let mut right_vec = vec![];
+            let mut right_vec = vec![Command::SoftDrop];
             while self.game.piece_right() {
                 right_vec.push(Command::MoveRight);
                 self.game.piece_soft_drop();
@@ -123,12 +126,13 @@ impl Bot {
                     break;
                 }
 
+                // moves back up
                 self.game.active_piece.center.row = row;
             }
 
-            self.game.active_piece.move_center_to_column(col);
+            self.game.active_piece = placement;
 
-            let mut left_vec = vec![];
+            let mut left_vec = vec![Command::SoftDrop];
             while self.game.piece_left() {
                 left_vec.push(Command::MoveLeft);
                 self.game.piece_soft_drop();
@@ -202,22 +206,24 @@ mod move_gen_tests {
         bot.game.add(1, 8, false);
         bot.game.add(1, 9, false);
 
+        bot.game.add(1, 0, false);
+        bot.game.add(1, 1, false);
+        bot.game.add(1, 2, false);
+
         bot.game.piece_das_right();
         bot.game.piece_hard_drop(true).expect("die");
 
-        // let (mut trivial, mut used) = bot.find_trivial();
-        // let trivial_only = trivial.clone();
-        // let (mut tucks, _) = bot.add_tucks_to_trivial(trivial, used);
+        let (mut trivial, mut used) = bot.find_trivial();
+        let trivial_only = trivial.clone();
+        let (mut tucks, _) = bot.add_tucks_to_trivial(trivial, used);
 
         println!("{}", bot.game);
-        for x in bot.all_moves() {
-            println!("{:?}", x);
+
+        for a in tucks {
+            if !trivial_only.contains(&a) {
+                println!("tuck {:?}", a);
+            }
         }
-        // for a in tucks {
-        //     if !trivial_only.contains(&a) {
-        //         println!("move {:?}", a);
-        //     }
-        // }
 
         assert!(false);
     }
