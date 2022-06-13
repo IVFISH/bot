@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use std::iter::zip;
 
 use crate::game::*;
 use crate::players::*;
@@ -72,7 +73,7 @@ impl Bot {
         moves
     }
 
-    fn do_undo_action(&mut self, action: fn(&mut Game) -> bool, command: Command, current_move: &Vec<Command>, mut used: &Vec<Placement>)
+    fn do_undo_action(&mut self, action: fn(&mut Game) -> bool, command: Command, current_move: &Vec<Command>, mut used_placements: &Vec<Placement>)
                       -> (Vec<MoveList>, Vec<Placement>) {
         // saves the start state
 
@@ -94,8 +95,9 @@ impl Bot {
 
             self.game.piece_soft_drop();
 
-            if Bot::new_placement(&self.game.active_piece, &used) &&
+            if Bot::new_placement(&self.game.active_piece, &used_placements) &&
                 Bot::new_placement(&self.game.active_piece, &added_used) {
+
                 added_moves.push(add_list.clone());
                 added_used.push(self.game.active_piece.clone());
                 continue;
@@ -145,54 +147,22 @@ impl Bot {
         let mut unchecked_moves = VecDeque::from(trivial.clone());
         let mut unchecked_placements = VecDeque::from(used_placements.clone());
 
+        let commands = [Command::MoveRight, Command::MoveLeft, Command::RotateCW, Command::RotateCCW, Command::Rotate180];
+        let actions = [Game::piece_right, Game::piece_left, Game::piece_rotate_cw, Game::piece_rotate_ccw, Game::piece_rotate_180];
+
         while !unchecked_moves.is_empty() {
-            let current = unchecked_moves.pop_front().unwrap();
+            let current_move = unchecked_moves.pop_front().unwrap();
             self.game.active_piece = unchecked_placements.pop_front().unwrap();
 
-            let (new_trivial, new_used_placements) =
-                self.do_undo_action(right, Command::MoveRight,
-                                    &current, &used_placements);
+            for (command, action) in zip(commands, actions) {
+                let (new_trivial, new_used_placements) =
+                    self.do_undo_action(action, command, &current_move, &used_placements);
 
-            unchecked_moves.append(&mut VecDeque::from(new_trivial.clone()));
-            unchecked_placements.append(&mut VecDeque::from(new_used_placements.clone()));
-            trivial.extend(new_trivial);
-            used_placements.extend(new_used_placements);
-
-            let (new_trivial, new_used_placements) =
-                self.do_undo_action(left, Command::MoveLeft,
-                                    &current, &used_placements);
-
-            unchecked_moves.append(&mut VecDeque::from(new_trivial.clone()));
-            unchecked_placements.append(&mut VecDeque::from(new_used_placements.clone()));
-            trivial.extend(new_trivial);
-            used_placements.extend(new_used_placements);
-
-            let (new_trivial, new_used_placements) =
-                self.do_undo_action(cw, Command::RotateCW,
-                                    &current, &used_placements);
-
-            unchecked_moves.append(&mut VecDeque::from(new_trivial.clone()));
-            unchecked_placements.append(&mut VecDeque::from(new_used_placements.clone()));
-            trivial.extend(new_trivial);
-            used_placements.extend(new_used_placements);
-
-            let (new_trivial, new_used_placements) =
-                self.do_undo_action(ccw, Command::RotateCCW,
-                                    &current, &used_placements);
-
-            unchecked_moves.append(&mut VecDeque::from(new_trivial.clone()));
-            unchecked_placements.append(&mut VecDeque::from(new_used_placements.clone()));
-            trivial.extend(new_trivial);
-            used_placements.extend(new_used_placements);
-
-            let (new_trivial, new_used_placements) =
-                self.do_undo_action(pi, Command::Rotate180,
-                                    &current, &used_placements);
-
-            unchecked_moves.append(&mut VecDeque::from(new_trivial.clone()));
-            unchecked_placements.append(&mut VecDeque::from(new_used_placements.clone()));
-            trivial.extend(new_trivial);
-            used_placements.extend(new_used_placements);
+                unchecked_moves.append(&mut VecDeque::from(new_trivial.clone()));
+                unchecked_placements.append(&mut VecDeque::from(new_used_placements.clone()));
+                trivial.extend(new_trivial);
+                used_placements.extend(new_used_placements);
+            }
         }
 
         self.game.active_piece = Placement::new(self.game.active_piece.piece_type);
@@ -233,26 +203,6 @@ impl Bot {
         }
         return vec![Command::MoveRight; col - SPAWN_COL];
     }
-}
-
-fn right(game: &mut Game) -> bool {
-    game.piece_right()
-}
-
-fn left(game: &mut Game) -> bool {
-    game.piece_left()
-}
-
-fn cw(game: &mut Game) -> bool {
-    game.piece_rotate_cw()
-}
-
-fn ccw(game: &mut Game) -> bool {
-    game.piece_rotate_ccw()
-}
-
-fn pi(game: &mut Game) -> bool {
-    game.piece_rotate_180()
 }
 
 #[cfg(test)]
