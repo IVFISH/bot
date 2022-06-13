@@ -102,7 +102,7 @@ impl Game {
         let out = self.piece_down();
 
         while self.piece_down() {
-            // this is intended wheeee
+            // this is intended wheee
         }
 
         out
@@ -171,6 +171,7 @@ impl Game {
     pub fn piece_hard_drop(&mut self, update_heights: bool) -> Result<(), GameError> {
         self.piece_soft_drop();
         self.set_piece(update_heights)?;
+        self.board.clear_lines(update_heights);
 
         // TODO: update game stats here probably
 
@@ -202,6 +203,10 @@ impl Game {
 
     fn manual_set_queue(&mut self, new_queue: VecDeque<usize>) {
         self.piece_queue.manual_queue_set(new_queue)
+    }
+
+    pub fn add(&mut self, row: usize, col: usize, update_heights: bool) {
+        self.board.add(row, col, update_heights);
     }
 }
 
@@ -357,7 +362,6 @@ mod game_tests {
         game.hold();
         assert_eq!(game.hold_piece.unwrap(), 3);
         assert_eq!(game.active_piece.piece_type, 2);
-
     }
 
     #[test]
@@ -402,7 +406,6 @@ mod game_tests {
 
     #[test]
     fn test_hard_drop() {
-
         let mut game = Game::new(Some(1337));
 
         game.piece_hard_drop(true).expect("die");
@@ -1261,12 +1264,10 @@ mod game_tests {
 
         assert_eq!([Point { row: 0, col: 2 }, Point { row: 2, col: 1 }, Point { row: 1, col: 1 }, Point { row: 0, col: 1 }],
                    game.active_piece.abs_locations().unwrap());
-
     }
 
     #[test]
     fn test_add_garbage() {
-
         let mut game = Game::new(Some(1337));
 
         game.piece_soft_drop();

@@ -5,10 +5,10 @@ use crate::placement::piece_data::*;
 use rand::Rng;
 
 pub struct Bot {
-    pub(crate) game: Game,
+    pub game: Game,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Command {
     None,
     MoveLeft,
@@ -56,6 +56,12 @@ impl Player for Bot {
 }
 
 impl Bot {
+    pub fn new(optional_seed: Option<usize>) -> Self {
+        Self {
+            game: Game::new(optional_seed)
+        }
+    }
+
     pub fn all_moves(&mut self) -> Vec<MoveList> {
         let (moves, used) = self.find_trivial();
         let (moves, used) = self.add_tucks_to_trivial(moves, used);
@@ -86,11 +92,62 @@ impl Bot {
             self.game.active_piece.rotate(1);
         }
 
+        self.game.active_piece = Placement::new(self.game.active_piece.piece_type);
+
         (trivial_moves, trivial_placements)
     }
 
     fn add_tucks_to_trivial(&mut self, mut trivial: Vec<MoveList>, mut used_placements: Vec<Placement>)
                             -> (Vec<MoveList>, Vec<Placement>) {
+        let num_trivial = trivial.len();
+
+        for index in 0..num_trivial {
+            let placement = used_placements.get(index).unwrap();
+
+            self.game.active_piece = *placement;
+            let row = self.game.active_piece.center.row;
+            let col = self.game.active_piece.center.col;
+
+            let mut right_vec = vec![];
+            while self.game.piece_right() {
+                right_vec.push(Command::MoveRight);
+                self.game.piece_soft_drop();
+
+                if Bot::new_placement(&self.game.active_piece, &used_placements) {
+                    let mut action = trivial.get(index).unwrap().clone();
+                    action.extend(right_vec.clone());
+
+                    trivial.push(action);
+                    used_placements.push(self.game.active_piece);
+                } else {
+                    break;
+                }
+
+                self.game.active_piece.center.row = row;
+            }
+
+            self.game.active_piece.move_center_to_column(col);
+
+            let mut left_vec = vec![];
+            while self.game.piece_left() {
+                left_vec.push(Command::MoveLeft);
+                self.game.piece_soft_drop();
+
+                if Bot::new_placement(&self.game.active_piece, &used_placements) {
+                    let mut action = trivial.get(index).unwrap().clone();
+                    action.extend(left_vec.clone());
+
+                    trivial.push(action);
+                    used_placements.push(self.game.active_piece);
+                } else {
+                    break;
+                }
+
+                self.game.active_piece.center.row = row;
+            }
+        }
+
+        self.game.active_piece = Placement::new(self.game.active_piece.piece_type);
         (trivial, used_placements)
     }
 
@@ -112,9 +169,11 @@ impl Bot {
         };
     }
 
+    fn new_placement(placement: &Placement, used_placements: &Vec<Placement>) -> bool {
+        !used_placements.contains(placement)
+    }
+
     fn do_move_list(&mut self, commands: MoveList) {
-        println!("{:?}", commands);
-        println!("{}", self.game);
         for command in commands {
             self.do_command(command);
         }
@@ -128,6 +187,39 @@ impl Bot {
             return vec![Command::MoveLeft; SPAWN_COL - col];
         }
         return vec![Command::MoveRight; col - SPAWN_COL];
+    }
+}
+
+#[cfg(test)]
+mod move_gen_tests {
+    use super::*;
+
+    #[test]
+    fn test_right_tucks() {
+        let mut bot = Bot::new(Some(1337));
+
+        bot.game.add(1, 7, false);
+        bot.game.add(1, 8, false);
+        bot.game.add(1, 9, false);
+
+        bot.game.piece_das_right();
+        bot.game.piece_hard_drop(true).expect("die");
+
+        // let (mut trivial, mut used) = bot.find_trivial();
+        // let trivial_only = trivial.clone();
+        // let (mut tucks, _) = bot.add_tucks_to_trivial(trivial, used);
+
+        println!("{}", bot.game);
+        for x in bot.all_moves() {
+            println!("{:?}", x);
+        }
+        // for a in tucks {
+        //     if !trivial_only.contains(&a) {
+        //         println!("move {:?}", a);
+        //     }
+        // }
+
+        assert!(false);
     }
 }
 

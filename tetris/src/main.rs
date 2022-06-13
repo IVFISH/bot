@@ -18,14 +18,11 @@ fn main() {
 
     let mut bot = Bot::default();
 
-    // println!("{}", bot.game);
-    // for _ in 0..10 {
-    //     bot.make_move();
-    //     println!("{}", bot.game);
-    // }
-    // println!("{}", bot.game.active_piece);
-    //
-    // for x in moves {
-    //     println!("{:?}", x);
-    // }
+    println!("{}", bot.game);
+    for _ in 0..15 {
+        bot.make_move();
+        println!("{}", bot.game);
+    }
+    println!("{}", bot.game.active_piece);
+
 }
