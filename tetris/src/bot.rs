@@ -1,5 +1,6 @@
-use crate::{Game, MoveVector, Placement};
+use crate::game::*;
 use crate::players::*;
+use crate::placement::*;
 use crate::placement::piece_data::*;
 
 use rand::Rng;
@@ -213,9 +214,9 @@ mod move_gen_tests {
         bot.game.piece_das_right();
         bot.game.piece_hard_drop(true).expect("die");
 
-        let (mut trivial, mut used) = bot.find_trivial();
+        let (trivial, used) = bot.find_trivial();
         let trivial_only = trivial.clone();
-        let (mut tucks, _) = bot.add_tucks_to_trivial(trivial, used);
+        let (tucks, _) = bot.add_tucks_to_trivial(trivial, used);
 
         let only_tucks: Vec<&MoveList> = tucks
             .iter()

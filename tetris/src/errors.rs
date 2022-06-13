@@ -10,7 +10,12 @@ pub enum GameError {
 
 impl Display for GameError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        todo!()
+        match self {
+            GameError::NotInBounds => write!(f, "Not In Bounds")?,
+            GameError::Collision => write!(f, "Collision")?,
+            GameError::TopOut => write!(f, "Thank you for playing.")?
+        }
+        Ok(())
     }
 }
 

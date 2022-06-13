@@ -1,14 +1,10 @@
 use crate::errors::GameError;
 use crate::board::Board;
 
-use std::{collections::HashMap, fmt::Display};
-use std::convert::TryInto;
-use std::fmt::Formatter;
-use itertools::Itertools;
+use std::fmt::{Display, Formatter};
 
 use piece_data::*;
 use piece_data::rotation::*;
-use piece_data::offset::*;
 
 #[derive(PartialEq, Copy, Clone)]
 pub struct Placement {

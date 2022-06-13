@@ -3,12 +3,11 @@ use std::fmt::{Display, Formatter};
 use crate::board::*;
 use crate::placement::*;
 use crate::queue::*;
-use crate::board::*;
 use crate::errors::GameError;
 use crate::placement::piece_data::offset::{FIVE_OFFSETS, THREE_OFFSETS, FIVE_180_OFFSETS, THREE_180_OFFSETS, O_OFFSETS};
 use crate::placement::piece_data::Piece;
 
-use crate::placement::piece_data::rotation::{RotationDirection, RotationState};
+use crate::placement::piece_data::rotation::{RotationDirection};
 
 
 #[derive(Default)]

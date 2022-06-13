@@ -1,5 +1,3 @@
-extern crate core;
-
 mod board;
 mod placement;
 mod errors;
@@ -8,11 +6,9 @@ mod queue;
 mod players;
 mod bot;
 
-use game::Game;
-use board::Board;
-use crate::bot::Bot;
-use crate::placement::{MoveVector, Placement, Point};
-use crate::players::Player;
+use crate::bot::*;
+use crate::players::*;
+
 
 fn main() {
 

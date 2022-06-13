@@ -1,10 +1,9 @@
 use std::fmt::{Formatter, Display};
 
 use std::cmp::max;
-use crate::errors::GameError;
-use crate::MoveVector;
 
-use crate::placement::{Placement, Point};
+use crate::errors::GameError;
+use crate::placement::{Placement, Point, MoveVector};
 use crate::queue::GarbageItem;
 
 

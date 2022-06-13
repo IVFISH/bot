@@ -3,7 +3,6 @@ use std::collections::VecDeque;
 
 use rand::Rng;
 
-use crate::Placement;
 use crate::placement::piece_data::Piece;
 
 pub struct PieceQueue {
