@@ -217,15 +217,14 @@ mod move_gen_tests {
         let trivial_only = trivial.clone();
         let (mut tucks, _) = bot.add_tucks_to_trivial(trivial, used);
 
-        println!("{}", bot.game);
+        let only_tucks: Vec<&MoveList> = tucks
+            .iter()
+            .filter(
+                |x| !trivial_only.contains(*x)
+            ).collect();
 
-        for a in tucks {
-            if !trivial_only.contains(&a) {
-                println!("tuck {:?}", a);
-            }
-        }
+        assert_eq!(only_tucks.len(), 12);
 
-        assert!(false);
     }
 }
 
