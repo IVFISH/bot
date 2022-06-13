@@ -1,4 +1,11 @@
 from tkinter import *
+import asyncio
+import websockets
+import threading
+import json
+
+newInput = threading.Event()
+nextInput = None
 
 
 class Tetris(Tk):
@@ -98,6 +105,7 @@ class Tetris(Tk):
 
 
 def keyPressed(event):
+    global newInput, nextInput
 
     keySymToCommand = {
         'Left': "MoveLeft",
@@ -111,6 +119,31 @@ def keyPressed(event):
     }
 
     try:
-        print(keySymToCommand[event.keysym])
+        nextInput = keySymToCommand[event.keysym]
+        print(nextInput)
+        newInput.set()
     except KeyError:
         pass
+
+
+async def handler(websocket):
+    for message in websocket:
+        msg = json.loads(message)
+
+        # TODO: Handle different kinds of messages
+
+        # put this code after displaying new board
+        newInput.wait()
+        await websocket.send(nextInput)
+        newInput.clear()
+
+
+async def serverLoop():
+    async with websockets.serve(handler, "localhost", 5678):
+        await asyncio.Future()  # run forever
+
+if __name__ == "__main__":
+    server = threading.Thread(target=asyncio.run, args=(serverLoop(),))
+    server.start()
+
+    Tetris()
