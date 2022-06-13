@@ -130,13 +130,17 @@ async def handler(websocket):
     for message in websocket:
         msg = json.loads(message)
 
-        # TODO: Handle different kinds of messages
+        if isinstance(msg, list):
+            a.updateBoard(msg)
+            newInput.wait()
+            await websocket.send(nextInput)
+            newInput.clear()
 
-        # put this code after displaying new board
-        newInput.wait()
-        await websocket.send(nextInput)
-        newInput.clear()
+        if isinstance(msg, int):
+            pass
 
+        if isinstance(msg, str):
+            a.updateQueue(msg)
 
 async def serverLoop():
     async with websockets.serve(handler, "localhost", 5678):
@@ -146,4 +150,4 @@ if __name__ == "__main__":
     server = threading.Thread(target=asyncio.run, args=(serverLoop(),))
     server.start()
 
-    Tetris()
+    a = Tetris()
