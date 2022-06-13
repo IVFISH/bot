@@ -71,6 +71,10 @@ impl Bot {
         moves
     }
 
+    fn do_undo_action(&mut self, command: Command, used: Vec<MoveList>, moves: Vec<MoveList>, action: MoveList) {
+
+    }
+
     fn find_trivial(&mut self) -> (Vec<MoveList>, Vec<Placement>) {
         let mut trivial_moves = Vec::new();
         let mut trivial_placements = Vec::new();
@@ -113,6 +117,7 @@ impl Bot {
             let row = self.game.active_piece.center.row;
 
             let mut right_vec = vec![Command::SoftDrop];
+
             while self.game.piece_right() {
                 right_vec.push(Command::MoveRight);
                 self.game.piece_soft_drop();

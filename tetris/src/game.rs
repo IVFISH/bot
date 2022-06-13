@@ -177,7 +177,11 @@ impl Game {
         Ok(())
     }
 
-    pub fn add_garbage(&mut self, amt: usize, update_heights: bool) {
+    pub fn add_garbage_to_queue(&mut self, amt: usize) {
+        todo!()
+    }
+
+    pub fn add_garbage_to_board(&mut self, amt: usize, update_heights: bool) {
         self.board.add_garbage(GarbageItem::new(amt), update_heights);
     }
 
@@ -1272,7 +1276,7 @@ mod game_tests {
         game.piece_soft_drop();
         game.set_piece(true).expect("die");
 
-        game.add_garbage(3, false);
+        game.add_garbage_to_board(3, false);
 
         // testing if stuff moves up properly
         for location in [Point { row: 4, col: 4 }, Point { row: 4, col: 5 }, Point { row: 3, col: 4 }, Point { row: 3, col: 5 }] {
