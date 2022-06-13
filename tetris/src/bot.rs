@@ -22,6 +22,7 @@ pub enum Command {
     RotateCCW,
     Rotate180,
     HardDrop,
+    Hold,
 
 }
 
@@ -67,8 +68,26 @@ impl Bot {
     }
 
     pub fn all_moves(&mut self) -> Vec<MoveList> {
-        let (moves, used) = self.find_trivial();
-        let (moves, _) = self.add_non_trivial(moves, used);
+        let start_piece = self.game.active_piece.piece_type;
+        let hold_piece;
+
+        if let Some(piece) = self.game.hold_piece {
+            hold_piece = piece
+        } else {
+            hold_piece = self.game.piece_queue_peek();
+        }
+
+        let (moves, used) = self.find_trivial(false);
+        let (mut moves, _) = self.add_non_trivial(moves, used);
+
+        self.game.active_piece = Placement::new(hold_piece);
+
+        let (hold_moves, used) = self.find_trivial(true);
+        let (hold_moves, _) = self.add_non_trivial(hold_moves, used);
+
+        moves.extend(hold_moves);
+
+        self.game.active_piece = Placement::new(start_piece);
 
         moves
     }
@@ -111,7 +130,7 @@ impl Bot {
         (added_moves, added_used)
     }
 
-    fn find_trivial(&mut self) -> (Vec<MoveList>, Vec<Placement>) {
+    fn find_trivial(&mut self, hold: bool) -> (Vec<MoveList>, Vec<Placement>) {
         let mut trivial_moves = Vec::new();
         let mut trivial_placements = Vec::new();
 
@@ -123,7 +142,14 @@ impl Bot {
             self.game.active_piece.move_center_to_column(0);
             for col in 0..10 {
                 if self.game.valid_location_for_active() {
-                    let mut inputs: MoveList = vec![rotation];
+
+                    let mut inputs: MoveList;
+                    if hold {
+                        inputs = vec![Command::Hold, rotation];
+                    } else {
+                        inputs = vec![rotation];
+                    }
+
                     inputs.append(Bot::column_to_move_list(col).as_mut());
                     trivial_moves.push(inputs);
 
@@ -180,6 +206,7 @@ impl Bot {
             Command::RotateCCW => self.game.piece_rotate_ccw(),
             Command::Rotate180 => self.game.piece_rotate_180(),
             Command::HardDrop => self.game.piece_hard_drop(true).is_ok(),
+            Command::Hold => {self.game.hold(); true},
             Command::None => false,
         };
     }
@@ -224,7 +251,7 @@ mod move_gen_tests {
         bot.game.piece_das_right();
         bot.game.piece_hard_drop(true).expect("die");
 
-        let (trivial, used) = bot.find_trivial();
+        let (trivial, used) = bot.find_trivial(false);
         let trivial_only = trivial.clone();
         let (all_moves, _) = bot.add_non_trivial(trivial, used);
 
@@ -259,7 +286,7 @@ mod move_gen_tests {
     fn test_z_spin() {
         let mut bot = make_z_spin_1();
 
-        let (moves, used) = bot.find_trivial();
+        let (moves, used) = bot.find_trivial(false);
         let (_, placements) = bot.add_non_trivial(moves, used);
 
         assert!(placements.iter().
@@ -271,7 +298,7 @@ mod move_gen_tests {
     fn test_tst() {
         let mut bot = make_tst();
 
-        let (moves, used) = bot.find_trivial();
+        let (moves, used) = bot.find_trivial(false);
         let (_, placements) = bot.add_non_trivial(moves, used);
 
         assert!(placements.iter().
@@ -283,7 +310,7 @@ mod move_gen_tests {
     fn test_l_spin_jank() {
         let mut bot = make_fuckery();
 
-        let (moves, used) = bot.find_trivial();
+        let (moves, used) = bot.find_trivial(false);
         let (_, placements) = bot.add_non_trivial(moves, used);
 
         assert!(placements.iter().

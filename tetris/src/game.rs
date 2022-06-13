@@ -211,6 +211,10 @@ impl Game {
     pub fn add(&mut self, row: usize, col: usize, update_heights: bool) {
         self.board.add(row, col, update_heights);
     }
+
+    pub fn piece_queue_peek(&self) -> Piece {
+        self.piece_queue.peek()
+    }
 }
 
 pub struct GameData {
