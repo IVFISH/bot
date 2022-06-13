@@ -65,14 +65,46 @@ impl Bot {
 
     pub fn all_moves(&mut self) -> Vec<MoveList> {
         let (moves, used) = self.find_trivial();
-        let (moves, used) = self.add_tucks_to_trivial(moves, used);
-        let moves = self.add_spins_to_tucks_and_trivial(moves, used);
+        let (moves, _) = self.add_non_trivial(moves, used);
 
         moves
     }
 
-    fn do_undo_action(&mut self, command: Command, used: Vec<MoveList>, moves: Vec<MoveList>, action: MoveList) {
+    fn do_undo_action(&mut self, action: fn(&mut Game) -> bool, command: Command, current_move: &Vec<Command>, mut used: &Vec<Placement>)
+                      -> (Vec<MoveList>, Vec<Placement>) {
+        // saves the start state
 
+        // while it can apply the action on the piece
+        // soft drop and check for new spot
+        // if new, add to moves and used
+        // else break
+
+        let save = self.game.active_piece.clone();
+
+        let mut added_moves = vec![];
+        let mut added_used = vec![];
+
+        let mut add_list = current_move.clone();
+        add_list.push(Command::SoftDrop);
+
+        while action(&mut self.game) {
+            add_list.push(command);
+
+
+            self.game.piece_soft_drop();
+
+            if Bot::new_placement(&self.game.active_piece, &used) {
+                added_moves.push(add_list.clone());
+                added_used.push(self.game.active_piece.clone());
+                continue;
+            }
+
+            break;
+        }
+
+        self.game.active_piece = save;
+
+        (added_moves, added_used)
     }
 
     fn find_trivial(&mut self) -> (Vec<MoveList>, Vec<Placement>) {
@@ -106,65 +138,53 @@ impl Bot {
         (trivial_moves, trivial_placements)
     }
 
-    fn add_tucks_to_trivial(&mut self, mut trivial: Vec<MoveList>, mut used_placements: Vec<Placement>)
-                            -> (Vec<MoveList>, Vec<Placement>) {
+    fn add_non_trivial(&mut self, mut trivial: Vec<MoveList>, mut used_placements: Vec<Placement>)
+                       -> (Vec<MoveList>, Vec<Placement>) {
         let num_trivial = trivial.len();
 
         for index in 0..num_trivial {
-            let placement = used_placements.get(index).unwrap().clone();
+            let current = trivial.get(index).unwrap().clone();
+            self.game.active_piece = *used_placements.get(index).unwrap();
 
-            self.game.active_piece = placement;
-            let row = self.game.active_piece.center.row;
+            let (new_trivial, new_used_placements) =
+                self.do_undo_action(right, Command::MoveRight,
+                                    &current, &used_placements);
 
-            let mut right_vec = vec![Command::SoftDrop];
+            trivial.extend(new_trivial);
+            used_placements.extend(new_used_placements);
 
-            while self.game.piece_right() {
-                right_vec.push(Command::MoveRight);
-                self.game.piece_soft_drop();
+            let (new_trivial, new_used_placements) =
+                self.do_undo_action(left, Command::MoveLeft,
+                                    &current, &used_placements);
 
-                if Bot::new_placement(&self.game.active_piece, &used_placements) {
-                    let mut action = trivial.get(index).unwrap().clone();
-                    action.extend(right_vec.clone());
+            trivial.extend(new_trivial);
+            used_placements.extend(new_used_placements);
 
-                    trivial.push(action);
-                    used_placements.push(self.game.active_piece);
-                } else {
-                    break;
-                }
+            let (new_trivial, new_used_placements) =
+                self.do_undo_action(cw, Command::RotateCW,
+                                    &current, &used_placements);
 
-                // moves back up
-                self.game.active_piece.center.row = row;
-            }
+            trivial.extend(new_trivial);
+            used_placements.extend(new_used_placements);
 
-            self.game.active_piece = placement;
+            let (new_trivial, new_used_placements) =
+                self.do_undo_action(ccw, Command::RotateCCW,
+                                    &current, &used_placements);
 
-            let mut left_vec = vec![Command::SoftDrop];
-            while self.game.piece_left() {
-                left_vec.push(Command::MoveLeft);
-                self.game.piece_soft_drop();
+            trivial.extend(new_trivial);
+            used_placements.extend(new_used_placements);
 
-                if Bot::new_placement(&self.game.active_piece, &used_placements) {
-                    let mut action = trivial.get(index).unwrap().clone();
-                    action.extend(left_vec.clone());
+            let (new_trivial, new_used_placements) =
+                self.do_undo_action(pi, Command::Rotate180,
+                                    &current, &used_placements);
 
-                    trivial.push(action);
-                    used_placements.push(self.game.active_piece);
-                } else {
-                    break;
-                }
-
-                self.game.active_piece.center.row = row;
-            }
+            trivial.extend(new_trivial);
+            used_placements.extend(new_used_placements);
         }
 
-        self.game.active_piece = Placement::new(self.game.active_piece.piece_type);
         (trivial, used_placements)
     }
 
-    fn add_spins_to_tucks_and_trivial(&mut self, trivial_and_tucks: Vec<MoveList>,
-                                      used_placements: Vec<Placement>) -> Vec<MoveList> {
-        trivial_and_tucks
-    }
 
     fn do_command(&mut self, command: Command) {
         match command {
@@ -200,12 +220,32 @@ impl Bot {
     }
 }
 
+fn right(game: &mut Game) -> bool {
+    game.piece_right()
+}
+
+fn left(game: &mut Game) -> bool {
+    game.piece_left()
+}
+
+fn cw(game: &mut Game) -> bool {
+    game.piece_rotate_cw()
+}
+
+fn ccw(game: &mut Game) -> bool {
+    game.piece_rotate_ccw()
+}
+
+fn pi(game: &mut Game) -> bool {
+    game.piece_rotate_180()
+}
+
 #[cfg(test)]
 mod move_gen_tests {
     use super::*;
 
     #[test]
-    fn test_right_tucks() {
+    fn test_tucks() {
         let mut bot = Bot::new(Some(1337));
 
         bot.game.add(1, 7, false);
@@ -221,16 +261,126 @@ mod move_gen_tests {
 
         let (trivial, used) = bot.find_trivial();
         let trivial_only = trivial.clone();
-        let (tucks, _) = bot.add_tucks_to_trivial(trivial, used);
+        let (all_moves, _) = bot.add_non_trivial(trivial, used);
 
-        let only_tucks: Vec<&MoveList> = tucks
+        let non_trivial: Vec<&MoveList> = all_moves
             .iter()
             .filter(
                 |x| !trivial_only.contains(*x)
             ).collect();
 
-        assert_eq!(only_tucks.len(), 12);
+        assert_eq!(non_trivial.len(), 12);
 
+        let expected_out = vec![
+            vec![Command::None, Command::None, Command::SoftDrop, Command::MoveRight],
+            vec![Command::None, Command::None, Command::SoftDrop, Command::MoveRight, Command::MoveRight],
+            vec![Command::None, Command::None, Command::SoftDrop, Command::MoveRight, Command::MoveRight, Command::MoveRight],
+            vec![Command::None, Command::None, Command::SoftDrop, Command::MoveLeft],
+            vec![Command::None, Command::None, Command::SoftDrop, Command::MoveLeft, Command::MoveLeft],
+            vec![Command::None, Command::None, Command::SoftDrop, Command::MoveLeft, Command::MoveLeft, Command::MoveLeft],
+            vec![Command::Rotate180, Command::MoveRight, Command::SoftDrop, Command::MoveRight],
+            vec![Command::Rotate180, Command::MoveRight, Command::SoftDrop, Command::MoveRight, Command::MoveRight],
+            vec![Command::Rotate180, Command::MoveRight, Command::SoftDrop, Command::MoveRight, Command::MoveRight, Command::MoveRight],
+            vec![Command::Rotate180, Command::MoveRight, Command::SoftDrop, Command::MoveLeft],
+            vec![Command::Rotate180, Command::MoveRight, Command::SoftDrop, Command::MoveLeft, Command::MoveLeft],
+            vec![Command::Rotate180, Command::MoveRight, Command::SoftDrop, Command::MoveLeft, Command::MoveLeft, Command::MoveLeft]];
+
+        for out in expected_out {
+            assert!(non_trivial.contains(&&out));
+        }
+    }
+
+    #[test]
+    fn test_z_spin() {
+        let mut bot = make_z_spin_1();
+
+        let (moves, used) = bot.find_trivial();
+        let (_, placements) = bot.add_non_trivial(moves, used);
+
+        assert!(placements.iter().
+            any(|x|
+                x.abs_locations().unwrap() == [Point { row: 0, col: 5 }, Point { row: 0, col: 4 }, Point { row: 1, col: 4 }, Point { row: 1, col: 3 }]));
+    }
+
+    #[test]
+    fn test_tst() {
+        let mut bot = make_tst();
+
+        let (moves, used) = bot.find_trivial();
+        let (_, placements) = bot.add_non_trivial(moves, used);
+
+        println!("{}", bot.game);
+
+        for x in &placements {
+            println!("{:?}", x.abs_locations().unwrap());
+        }
+        assert!(placements.iter().
+            any(|x|
+                x.abs_locations().unwrap() == [Point { row: 0, col: 3 }, Point { row: 1, col: 3 }, Point { row: 1, col: 2 }, Point { row: 2, col: 3 }]));
+    }
+
+    fn make_z_spin_1() -> Bot {
+        let mut bot = Bot::new(None);
+        bot.game.active_piece = Placement::new(0);
+
+        bot.game.add(0, 0, false);
+        bot.game.add(1, 0, false);
+        bot.game.add(0, 1, false);
+        bot.game.add(1, 1, false);
+        bot.game.add(0, 2, false);
+        bot.game.add(1, 2, false);
+        bot.game.add(0, 3, false);
+        bot.game.add(1, 5, false);
+        bot.game.add(0, 6, false);
+        bot.game.add(1, 6, false);
+        bot.game.add(0, 7, false);
+        bot.game.add(1, 7, false);
+        bot.game.add(0, 8, false);
+        bot.game.add(1, 8, false);
+        bot.game.add(0, 9, false);
+        bot.game.add(1, 9, false);
+
+        bot
+    }
+
+    fn make_tst() -> Bot {
+        let mut bot = Bot::new(None);
+        bot.game.active_piece = Placement::new(6);
+
+        bot.game.add(1, 0, false);
+        bot.game.add(0, 0, false);
+        bot.game.add(0, 1, false);
+        bot.game.add(0, 2, false);
+        bot.game.add(2, 1, false);
+        bot.game.add(2, 0, false);
+        bot.game.add(1, 1, false);
+        bot.game.add(2, 2, false);
+        bot.game.add(0, 4, false);
+        bot.game.add(2, 4, false);
+        bot.game.add(1, 4, false);
+        bot.game.add(3, 4, false);
+        bot.game.add(4, 4, false);
+        bot.game.add(4, 3, false);
+        bot.game.add(4, 5, false);
+        bot.game.add(3, 5, false);
+        bot.game.add(1, 5, false);
+        bot.game.add(1, 5, false);
+        bot.game.add(2, 5, false);
+        bot.game.add(0, 5, false);
+        bot.game.add(2, 6, false);
+        bot.game.add(1, 6, false);
+        bot.game.add(0, 6, false);
+        bot.game.add(2, 7, false);
+        bot.game.add(1, 7, false);
+        bot.game.add(0, 7, false);
+        bot.game.add(2, 8, false);
+        bot.game.add(1, 8, false);
+        bot.game.add(0, 8, false);
+        bot.game.add(2, 9, false);
+        bot.game.add(1, 9, false);
+        bot.game.add(0, 9, false);
+
+        bot
     }
 }
 
