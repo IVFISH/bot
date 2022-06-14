@@ -155,7 +155,6 @@ def keyReleased(event, game):
 async def handler(websocket):
     async for msg in websocket:
         msg = json.loads(msg)
-        print(msg)
         match msg["kind"]:
 
             case "board":
