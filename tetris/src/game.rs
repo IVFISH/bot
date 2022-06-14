@@ -1,5 +1,7 @@
 use std::collections::VecDeque;
 use std::fmt::{Display, Formatter};
+use serde_json::{json, Value};
+use serde::{Serialize, Deserialize};
 
 use crate::board::*;
 use crate::placement::*;
@@ -10,6 +12,17 @@ use crate::placement::piece_data::*;
 use crate::placement::piece_data::offset::*;
 use crate::placement::piece_data::rotation::*;
 
+#[derive(Serialize, Deserialize)]
+struct JsonBoard {
+    board: String,
+    kind: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct JsonPieceQueue {
+    queue: String,
+    kind: String,
+}
 
 #[derive(Default)]
 pub struct Game {
@@ -38,8 +51,16 @@ impl Game {
         self.board.to_string(&self.active_piece)
     }
 
+    pub fn get_board_json(&self) -> Value {
+        json!( JsonBoard{kind: String::from("board"), board: self.get_board_string()} )
+    }
+
     pub fn get_piece_queue(&self) -> &PieceQueue {
         &self.piece_queue
+    }
+
+    pub fn get_piece_queue_json(&self) -> Value {
+        json!( JsonPieceQueue{kind: String::from("piecequeue"), queue: self.get_piece_queue().to_string()} )
     }
 
     pub fn get_active_piece_type(&self) -> Piece {

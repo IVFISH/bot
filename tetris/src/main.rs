@@ -27,13 +27,15 @@ struct Information {
 fn main() {
     let mut human = Human::default();
 
-    let empty = human.get_game().get_board_string();
+    let empty_board = serde_json::to_string(&human.get_game().get_board_json());
+    let empty_queue = serde_json::to_string(&human.get_game().get_piece_queue_json());
+
 
     // Connect to the WS server locally
     let (mut socket, _response) = connect(Url::parse("ws://localhost:5678").unwrap()).expect("Can't connect");
 
-    socket.write_message(Message::Text(human.get_game().get_piece_queue().to_string()).into()).unwrap();
-    socket.write_message(Message::Text(empty).into()).unwrap();
+    socket.write_message(Message::Text(empty_queue.unwrap())).unwrap();
+    socket.write_message(Message::Text(empty_board.unwrap())).unwrap();
 
 
     // Loop forever, handling parsing each message
@@ -51,16 +53,19 @@ fn main() {
         human.make_move();
 
         // send board
-        let board_state = human.get_game().get_board_string();
-        let queue = human.get_game().get_piece_queue();
+        let board_state = serde_json::to_string(&human.get_game().get_board_json());
+        let queue = serde_json::to_string(&human.get_game().get_piece_queue_json());
 
-        socket.write_message(Message::Text(queue.to_string()).into()).unwrap();
+        socket.write_message(Message::Text(queue.unwrap())).unwrap();
 
         if let Some(hold) = human.get_game().hold_piece {
-            let hold = PieceQueue::int_to_piece(hold);
-            socket.write_message(Message::Text(hold.into())).unwrap();
+            let hold = serde_json::to_string(
+                &json!({
+                        "hold": PieceQueue::int_to_piece(hold),
+                        "kind": String::from("hold")}));
+            socket.write_message(Message::Text(hold.unwrap())).unwrap();
         }
 
-        socket.write_message(Message::Text(board_state).into()).unwrap();
+        socket.write_message(Message::Text(board_state.unwrap())).unwrap();
     }
 }

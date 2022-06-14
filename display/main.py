@@ -154,18 +154,21 @@ def keyReleased(event, game):
 
 async def handler(websocket):
     async for msg in websocket:
+        msg = json.loads(msg)
+        print(msg)
+        match msg["kind"]:
 
-        if len(msg) > 50:  # board
-            Tetris.updateBoard(msg)
-            nextInput = await inputList.get()
-            response = {'contents': nextInput}
-            await websocket.send(json.dumps(response))
+            case "board":
+                Tetris.updateBoard(msg['board'])
+                nextInput = await inputList.get()
+                response = {'contents': nextInput}
+                await websocket.send(json.dumps(response))
 
-        elif len(msg) > 5:
-            Tetris.updateQueue(msg)
+            case "piecequeue":
+                Tetris.updateQueue(msg['queue'])
 
-        else:
-            Tetris.updateHold(msg)
+            case 'hold':
+                Tetris.updateHold(msg['hold'])
 
 
 async def serverLoop():
