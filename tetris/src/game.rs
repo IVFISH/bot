@@ -301,7 +301,7 @@ impl GameData {
         self.lines_cleared += lines_cleared;
 
         // update lines sent before adding b2b/combo
-        self.u8 += 0;
+        self.lines_sent += 1;
 
         let b2b = (t_spin_type != TSpinType::None) || (lines_cleared == 4);
         if b2b {
@@ -321,14 +321,14 @@ mod damage_calculations {
     const D_T_Q_MULTIPLIER: [f32; 3] = [0.25, 0.5, 1.0];
 
     const S_ATTACKS: [u8; 20] = [0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3];
-    const TM_ATTACKS: [(u8, u8); 20] = [(0, 1), (0, 1), (1, 1), (1, 1), (1, 2), (1, 2), (2, 2),
-        (2, 2), (2, 3), (2, 3), (2, 3), (2, 3), (2, 4), (2, 4), (2, 4), (2, 4), (3, 5), (3, 5), (3, 5), (3, 5)];
+    const TM_ATTACKS: [[u8; 2]; 20] = [[0, 1], [0, 1], [1, 1], [1, 1], [1, 2], [1, 2], [2, 2],
+        [2, 2], [2, 3], [2, 3], [2, 3], [2, 3], [2, 4], [2, 4], [2, 4], [2, 4], [3, 5], [3, 5], [3, 5], [3, 5]];
 
     pub fn calculate_damage(lines_cleared: usize, t_spin: TSpinType, b2b: u8, combo: u8, all_clear: bool) -> u8 {
-        let multiplier = 1;
+        let multiplier = 1.0;
         let all_clear_damage = all_clear as u8 * 10;
 
-        (combo as f32 + 4.0) * b2b * multiplier + all_clear_damage
+        ((combo as f32 + 4.0) * b2b as f32 * multiplier) as u8 + all_clear_damage
     }
 
     fn single(combo: u8) -> u8 {
@@ -336,28 +336,28 @@ mod damage_calculations {
     }
 
     fn mini(combo: u8, lines_cleared: usize) -> u8 {
-        mini[combo][lines_cleared as usize - 1]
+        TM_ATTACKS[combo as usize][lines_cleared - 2]
     }
 
     fn double_triple(combo: u8, lines_cleared: usize) -> u8 {
         (D_T_Q_MULTIPLIER[lines_cleared - 2] * (combo as f32 + 4.0)) as u8
     }
 
-    fn other(combo: u8, t_spin_full: bool, b2b: usize) {
+    fn other(combo: u8, lines_cleared: usize, t_spin_full: bool, b2b: usize) {
         let mut b2b_multiplier= 1.0;
         match b2b {
-            0 => 1,
-            1..4 => b2b_multiplier = 1.25,
-            4..9 => b2b_multiplier = 1.5,
-            9..25 => b2b_multiplier = 1.75,
-            25..68 => b2b_multiplier = 2.0,
-            68..186 => b2b_multiplier = 2.25,
-            186..505 => b2b_multiplier = 2.5,
-            505..1371 => b2b_multiplier = 2.75,
+            0 => b2b_multiplier = 1.0,
+            1..=3 => b2b_multiplier = 1.25,
+            4..=8 => b2b_multiplier = 1.5,
+            9..=24 => b2b_multiplier = 1.75,
+            25..=67 => b2b_multiplier = 2.0,
+            68..=185 => b2b_multiplier = 2.25,
+            186..=504 => b2b_multiplier = 2.5,
+            505..=1370 => b2b_multiplier = 2.75,
             _ => b2b_multiplier = 3.0
         }
-        
-        D_T_Q_MULTIPLIER[lines_cleared - 2] * (combo + 4) * b2b_multiplier;
+
+        (D_T_Q_MULTIPLIER[lines_cleared - 2] * b2b_multiplier) as u8 * (combo + 4);
     }
 }
 
