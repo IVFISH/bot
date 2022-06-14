@@ -84,14 +84,40 @@ impl Bot {
         moves
     }
 
+    fn all_placements(&mut self) -> Vec<Placement> {
+        // only used for debugging purposes
+
+        let start_piece = self.game.get_active_piece_type();
+        let hold_piece;
+
+        if let Some(piece) = self.game.hold_piece {
+            hold_piece = piece
+        } else {
+            hold_piece = self.game.piece_queue_peek();
+        }
+
+        let (moves, used) = self.find_trivial(false);
+        let (_, mut placements) = self.add_non_trivial(moves, used);
+
+        self.game.active_piece = Placement::new(hold_piece);
+
+        let (hold_moves, used) = self.find_trivial(true);
+        let (_, hold_placements) = self.add_non_trivial(hold_moves, used);
+
+        placements.extend(hold_placements);
+
+        self.game.active_piece = Placement::new(start_piece);
+
+        placements
+    }
+
     pub fn show_all_placements_on_timer(&mut self, clear: bool) {
-        let all_moves = self.all_moves();
+        let all_placements = self.all_placements();
         let start = self.game.active_piece.clone();
 
-        for input_list in all_moves {
-            let mut input_list = input_list.clone();
+        for placement in all_placements {
 
-            self.show_placement(input_list, clear, &start);
+            self.show_placement(&placement, clear, &start);
             thread::sleep(time::Duration::from_millis(1000));
         }
     }
@@ -99,9 +125,9 @@ impl Bot {
     pub fn show_all_placements_on_input(&mut self, clear: bool) {
         use std::io;
 
-        let all_moves = self.all_moves();
+        let all_placements = self.all_placements();
         let start = self.game.active_piece.clone();
-        let num_moves = all_moves.len();
+        let num_moves = all_placements.len();
         let mut index = num_moves - 1;
 
         loop {
@@ -120,30 +146,28 @@ impl Bot {
                 index -= 1;
                 index %= num_moves;
 
-                let input_list = all_moves.get(index).unwrap().clone();
-                self.show_placement(input_list, clear, &start);
+                let placement = &all_placements.get(index).unwrap().clone();
+                self.show_placement(placement, clear, &start);
             } else if input == String::from(".") {
                 index += 1;
                 index %= num_moves;
 
-                let input_list = all_moves.get(index).unwrap().clone();
-                self.show_placement(input_list, clear, &start);
+                let placement = &all_placements.get(index).unwrap().clone();
+                self.show_placement(placement, clear, &start);
             } else if input == String::from("exit") {
                 break;
             }
         }
     }
 
-    fn show_placement(&mut self, mut input_list: MoveList, clear: bool, start: &Placement) {
+    fn show_placement(&mut self, mut target_placement: &Placement, clear: bool, start: &Placement) {
         if clear {
             print!("{}[2J", 27 as char);
         }
 
-        input_list.push(Command::SoftDrop);
-
-        self.game.active_piece = start.clone();
-        do_move_list(&mut self.game, input_list);
+        self.game.active_piece = target_placement.clone();
         println!("{}", self);
+        self.game.active_piece = start.clone();
     }
 
     fn do_undo_action(&mut self, action: fn(&mut Game) -> bool, command: Command, current_move: &Vec<Command>, used_placements: &Vec<Placement>)
