@@ -105,7 +105,7 @@ class Tetris(Tk):
 
                 self.update()
                 self.update_idletasks()
-                await asyncio.sleep(0.05)
+                await asyncio.sleep(0.02)
         except TclError:
             pass
 
