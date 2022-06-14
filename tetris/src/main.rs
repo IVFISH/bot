@@ -15,6 +15,8 @@ use crate::players::*;
 
 fn main() {
     // human_play();
-    bot_play();
+    // bot_play();
+
+    bot_debug();
 
 }

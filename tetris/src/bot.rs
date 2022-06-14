@@ -84,6 +84,68 @@ impl Bot {
         moves
     }
 
+    pub fn show_all_placements_on_timer(&mut self, clear: bool) {
+        let all_moves = self.all_moves();
+        let start = self.game.active_piece.clone();
+
+        for input_list in all_moves {
+            let mut input_list = input_list.clone();
+
+            self.show_placement(input_list, clear, &start);
+            thread::sleep(time::Duration::from_millis(1000));
+        }
+    }
+
+    pub fn show_all_placements_on_input(&mut self, clear: bool) {
+        use std::io;
+
+        let all_moves = self.all_moves();
+        let start = self.game.active_piece.clone();
+        let num_moves = all_moves.len();
+        let mut index = num_moves - 1;
+
+        loop {
+            if index == 0 {
+                index = num_moves;
+                // prevent back flow error (-usize)
+            }
+
+            let mut input = String::new();
+            io::stdin()
+                .read_line(&mut input)
+                .expect("Cannot read line.");
+            let mut input = input.trim();
+
+            if input == String::from(",") {
+                index -= 1;
+                index %= num_moves;
+
+                let input_list = all_moves.get(index).unwrap().clone();
+                self.show_placement(input_list, clear, &start);
+            } else if input == String::from(".") {
+                index += 1;
+                index %= num_moves;
+
+                let input_list = all_moves.get(index).unwrap().clone();
+                self.show_placement(input_list, clear, &start);
+            } else if input == String::from("exit") {
+                break;
+            }
+        }
+    }
+
+    fn show_placement(&mut self, mut input_list: MoveList, clear: bool, start: &Placement) {
+        if clear {
+            print!("{}[2J", 27 as char);
+        }
+
+        input_list.push(Command::SoftDrop);
+
+        self.game.active_piece = start.clone();
+        do_move_list(&mut self.game, input_list);
+        println!("{}", self);
+    }
+
     fn do_undo_action(&mut self, action: fn(&mut Game) -> bool, command: Command, current_move: &Vec<Command>, used_placements: &Vec<Placement>)
                       -> (Vec<MoveList>, Vec<Placement>) {
         // saves the start state
@@ -215,7 +277,13 @@ pub fn bot_play() {
 
         thread::sleep(time::Duration::from_millis(500));
     }
+}
 
+pub fn bot_debug() {
+    let mut bot = Bot::default();
+
+    // bot.show_all_placements_on_timer(true);
+    bot.show_all_placements_on_input(true);
 }
 
 #[cfg(test)]
