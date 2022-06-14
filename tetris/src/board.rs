@@ -1,9 +1,12 @@
 use std::fmt::{Formatter, Display};
 
+use itertools::Itertools;
+
 use std::cmp::max;
 
 use crate::errors::GameError;
 use crate::placement::{Placement, Point, MoveVector};
+use crate::placement::piece_data::NUM_ROTATE_STATES;
 use crate::queue::GarbageItem;
 
 
@@ -192,6 +195,40 @@ impl Board {
         }
     }
 
+    pub fn get_t_spin_type(&self, piece: Placement) -> TSpinType {
+        if piece.piece_type != 6 {
+            return TSpinType::None;
+        }
+
+        let (front, back) = RELATIVE_CORNERS[piece.rotation_state];
+
+        let mut front_count = front.iter()
+            .map(|x| x.add_to_point(&piece.center))
+            .flatten()
+            .filter(|x| self.get(x.row, x.col))
+            .count();
+
+        let mut back_count = back.iter()
+            .map(|x| x.add_to_point(&piece.center))
+            .flatten()
+            .filter(|x| self.get(x.row, x.col))
+            .count();
+
+        if (piece.center.col == 9 && piece.rotation_state == 3) ||
+            (piece.center.col == 0 && piece.rotation_state == 1) ||
+            (piece.rotation_state + piece.center.row == 0) {
+            back_count += 2;
+        }
+
+        return if (front_count == 2 && back_count >= 1) || (front_count == 1 && back_count >= 2 && piece.last_kick == 4) {
+            TSpinType::Full
+        } else if front_count == 1 && back_count >= 2 {
+            TSpinType::Mini
+        } else {
+            TSpinType::None
+        };
+    }
+
     pub fn clear_lines(&mut self, update_heights: bool) -> usize {
         let full_rows = self.all_full_rows();
         let num_full_rows = self.all_full_rows().len();
@@ -322,6 +359,20 @@ impl Display for Board {
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub enum TSpinType {
+    None,
+    Mini,
+    Full,
+}
+
+const RELATIVE_CORNERS: [([MoveVector; 2], [MoveVector; 2]); 4] = [
+    ([MoveVector(1, -1), MoveVector(1, 1)], [MoveVector(-1, -1), MoveVector(-1, 1)]),
+    ([MoveVector(-1, 1), MoveVector(1, 1)], [MoveVector(-1, -1), MoveVector(1, -1)]),
+    ([MoveVector(-1, -1), MoveVector(-1, 1)], [MoveVector(1, -1), MoveVector(1, 1)]),
+    ([MoveVector(-1, -1), MoveVector(1, -1)], [MoveVector(-1, 1), MoveVector(1, 1)]),
+];
+
 #[cfg(test)]
 mod board_tests {
     use super::*;
@@ -389,6 +440,41 @@ mod board_tests {
         assert!(!board.get(4, 3));
     }
 
+    #[test]
+    fn t_spin_detection_1() {
+        let board = create_tsd();
+
+        let mut piece = Placement {
+            piece_type: 6,
+            rotation_state: 2,
+            center: Point { row: 1, col: 7 },
+            last_kick: 0,
+        };
+
+        assert_eq!(board.get_t_spin_type(piece), TSpinType::Full);
+
+        piece.piece_type = 1;
+        assert_eq!(board.get_t_spin_type(piece), TSpinType::None);
+    }
+
+    #[test]
+    fn t_spin_detection_2() {
+        let board = create_tsm();
+
+        let mut piece = Placement {
+            piece_type: 6,
+            rotation_state: 1,
+            center: Point { row: 1, col: 0 },
+            last_kick: 0,
+        };
+
+        println!("{}", board.to_string(&piece));
+        assert_eq!(board.get_t_spin_type(piece), TSpinType::Mini);
+
+        piece.piece_type = 1;
+        assert_eq!(board.get_t_spin_type(piece), TSpinType::None);
+    }
+
     fn create_preset_board() -> Board {
         let mut board = Board::new();
 
@@ -405,6 +491,48 @@ mod board_tests {
             piece_type: 4,
             rotation_state: 2,
             center: Point { row: 2, col: 2 },
+            last_kick: 0,
         }
+    }
+
+    fn create_tsd() -> Board {
+        let mut board = Board::new();
+
+        board.add(0, 0, false);
+        board.add(0, 1, false);
+        board.add(0, 2, false);
+        board.add(0, 3, false);
+        board.add(0, 5, false);
+        board.add(0, 4, false);
+        board.add(0, 6, false);
+        board.add(0, 8, false);
+        board.add(0, 9, false);
+        board.add(1, 9, false);
+        board.add(2, 9, false);
+        board.add(1, 5, false);
+        board.add(1, 4, false);
+        board.add(1, 3, false);
+        board.add(1, 2, false);
+        board.add(1, 1, false);
+        board.add(1, 0, false);
+        board.add(2, 6, false);
+        board.add(2, 5, false);
+
+        board
+    }
+
+    fn create_tsm() -> Board {
+        let mut board = Board::new();
+        board.add(0, 1, false);
+        board.add(0, 2, false);
+        board.add(0, 3, false);
+        board.add(0, 4, false);
+        board.add(0, 5, false);
+        board.add(0, 6, false);
+        board.add(0, 7, false);
+        board.add(0, 8, false);
+        board.add(0, 9, false);
+
+        board
     }
 }

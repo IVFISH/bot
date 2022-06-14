@@ -6,11 +6,20 @@ use std::fmt::{Display, Formatter};
 use piece_data::*;
 use piece_data::rotation::*;
 
-#[derive(PartialEq, Copy, Clone)]
+#[derive(Copy, Clone)]
 pub struct Placement {
     pub piece_type: Piece,
     pub rotation_state: RotationState,
     pub center: Point,
+
+    pub last_kick: usize
+}
+
+impl PartialEq for Placement {
+    fn eq(&self, other: &Self) -> bool {
+        self.piece_type == other.piece_type && self.rotation_state == other.rotation_state
+            && self.center == other.center
+    }
 }
 
 impl Default for Placement {
@@ -19,6 +28,7 @@ impl Default for Placement {
             piece_type: 0,
             rotation_state: 0,
             center: Point { row: SPAWN_ROW, col: SPAWN_COL },
+            last_kick: 0
         }
     }
 }
@@ -145,7 +155,7 @@ impl Mino {
 pub struct MoveVector(pub i8, pub i8);
 
 impl MoveVector {
-    fn add_to_point(&self, other: &Point) -> Result<Point, GameError> {
+    pub fn add_to_point(&self, other: &Point) -> Result<Point, GameError> {
         let row = self.0 + other.row as i8;
         let col = self.1 + other.col as i8;
 
@@ -345,6 +355,7 @@ mod piece_tests {
             piece_type: 0,
             rotation_state: 0,
             center: Point { row: 0, col: 0 },
+            last_kick: 0
         };
 
         assert!(piece.abs_locations().is_err());
@@ -376,6 +387,7 @@ mod piece_tests {
             piece_type: 2,
             rotation_state: 3,
             center: Point { row: 0, col: 0 },
+            last_kick: 0
         };
 
         assert!(piece.abs_locations().is_err());
@@ -387,6 +399,7 @@ mod piece_tests {
             piece_type: 4,
             rotation_state: 2,
             center: Point { row: 4, col: 6 },
+            last_kick: 0
         }
     }
 
@@ -395,6 +408,7 @@ mod piece_tests {
             piece_type: 3,
             rotation_state: 1,
             center: Point { row: 15, col: 5 },
+            last_kick: 0
         }
     }
 
@@ -403,6 +417,7 @@ mod piece_tests {
             piece_type: 6,
             rotation_state: 0,
             center: Point { row: 2, col: 2 },
+            last_kick: 0
         }
     }
 }

@@ -31,6 +31,8 @@ pub struct Game {
     piece_queue: PieceQueue,
     garbage_queue: GarbageQueue,
 
+    last_piece_cleared: bool,
+
     pub game_data: GameData,
 
     pub active_piece: Placement,
@@ -162,6 +164,7 @@ impl Game {
         for index in 0..kicks.len() {
             if self.active_piece.move_by_vector(kicks[index]) {
                 if self.board.check_valid_location(&self.active_piece).is_ok() {
+                    self.active_piece.last_kick = index;
                     return true;
                 } else {
                     self.active_piece.move_by_vector(kicks[index].negative());
@@ -185,7 +188,7 @@ impl Game {
                 kicks = FIVE_OFFSETS[before][dir / 2].to_vec();
             }
         } else if self.active_piece.piece_type == 2 { // O piece is the other special child
-            kicks = vec!(O_OFFSETS[before][dir-1]);
+            kicks = vec!(O_OFFSETS[before][dir - 1]);
         } else {
             if dir == 2 {
                 kicks = THREE_180_OFFSETS[before].to_vec()
@@ -211,9 +214,11 @@ impl Game {
     pub fn piece_hard_drop(&mut self, update_heights: bool) -> Result<(), GameError> {
         self.piece_soft_drop();
         self.set_piece(update_heights)?;
-        self.board.clear_lines(update_heights);
 
-        // TODO: update game stats here probably
+        let lines_cleared = self.board.clear_lines(update_heights);
+
+        let t_spin_type = self.board.get_t_spin_type(self.active_piece);
+        self.game_data.update(lines_cleared, t_spin_type, self.board.all_clear());
 
         Ok(())
     }
@@ -259,33 +264,18 @@ impl Game {
     }
 }
 
+#[derive(Default)]
 pub struct GameData {
     pub all_clear: bool,
-    pub combo: i8,
-    pub b2b: i8,
+    pub combo: u8,
+    pub b2b: u8,
 
     pub pieces_placed: u8,
-    pub lines_cleared: u8,
+    pub lines_cleared: usize,
     pub lines_sent: u8,
 
     pub game_over: bool,
-
     init_time: f32,
-}
-
-impl Default for GameData {
-    fn default() -> Self {
-        Self {
-            all_clear: false,
-            combo: -1,
-            b2b: -1,
-            pieces_placed: 0,
-            lines_cleared: 0,
-            lines_sent: 0,
-            game_over: false,
-            init_time: 0.0,
-        }
-    }
 }
 
 impl GameData {
@@ -293,12 +283,81 @@ impl GameData {
         unimplemented!()
     }
 
-    #[allow(unused)]
     fn new(init_time: f32) -> Self {
         Self {
             init_time,
             ..Default::default()
         }
+    }
+
+    fn update(&mut self, lines_cleared: usize, t_spin_type: TSpinType, all_clear: bool) {
+        self.pieces_placed += 1;
+
+        if lines_cleared == 0 {
+            self.combo = 0;
+            return;
+        }
+
+        self.lines_cleared += lines_cleared;
+
+        // update lines sent before adding b2b/combo
+        self.u8 += 0;
+
+        let b2b = (t_spin_type != TSpinType::None) || (lines_cleared == 4);
+        if b2b {
+            self.b2b += 1;
+        } else {
+            self.b2b = 0;
+        }
+        self.combo += 1;
+
+        self.all_clear = all_clear;
+    }
+}
+
+mod damage_calculations {
+    use crate::board::TSpinType;
+    
+    const D_T_Q_MULTIPLIER: [f32; 3] = [0.25, 0.5, 1.0];
+
+    const S_ATTACKS: [u8; 20] = [0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3];
+    const TM_ATTACKS: [(u8, u8); 20] = [(0, 1), (0, 1), (1, 1), (1, 1), (1, 2), (1, 2), (2, 2),
+        (2, 2), (2, 3), (2, 3), (2, 3), (2, 3), (2, 4), (2, 4), (2, 4), (2, 4), (3, 5), (3, 5), (3, 5), (3, 5)];
+
+    pub fn calculate_damage(lines_cleared: usize, t_spin: TSpinType, b2b: u8, combo: u8, all_clear: bool) -> u8 {
+        let multiplier = 1;
+        let all_clear_damage = all_clear as u8 * 10;
+
+        (combo as f32 + 4.0) * b2b * multiplier + all_clear_damage
+    }
+
+    fn single(combo: u8) -> u8 {
+        S_ATTACKS[combo as usize]
+    }
+
+    fn mini(combo: u8, lines_cleared: usize) -> u8 {
+        mini[combo][lines_cleared as usize - 1]
+    }
+
+    fn double_triple(combo: u8, lines_cleared: usize) -> u8 {
+        (D_T_Q_MULTIPLIER[lines_cleared - 2] * (combo as f32 + 4.0)) as u8
+    }
+
+    fn other(combo: u8, t_spin_full: bool, b2b: usize) {
+        let mut b2b_multiplier= 1.0;
+        match b2b {
+            0 => 1,
+            1..4 => b2b_multiplier = 1.25,
+            4..9 => b2b_multiplier = 1.5,
+            9..25 => b2b_multiplier = 1.75,
+            25..68 => b2b_multiplier = 2.0,
+            68..186 => b2b_multiplier = 2.25,
+            186..505 => b2b_multiplier = 2.5,
+            505..1371 => b2b_multiplier = 2.75,
+            _ => b2b_multiplier = 3.0
+        }
+        
+        D_T_Q_MULTIPLIER[lines_cleared - 2] * (combo + 4) * b2b_multiplier;
     }
 }
 
