@@ -201,6 +201,23 @@ impl Bot {
     }
 }
 
+use std::{thread, time};
+
+pub fn bot_play() {
+    let mut bot = Bot::default();
+
+    while !bot.game.game_over {
+        // clears the console
+        print!("{}[2J", 27 as char);
+
+        bot.make_move();
+        println!("{}", bot.game);
+
+        thread::sleep(time::Duration::from_millis(500));
+    }
+
+}
+
 #[cfg(test)]
 mod move_gen_tests {
     use super::*;

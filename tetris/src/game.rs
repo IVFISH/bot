@@ -35,6 +35,8 @@ pub struct Game {
 
     pub active_piece: Placement,
     pub hold_piece: Option<Piece>,
+
+    pub game_over: bool,
 }
 
 impl Display for Game {
@@ -122,16 +124,18 @@ impl Game {
         self.safe_move_active_piece_by_vector(MoveVector(0, 1))
     }
 
-    pub fn piece_das_left(&mut self) {
+    pub fn piece_das_left(&mut self) -> bool {
         while self.piece_left() {
             // this is intended wheeee
         }
+        true
     }
 
-    pub fn piece_das_right(&mut self) {
+    pub fn piece_das_right(&mut self) -> bool {
         while self.piece_right() {
             // this is intended wheeee
         }
+        true
     }
 
     pub fn piece_soft_drop(&mut self) -> bool {
@@ -226,7 +230,7 @@ impl Game {
         unimplemented!()
     }
 
-    pub fn hold(&mut self) {
+    pub fn hold(&mut self) -> bool {
         // TODO: refactor maybe
 
         let first_hold = self.hold_piece.is_none();
@@ -239,6 +243,7 @@ impl Game {
         }
 
         self.hold_piece = Some(active_type);
+        true
     }
 
     fn manual_set_queue(&mut self, new_queue: VecDeque<usize>) {
