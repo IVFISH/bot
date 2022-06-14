@@ -7,8 +7,8 @@ use crate::placement::{Placement, Point, MoveVector};
 use crate::queue::GarbageItem;
 
 
-const BOARD_WIDTH: usize = 10;
-const BOARD_HEIGHT: usize = 40;
+pub const BOARD_WIDTH: usize = 10;
+pub const BOARD_HEIGHT: usize = 40;
 
 pub struct Board {
     width: usize,
@@ -19,6 +19,11 @@ pub struct Board {
 }
 
 impl Board {
+
+    pub fn get_board_array(&self) -> [[bool; BOARD_WIDTH]; BOARD_HEIGHT] {
+        self.arr
+    }
+
     pub fn add(&mut self, row: usize, col: usize, update_heights: bool) {
         self.arr[row][col] = true;
 

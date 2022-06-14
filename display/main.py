@@ -33,7 +33,6 @@ class Tetris(Tk):
         self.init_display()
         self.bind("<Key>", lambda event: keyPressed(event))  # keyboard inputs
 
-
     def init_display(self):
         self.geometry(f"{self.WindowX}x{self.WindowY}")
         self.canvas = Canvas(self, width=self.WindowX, height=self.WindowY, background=self.BackgroundColor)
@@ -129,15 +128,15 @@ async def handler(websocket):
         msg = json.loads(message)
         print(msg)
 
-        if isinstance(msg, list): # board
+        if isinstance(msg, list):  # board
             a.updateBoard(msg)
             nextInput = await inputList.get()
             await websocket.send(nextInput)
 
-        if isinstance(msg, int): # op codes
+        if isinstance(msg, int):  # op codes
             pass
 
-        if isinstance(msg, str): # queue
+        if isinstance(msg, str):  # queue
             a.updateQueue(msg)
 
 

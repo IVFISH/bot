@@ -1,13 +1,14 @@
 use std::collections::VecDeque;
 use std::fmt::{Display, Formatter};
+
 use crate::board::*;
 use crate::placement::*;
 use crate::queue::*;
 use crate::errors::GameError;
-use crate::placement::piece_data::offset::{FIVE_OFFSETS, THREE_OFFSETS, FIVE_180_OFFSETS, THREE_180_OFFSETS, O_OFFSETS};
-use crate::placement::piece_data::Piece;
 
-use crate::placement::piece_data::rotation::{RotationDirection};
+use crate::placement::piece_data::*;
+use crate::placement::piece_data::offset::*;
+use crate::placement::piece_data::rotation::*;
 
 
 #[derive(Default)]
@@ -33,7 +34,18 @@ impl Display for Game {
 }
 
 impl Game {
-    #[allow(unused)]
+    pub fn get_board_array(&self) -> [[bool; BOARD_WIDTH]; BOARD_HEIGHT] {
+        self.board.get_board_array()
+    }
+
+    pub fn get_active_piece_type(&self) -> Piece {
+        self.active_piece.piece_type
+    }
+
+    pub fn reset_active_piece(&mut self) {
+        self.active_piece = Placement::new(self.get_active_piece_type())
+    }
+
     pub fn new(seed: Option<usize>) -> Self {
         let mut out = Self {
             piece_queue: PieceQueue::new(seed),

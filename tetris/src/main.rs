@@ -5,6 +5,7 @@ mod game;
 mod queue;
 mod players;
 mod bot;
+mod human;
 
 use crate::bot::*;
 use crate::players::*;
@@ -14,11 +15,10 @@ fn main() {
 
     let mut bot = Bot::default();
 
-    println!("{}", bot.game);
+    println!("{}", bot);
     for _ in 0..15 {
         bot.make_move();
-        println!("{}", bot.game);
+        println!("{}", bot);
     }
-    println!("{}", bot.game.active_piece);
 
 }

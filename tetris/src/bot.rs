@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use std::fmt::{Display, Formatter};
 use std::iter::zip;
 
 use crate::game::*;
@@ -9,24 +10,15 @@ use crate::placement::piece_data::*;
 use rand::Rng;
 
 pub struct Bot {
-    pub game: Game,
+    game: Game,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub enum Command {
-    None,
-    MoveLeft,
-    MoveRight,
-    SoftDrop,
-    RotateCW,
-    RotateCCW,
-    Rotate180,
-    HardDrop,
-    Hold,
-
+impl Display for Bot {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.game)?;
+        Ok(())
+    }
 }
-
-type MoveList = Vec<Command>;
 
 impl Default for Bot {
     fn default() -> Self {
@@ -37,30 +29,30 @@ impl Default for Bot {
 }
 
 impl Player for Bot {
-    fn make_move(&mut self) {
+    fn get_game(&mut self) -> &mut Game {
+        &mut self.game
+    }
+
+    fn get_next_move(&mut self) -> MoveList {
         let mut moves = self.all_moves();
         let num = rand::thread_rng().gen_range(0..moves.len());
 
         let mut action = moves.remove(num);
         action.push(Command::HardDrop);
 
-        self.do_move_list(action);
-    }
-
-    fn get_next_move(&self) {
-        todo!()
-    }
-
-    fn score_board(&self) -> i32 {
-        todo!()
-    }
-
-    fn score(&self) -> i32 {
-        todo!()
+        action
     }
 }
 
 impl Bot {
+    fn score_board(&self) -> i32 {
+        unimplemented!()
+    }
+
+    fn score(&self) -> i32 {
+        unimplemented!()
+    }
+
     pub fn new(optional_seed: Option<usize>) -> Self {
         Self {
             game: Game::new(optional_seed)
@@ -68,7 +60,7 @@ impl Bot {
     }
 
     pub fn all_moves(&mut self) -> Vec<MoveList> {
-        let start_piece = self.game.active_piece.piece_type;
+        let start_piece = self.game.get_active_piece_type();
         let hold_piece;
 
         if let Some(piece) = self.game.hold_piece {
@@ -92,7 +84,7 @@ impl Bot {
         moves
     }
 
-    fn do_undo_action(&mut self, action: fn(&mut Game) -> bool, command: Command, current_move: &Vec<Command>, mut used_placements: &Vec<Placement>)
+    fn do_undo_action(&mut self, action: fn(&mut Game) -> bool, command: Command, current_move: &Vec<Command>, used_placements: &Vec<Placement>)
                       -> (Vec<MoveList>, Vec<Placement>) {
         // saves the start state
 
@@ -116,7 +108,6 @@ impl Bot {
 
             if Bot::new_placement(&self.game.active_piece, &used_placements) &&
                 Bot::new_placement(&self.game.active_piece, &added_used) {
-
                 added_moves.push(add_list.clone());
                 added_used.push(self.game.active_piece.clone());
                 continue;
@@ -142,7 +133,6 @@ impl Bot {
             self.game.active_piece.move_center_to_column(0);
             for col in 0..10 {
                 if self.game.valid_location_for_active() {
-
                     let mut inputs: MoveList;
                     if hold {
                         inputs = vec![Command::Hold, rotation];
@@ -163,7 +153,7 @@ impl Bot {
             self.game.active_piece.rotate(1);
         }
 
-        self.game.active_piece = Placement::new(self.game.active_piece.piece_type);
+        self.game.reset_active_piece();
 
         (trivial_moves, trivial_placements)
     }
@@ -191,34 +181,13 @@ impl Bot {
             }
         }
 
-        self.game.active_piece = Placement::new(self.game.active_piece.piece_type);
+        self.game.reset_active_piece();
 
         (trivial, used_placements)
     }
 
-
-    fn do_command(&mut self, command: Command) {
-        match command {
-            Command::MoveLeft => self.game.piece_left(),
-            Command::MoveRight => self.game.piece_right(),
-            Command::SoftDrop => self.game.piece_soft_drop(),
-            Command::RotateCW => self.game.piece_rotate_cw(),
-            Command::RotateCCW => self.game.piece_rotate_ccw(),
-            Command::Rotate180 => self.game.piece_rotate_180(),
-            Command::HardDrop => self.game.piece_hard_drop(true).is_ok(),
-            Command::Hold => {self.game.hold(); true},
-            Command::None => false,
-        };
-    }
-
     fn new_placement(placement: &Placement, used_placements: &Vec<Placement>) -> bool {
         !used_placements.contains(placement)
-    }
-
-    fn do_move_list(&mut self, commands: MoveList) {
-        for command in commands {
-            self.do_command(command);
-        }
     }
 
     fn column_to_move_list(col: usize) -> MoveList {
