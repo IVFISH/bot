@@ -1,3 +1,4 @@
+from json import JSONDecodeError
 from tkinter import *
 import asyncio
 import websockets
@@ -125,23 +126,32 @@ def keyPressed(event):
 async def handler(websocket):
     print("handle")
     async for message in websocket:
-        msg = json.loads(message)
-        print(msg)
+        print(message)
 
-        if isinstance(msg, list):  # board
-            a.updateBoard(msg)
-            nextInput = await inputList.get()
-            await websocket.send(nextInput)
+        try:
 
-        if isinstance(msg, int):  # op codes
-            pass
+            msg = json.loads(message)
+            print(msg)
 
-        if isinstance(msg, str):  # queue
-            a.updateQueue(msg)
+            if isinstance(msg, list): # board
+                print("update board")
+                a.updateBoard(msg)
+                nextInput = await inputList.get()
+                response = {
+                    'eshan': nextInput
+                }
+                await websocket.send(json.dumps(response))
+
+            if isinstance(msg, int): # op codes
+                pass
+
+        except JSONDecodeError:
+            a.updateQueue(message)
+
 
 
 async def serverLoop():
-    async with websockets.serve(handler, "localhost", 5678):
+    async with websockets.serve(handler, "localhost", 5678, ping_interval=None):
         await asyncio.Future()  # run forever
 
 

@@ -38,6 +38,10 @@ impl Game {
         self.board.get_board_array()
     }
 
+    pub fn get_piece_queue(&self) -> &PieceQueue {
+        &self.piece_queue
+    }
+
     pub fn get_active_piece_type(&self) -> Piece {
         self.active_piece.piece_type
     }

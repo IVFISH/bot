@@ -2,10 +2,28 @@ use crate::game::*;
 use crate::players::*;
 use crate::placement::*;
 use crate::placement::piece_data::*;
+use std::fmt::{Display, Formatter};
 
 
-struct Human {
-    game: Game
+pub struct Human {
+    pub game: Game,
+    pub nextMove: Option<String>
+}
+
+impl Display for Human {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.game)?;
+        Ok(())
+    }
+}
+
+impl Default for Human {
+    fn default() -> Self {
+        Self {
+            game: Game::new(None),
+            nextMove: None
+        }
+    }
 }
 
 impl Player for Human {
@@ -14,11 +32,22 @@ impl Player for Human {
     }
 
     fn get_next_move(&mut self) -> MoveList {
-        todo!()
+        if let Some(eshan) = &self.nextMove {
+            let out = vec!(string_to_command(eshan.clone()));
+            self.nextMove = None;
+            return out;
+        }
+        return vec!(Command::None);
     }
 }
 
-fn string_to_command(command_str: String) -> Command {
+impl Human {
+    pub fn set_next_move(&mut self, eshan: String) {
+        self.nextMove = Some(eshan);
+    }
+}
+
+pub fn string_to_command(command_str: String) -> Command {
     let command_str: &str = &command_str;
 
     match command_str {
