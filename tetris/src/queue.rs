@@ -56,7 +56,7 @@ impl PieceQueue {
         self.queue = new_queue;
     }
 
-    fn int_to_piece(piece: Piece) -> String {
+    pub fn int_to_piece(piece: Piece) -> String {
         let arr = ["Z", "L", "O", "S", "I", "J", "T"];
         arr[piece].to_owned()
     }

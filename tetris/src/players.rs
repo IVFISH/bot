@@ -5,6 +5,7 @@ pub trait Player {
     fn make_move(&mut self) {
         let action = self.get_next_move();
         do_move_list(&mut self.get_game(), action);
+
     }
 
     fn get_game(&mut self) -> &mut Game;
@@ -23,6 +24,8 @@ pub enum Command {
     RotateCCW,
     Rotate180,
     HardDrop,
+    DasLeft,
+    DasRight,
     Hold,
 
 }
@@ -42,10 +45,9 @@ fn do_command(game: &mut Game, command: Command) {
         Command::RotateCCW => game.piece_rotate_ccw(),
         Command::Rotate180 => game.piece_rotate_180(),
         Command::HardDrop => game.piece_hard_drop(true).is_ok(),
-        Command::Hold => {
-            game.hold();
-            true
-        }
+        Command::DasLeft => {game.piece_das_left(); true},
+        Command::DasRight => {game.piece_das_right(); true},
+        Command::Hold => { game.hold(); true }
         Command::None => false,
     };
 }

@@ -34,8 +34,8 @@ impl Display for Game {
 }
 
 impl Game {
-    pub fn get_board_array(&self) -> [[bool; BOARD_WIDTH]; BOARD_HEIGHT] {
-        self.board.get_board_array()
+    pub fn get_board_string(&self) -> String {
+        self.board.to_string(&self.active_piece)
     }
 
     pub fn get_piece_queue(&self) -> &PieceQueue {
@@ -160,7 +160,7 @@ impl Game {
                 kicks = FIVE_OFFSETS[before][dir / 2].to_vec();
             }
         } else if self.active_piece.piece_type == 2 { // O piece is the other special child
-            kicks = O_OFFSETS[before].to_vec();
+            kicks = vec!(O_OFFSETS[before][dir-1]);
         } else {
             if dir == 2 {
                 kicks = THREE_180_OFFSETS[before].to_vec()

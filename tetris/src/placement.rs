@@ -268,8 +268,7 @@ pub mod piece_data {
             [MoveVector(1, 0), MoveVector(1, 1), MoveVector(0, 1)],
             [MoveVector(0, 1), MoveVector(-1, 1), MoveVector(-1, 0)],
             [MoveVector(-1, 0), MoveVector(-1, -1), MoveVector(0, -1)],
-            [MoveVector(0, -1), MoveVector(1, -1), MoveVector(1, 0)
-            ]
+            [MoveVector(0, -1), MoveVector(1, -1), MoveVector(1, 0)]
         ];
 
         const THREE_OFFSET_ZERO: [[MoveVector; 5]; 2] = [

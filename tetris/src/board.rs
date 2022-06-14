@@ -19,7 +19,6 @@ pub struct Board {
 }
 
 impl Board {
-
     pub fn get_board_array(&self) -> [[bool; BOARD_WIDTH]; BOARD_HEIGHT] {
         self.arr
     }
@@ -198,10 +197,12 @@ impl Board {
         let num_full_rows = self.all_full_rows().len();
         let highest = self.max_filled_height();
 
-        for row in full_rows {
-            self.remove_row(row, false);
+        for row in &full_rows {
+            self.remove_row(*row, false);
+        }
 
-            for r in row..highest {
+        for row in full_rows.iter().rev() {
+            for r in *row..highest {
                 self.set_row(r, self.get_row(r + 1), false);
             }
         }
@@ -282,7 +283,7 @@ impl Board {
             for col in 0..self.width {
                 if self.get(row, col) {
                     out.push_str("■ ");
-                } else if locations.contains(&Point {row, col}) {
+                } else if locations.contains(&Point { row, col }) {
                     out.push_str("⬚ ");
                 } else {
                     out.push_str("□ ");

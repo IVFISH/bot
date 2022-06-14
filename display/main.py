@@ -1,4 +1,3 @@
-from json import JSONDecodeError
 from tkinter import *
 import asyncio
 import websockets
@@ -26,13 +25,18 @@ class Tetris(Tk):
     GridWidth = 32
 
     def __init__(self):
-        print("init!")
         super().__init__()
         self.title("Tetris: IVFISH")
 
         self.canvas = None
         self.init_display()
-        self.bind("<Key>", lambda event: keyPressed(event))  # keyboard inputs
+
+        self.bind("<Key>", lambda event: keyPressed(event, self))  # keyboard inputs
+        self.bind('<KeyRelease>', lambda event: keyReleased(event, self))
+        self.keyHeld = None
+        self.DAS = 75
+
+        self.runTime = 0
 
     def init_display(self):
         self.geometry(f"{self.WindowX}x{self.WindowY}")
@@ -67,11 +71,22 @@ class Tetris(Tk):
         initRectangles()
         init_text()
 
-    def updateBoard(self, newBoard: list[list[bool]]):
-        for row in range(23):
-            for col in range(10):
-                newColor = self.FillColor if newBoard[row][col] else self.EmptyColor
-                self.canvas.itemconfigure(f"{row},{col}", fill=newColor)
+    def updateBoard(self, newBoard: str):
+
+        color_map = {
+            "■": self.FillColor,
+            "⬚": self.FillColor,
+            "□": self.EmptyColor,
+
+            "\n■": self.FillColor,
+            "\n⬚": self.FillColor,
+            "\n□": self.EmptyColor
+        }
+
+        newBoard = newBoard.strip().split(" ")
+
+        for index, item in enumerate(newBoard):
+            self.canvas.itemconfigure(f"{22 - index // 10},{index % 10}", fill=color_map[item])
 
     def updateQueue(self, newQueue: str):
         self.canvas.itemconfigure("QueueText", text=newQueue)
@@ -83,33 +98,39 @@ class Tetris(Tk):
         # stats not done in rust yet
         pass
 
-    def update_display(self, newBoard: list[list[bool]] = None, newQueue: str = None, newHold: str = None):
-        if newBoard is not None:
-            self.updateBoard(newBoard)
-
-        if newQueue is not None:
-            self.updateQueue(newQueue)
-
-        if newHold is not None:
-            self.updateHold(newHold)
-
     async def display(self):
         try:
             while self.state():
+                self.checkDas()
+
                 self.update()
                 self.update_idletasks()
                 await asyncio.sleep(0.05)
         except TclError:
             pass
 
+    def checkDas(self):
+        if not self.keyHeld:
+            return
 
-def keyPressed(event):
+        key, time = self.keyHeld
+        time = (self.runTime - time) * 1000
+        # if time < self.DAS:
+        #     return
+
+        if key == 'Left':
+            inputList.put_nowait("DasLeft")
+        elif key == 'Right':
+            inputList.put_nowait("DasRight")
+
+
+def keyPressed(event, tetris):
     global newInput, nextInput
 
     keySymToCommand = {
         'Left': "MoveLeft",
         'Right': "MoveRight",
-        'Down': "MoveDown",
+        'Down': "SoftDrop",
         'space': "HardDrop",
         'x': "RotateCW",
         'z': "RotateCCW",
@@ -117,37 +138,34 @@ def keyPressed(event):
         'c': "HoldPiece"
     }
 
+    if event.keysym == 'Left' or event.keysym == 'Right':
+        tetris.keyHeld = (event.keysym, tetris.runTime)
+
     try:
         inputList.put_nowait(keySymToCommand[event.keysym])
     except KeyError:
         pass
 
 
+def keyReleased(event, game):
+    if game.keyHeld and event.keysym == game.keyHeld[0]:
+        game.keyHeld = None
+
+
 async def handler(websocket):
-    print("handle")
-    async for message in websocket:
-        print(message)
+    async for msg in websocket:
 
-        try:
+        if len(msg) > 50:  # board
+            Tetris.updateBoard(msg)
+            nextInput = await inputList.get()
+            response = {'contents': nextInput}
+            await websocket.send(json.dumps(response))
 
-            msg = json.loads(message)
-            print(msg)
+        elif len(msg) > 5:
+            Tetris.updateQueue(msg)
 
-            if isinstance(msg, list): # board
-                print("update board")
-                a.updateBoard(msg)
-                nextInput = await inputList.get()
-                response = {
-                    'eshan': nextInput
-                }
-                await websocket.send(json.dumps(response))
-
-            if isinstance(msg, int): # op codes
-                pass
-
-        except JSONDecodeError:
-            a.updateQueue(message)
-
+        else:
+            Tetris.updateHold(msg)
 
 
 async def serverLoop():
@@ -156,8 +174,8 @@ async def serverLoop():
 
 
 if __name__ == "__main__":
-    a = Tetris()
-    x = asyncio.ensure_future(a.display())
+    Tetris = Tetris()
+    x = asyncio.ensure_future(Tetris.display())
     y = asyncio.ensure_future(serverLoop())
 
     loop = asyncio.get_event_loop()

@@ -53,6 +53,8 @@ pub fn string_to_command(command_str: String) -> Command {
     match command_str {
         "MoveLeft" => Command::MoveLeft,
         "MoveRight" => Command::MoveRight,
+        "DasLeft" => Command::DasLeft,
+        "DasRight" => Command::DasRight,
         "RotateCW" => Command::RotateCW,
         "RotateCCW" => Command::RotateCCW,
         "Rotate180" => Command::Rotate180,
