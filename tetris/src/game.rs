@@ -43,8 +43,15 @@ pub struct Game {
 
 impl Display for Game {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.board.to_string(&self.active_piece))?;
         write!(f, "Queue: {}", self.piece_queue)?;
+        if let Some(hold) = self.hold_piece {
+            write!(f, "Hold: {}\n", PieceQueue::int_to_piece(hold))?;
+        } else {
+            write!(f, "Hold: None\n")?;
+        }
+
+        write!(f, "{}", self.board.to_string(&self.active_piece))?;
+        write!(f, "{}", self.game_data.to_string())?;
 
         Ok(())
     }
@@ -278,6 +285,21 @@ pub struct GameData {
     init_time: f32,
 }
 
+impl Display for GameData {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "All Clear: {}\n", self.all_clear)?;
+        write!(f, "Combo: {}\n", self.combo)?;
+        write!(f, "Back to Back: {}\n", self.b2b)?;
+
+        write!(f, "Pieces Placed: {}\n", self.pieces_placed)?;
+
+        write!(f, "Lines Cleared: {}\n", self.lines_cleared)?;
+        write!(f, "Lines Sent: {}", self.lines_sent)?;
+
+        Ok(())
+    }
+}
+
 impl GameData {
     fn run_time() -> f32 {
         unimplemented!()
@@ -295,6 +317,7 @@ impl GameData {
 
         if lines_cleared == 0 {
             self.combo = 0;
+            self.all_clear = false;
             return;
         }
 
@@ -317,7 +340,7 @@ impl GameData {
 
 mod damage_calculations {
     use crate::board::TSpinType;
-    
+
     const D_T_Q_MULTIPLIER: [f32; 3] = [0.25, 0.5, 1.0];
 
     const S_ATTACKS: [u8; 20] = [0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3];
@@ -344,7 +367,7 @@ mod damage_calculations {
     }
 
     fn other(combo: u8, lines_cleared: usize, t_spin_full: bool, b2b: usize) {
-        let mut b2b_multiplier= 1.0;
+        let mut b2b_multiplier = 1.0;
         match b2b {
             0 => b2b_multiplier = 1.0,
             1..=3 => b2b_multiplier = 1.25,
