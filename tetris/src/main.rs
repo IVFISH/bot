@@ -6,6 +6,7 @@ mod queue;
 mod players;
 mod bot;
 mod human;
+mod communications;
 
 use crate::bot::*;
 use crate::human::*;
