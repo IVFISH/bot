@@ -2,6 +2,8 @@ use std::collections::VecDeque;
 use std::fmt::{Display, Formatter};
 use std::iter::zip;
 
+use polynomial::Polynomial;
+
 use crate::game::*;
 use crate::players::*;
 use crate::placement::*;
@@ -11,6 +13,7 @@ use rand::Rng;
 
 pub struct Bot {
     game: Game,
+    weight: Weights,
 }
 
 impl Display for Bot {
@@ -23,7 +26,8 @@ impl Display for Bot {
 impl Default for Bot {
     fn default() -> Self {
         Self {
-            game: Game::new(None)
+            game: Game::new(None),
+            weight: Weights::default(),
         }
     }
 }
@@ -44,18 +48,71 @@ impl Player for Bot {
     }
 }
 
+pub type Score = usize;
+
 impl Bot {
-    fn score_board(&self) -> i32 {
-        unimplemented!()
+    pub fn score(&mut self) -> Score {
+        // todo: add versus weights, such as combo/b2b/attack
+
+        self.score_board()
     }
 
-    fn score(&self) -> i32 {
-        unimplemented!()
+    fn score_board(&mut self) -> Score {
+        self.game.board.set_piece(&self.game.active_piece, false);
+
+        let out =
+            self.get_holes_and_cell_covered_score() +
+            self.get_height_score() +
+            self.get_height_differences_score();
+
+        self.game.board.remove_piece(&self.game.active_piece, false);
+
+        out
     }
 
-    pub fn new(optional_seed: Option<usize>) -> Self {
+    fn score_game(&mut self) -> Score {
+
+        0
+    }
+
+    fn get_height_differences_score(&self) -> usize {
+        self.game.board.get_height_differences()
+            .iter()
+            .map(|x| self.weight.adjacent_height_differences_weight.eval(*x))
+            .sum()
+    }
+
+    pub fn get_height_score(&self) -> usize {
+        let mut out = 0;
+        let total_height = self.game.board.max_filled_height();
+        out += self.weight.height_weight.eval(total_height);
+
+        if let Some(half_height) = out.checked_sub(10) {
+            out += self.weight.top_half_height_weight.eval(half_height);
+
+            if let Some(quarter_height) = out.checked_sub(15) {
+                out += self.weight.top_quarter_height_weight.eval(quarter_height);
+            }
+        }
+
+        out
+    }
+
+    pub fn get_holes_and_cell_covered_score(&self) -> usize {
+        let mut out = 0;
+
+        let (holes, covered) = self.game.board.holes_and_cell_covered();
+
+        out += self.weight.num_hole_weight.eval(holes);
+        out += self.weight.cell_covered_weight.eval(covered);
+
+        out
+    }
+
+    pub fn new(optional_seed: Option<usize>, weight: Weights) -> Self {
         Self {
-            game: Game::new(optional_seed)
+            game: Game::new(optional_seed),
+            weight,
         }
     }
 
@@ -116,7 +173,6 @@ impl Bot {
         let start = self.game.active_piece.clone();
 
         for placement in all_placements {
-
             self.show_placement(&placement, clear, &start);
             thread::sleep(time::Duration::from_millis(1000));
         }
@@ -287,6 +343,37 @@ impl Bot {
     }
 }
 
+pub struct Weights {
+    top_quarter_height_weight: Polynomial<usize>,
+    top_half_height_weight: Polynomial<usize>,
+    height_weight: Polynomial<usize>,
+
+    adjacent_height_differences_weight: Polynomial<usize>,
+    num_hole_weight: Polynomial<usize>,
+    cell_covered_weight: Polynomial<usize>,
+
+    b2b_weight: Polynomial<i8>,
+    combo_weight: Polynomial<i8>
+}
+
+impl Default for Weights {
+    fn default() -> Self {
+        Self {
+            top_quarter_height_weight: Polynomial::new(vec![0, 5, 10]),
+            top_half_height_weight: Polynomial::new(vec![0, 3, 1]),
+            height_weight: Polynomial::new(vec![0, 5, 0]),
+
+            adjacent_height_differences_weight: Polynomial::new(vec![0, 2, 1]),
+            num_hole_weight: Polynomial::new(vec![0, 12, 0]),
+            cell_covered_weight: Polynomial::new(vec![0, 10, 1]),
+
+            b2b_weight: Polynomial::new(vec![0, -1, -5]),
+            combo_weight: Polynomial::new(vec![0, -2, -2]),
+
+        }
+    }
+}
+
 use std::{thread, time};
 
 pub fn bot_play() {
@@ -316,7 +403,7 @@ mod move_gen_tests {
 
     #[test]
     fn test_tucks() {
-        let mut bot = Bot::new(Some(1337));
+        let mut bot = Bot::new(Some(1337), Weights::default());
 
         bot.game.add(1, 7, false);
         bot.game.add(1, 8, false);
@@ -397,7 +484,7 @@ mod move_gen_tests {
     }
 
     fn make_z_spin_1() -> Bot {
-        let mut bot = Bot::new(None);
+        let mut bot = Bot::new(None, Weights::default());
         bot.game.active_piece = Placement::new(0);
 
         bot.game.add(0, 0, false);
@@ -421,7 +508,7 @@ mod move_gen_tests {
     }
 
     fn make_tst() -> Bot {
-        let mut bot = Bot::new(None);
+        let mut bot = Bot::new(None, Weights::default());
         bot.game.active_piece = Placement::new(6);
 
         bot.game.add(1, 0, false);
@@ -461,7 +548,7 @@ mod move_gen_tests {
     }
 
     fn make_fuckery() -> Bot {
-        let mut bot = Bot::new(None);
+        let mut bot = Bot::new(None, Weights::default());
         bot.game.active_piece = Placement::new(1);
 
         bot.game.add(0, 0, false);

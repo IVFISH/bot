@@ -9,7 +9,6 @@ use crate::placement::{Placement, Point, MoveVector};
 use crate::placement::piece_data::NUM_ROTATE_STATES;
 use crate::queue::GarbageItem;
 
-
 pub const BOARD_WIDTH: usize = 10;
 pub const BOARD_HEIGHT: usize = 40;
 
@@ -251,6 +250,57 @@ impl Board {
         num_full_rows
     }
 
+    pub fn holes_and_cell_covered(&self) -> (usize, usize) {
+        let mut holes_count = 0;
+        let mut cell_covered_count = 0;
+
+
+        for col in 0..self.width {
+            // only counting when you find a filled block
+            let mut counting = true;
+
+            let mut covered_counter = 0;
+
+            for row in (0..self.heights_for_each_column[col]).rev() {
+                // start at top
+
+                let spot = self.get(row, col);
+                // hole
+                if !spot {
+                    cell_covered_count += covered_counter;
+
+                    if counting {
+                        holes_count += 1;
+                        counting = false;
+                    }
+
+                } else {
+                    covered_counter += 1;
+                    counting = true;
+                }
+            }
+        }
+
+        (holes_count, cell_covered_count)
+    }
+
+    pub fn t_slot(&self) -> usize {
+        unimplemented!()
+    }
+
+    pub fn max_height_difference(&self) -> usize {
+        self.max_filled_height() - self.min_filled_height()
+    }
+
+    pub fn get_height_differences(&self) -> Vec<usize> {
+        // maybe make output an array
+
+        self.heights_for_each_column.
+            windows(2)
+            .map(|w| w[0].abs_diff(w[1]))
+            .collect::<Vec<usize>>()
+    }
+
     fn add_to_heights(&mut self, amt: usize) {
         for col in 0..self.width {
             self.heights_for_each_column[col] += amt;
@@ -468,11 +518,158 @@ mod board_tests {
             last_kick: 0,
         };
 
-        println!("{}", board.to_string(&piece));
+        // println!("{}", board.to_string(&piece));
         assert_eq!(board.get_t_spin_type(piece), TSpinType::Mini);
 
         piece.piece_type = 1;
         assert_eq!(board.get_t_spin_type(piece), TSpinType::None);
+    }
+
+    #[test]
+    fn test_adjacent_spikes() {
+        let mut board = create_preset_board();
+
+        let heights = board.get_height_differences();
+        assert_eq!(heights, vec![6, 4, 2, 0, 0, 0, 4, 4, 0]);
+    }
+
+    #[test]
+    fn height_difference() {
+        let mut board = create_preset_board();
+        assert_eq!(board.max_height_difference(), 6);
+    }
+
+    #[test]
+    fn test_holes() {
+        let board = create_preset_board();
+        assert_eq!(board.holes_and_cell_covered().0, 4);
+
+        let board = create_l_spin_fuckery();
+        assert_eq!(board.holes_and_cell_covered().0, 13);
+    }
+
+    #[test]
+    fn test_cell_covered() {
+        let board = create_preset_board();
+        assert_eq!(board.holes_and_cell_covered().1, 9);
+
+        let board = create_l_spin_fuckery();
+        assert_eq!(board.holes_and_cell_covered().1, 113);
+    }
+
+    #[test]
+    fn test_t_slot() {
+
+    }
+
+    fn create_l_spin_fuckery() -> Board {
+        let mut board = Board::new();
+
+        board.add(0, 0, true);
+        board.add(1, 0, true);
+        board.add(2, 0, true);
+        board.add(3, 0, true);
+        board.add(4, 0, true);
+        board.add(5, 0, true);
+        board.add(6, 0, true);
+        board.add(7, 0, true);
+        board.add(8, 0, true);
+        board.add(9, 0, true);
+        board.add(10, 0, true);
+        board.add(11, 0, true);
+        board.add(12, 0, true);
+        board.add(13, 0, true);
+        board.add(14, 0, true);
+        board.add(4, 1, true);
+        board.add(5, 1, true);
+        board.add(6, 1, true);
+        board.add(7, 1, true);
+        board.add(8, 1, true);
+        board.add(9, 1, true);
+        board.add(10, 1, true);
+        board.add(11, 1, true);
+        board.add(12, 1, true);
+        board.add(14, 1, true);
+        board.add(1, 2, true);
+        board.add(2, 2, true);
+        board.add(5, 2, true);
+        board.add(6, 2, true);
+        board.add(7, 2, true);
+        board.add(8, 2, true);
+        board.add(9, 2, true);
+        board.add(0, 3, true);
+        board.add(1, 3, true);
+        board.add(6, 3, true);
+        board.add(7, 3, true);
+        board.add(8, 3, true);
+        board.add(9, 3, true);
+        board.add(11, 3, true);
+        board.add(12, 3, true);
+        board.add(0, 4, true);
+        board.add(1, 4, true);
+        board.add(3, 4, true);
+        board.add(4, 4, true);
+        board.add(6, 4, true);
+        board.add(9, 4, true);
+        board.add(12, 4, true);
+        board.add(0, 5, true);
+        board.add(1, 5, true);
+        board.add(2, 5, true);
+        board.add(3, 5, true);
+        board.add(4, 5, true);
+        board.add(12, 5, true);
+        board.add(0, 6, true);
+        board.add(1, 6, true);
+        board.add(2, 6, true);
+        board.add(3, 6, true);
+        board.add(4, 6, true);
+        board.add(5, 6, true);
+        board.add(6, 6, true);
+        board.add(7, 6, true);
+        board.add(9, 6, true);
+        board.add(10, 6, true);
+        board.add(11, 6, true);
+        board.add(12, 6, true);
+        board.add(0, 7, true);
+        board.add(1, 7, true);
+        board.add(2, 7, true);
+        board.add(3, 7, true);
+        board.add(4, 7, true);
+        board.add(5, 7, true);
+        board.add(6, 7, true);
+        board.add(7, 7, true);
+        board.add(9, 7, true);
+        board.add(10, 7, true);
+        board.add(11, 7, true);
+        board.add(12, 7, true);
+        board.add(0, 8, true);
+        board.add(1, 8, true);
+        board.add(2, 8, true);
+        board.add(3, 8, true);
+        board.add(4, 8, true);
+        board.add(5, 8, true);
+        board.add(6, 8, true);
+        board.add(7, 8, true);
+        board.add(8, 8, true);
+        board.add(9, 8, true);
+        board.add(10, 8, true);
+        board.add(11, 8, true);
+        board.add(12, 8, true);
+        board.add(0, 9, true);
+        board.add(1, 9, true);
+        board.add(2, 9, true);
+        board.add(3, 9, true);
+        board.add(4, 9, true);
+        board.add(5, 9, true);
+        board.add(6, 9, true);
+        board.add(7, 9, true);
+        board.add(8, 9, true);
+        board.add(9, 9, true);
+        board.add(10, 9, true);
+        board.add(11, 9, true);
+        board.add(12, 9, true);
+
+        board
     }
 
     fn create_preset_board() -> Board {

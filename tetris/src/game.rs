@@ -26,7 +26,7 @@ struct JsonPieceQueue {
 
 #[derive(Default)]
 pub struct Game {
-    board: Board,
+    pub board: Board,
 
     piece_queue: PieceQueue,
     garbage_queue: GarbageQueue,
@@ -58,6 +58,7 @@ impl Display for Game {
 }
 
 impl Game {
+
     pub fn get_board_string(&self) -> String {
         self.board.to_string(&self.active_piece)
     }
@@ -274,8 +275,8 @@ impl Game {
 #[derive(Default)]
 pub struct GameData {
     pub all_clear: bool,
-    pub combo: u8,
-    pub b2b: u8,
+    pub combo: i8,
+    pub b2b: i8,
 
     pub pieces_placed: u8,
     pub lines_cleared: usize,
