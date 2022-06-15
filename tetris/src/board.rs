@@ -1,12 +1,12 @@
-use std::fmt::{Formatter, Display};
+use std::fmt::{Display, Formatter};
 
 use itertools::Itertools;
 
 use std::cmp::max;
 
 use crate::errors::GameError;
-use crate::placement::{Placement, Point, MoveVector};
 use crate::placement::piece_data::NUM_ROTATE_STATES;
+use crate::placement::{MoveVector, Placement, Point};
 use crate::queue::GarbageItem;
 
 pub const BOARD_WIDTH: usize = 10;
@@ -21,6 +21,32 @@ pub struct Board {
 }
 
 impl Board {
+    pub fn set_board(&mut self, mut new_arr: Vec<Vec<bool>>) {
+        // for row in 0..self.height {
+        //     for col in 0..self.width {
+        //         self.arr[row][col] = *new_arr.get(row).unwrap().get(col).unwrap();
+        //     }
+        // }
+
+        // for (row_num, row) in new_arr.iter().enumerate() {
+        //     for (col_num, col) in row.iter().enumerate() {
+        //         self.arr[row_num][col_num] = *col;
+        //     }
+        // }
+
+        // let _ = new_arr.iter().enumerate().for_each(|(row_num, row)| {
+        //     row.iter()
+        //         .enumerate()
+        //         .for_each(|(col_num, col)| self.arr[row_num][col_num] = *col)
+        // });
+
+        self.arr
+            .iter_mut()
+            .flatten()
+            .zip(new_arr.iter_mut().flatten())
+            .for_each(|(a, b)| std::mem::swap(a, b));
+    }
+
     pub fn get_board_array(&self) -> [[bool; BOARD_WIDTH]; BOARD_HEIGHT] {
         self.arr
     }
@@ -131,9 +157,7 @@ impl Board {
 
         let in_bounds = locations
             .iter()
-            .all(
-                |loc| Board::in_bounds(loc.row, loc.col).is_ok()
-            );
+            .all(|loc| Board::in_bounds(loc.row, loc.col).is_ok());
 
         if !in_bounds {
             return Err(GameError::NotInBounds);
@@ -201,25 +225,30 @@ impl Board {
 
         let (front, back) = RELATIVE_CORNERS[piece.rotation_state];
 
-        let mut front_count = front.iter()
+        let mut front_count = front
+            .iter()
             .map(|x| x.add_to_point(&piece.center))
             .flatten()
             .filter(|x| self.get(x.row, x.col))
             .count();
 
-        let mut back_count = back.iter()
+        let mut back_count = back
+            .iter()
             .map(|x| x.add_to_point(&piece.center))
             .flatten()
             .filter(|x| self.get(x.row, x.col))
             .count();
 
-        if (piece.center.col == 9 && piece.rotation_state == 3) ||
-            (piece.center.col == 0 && piece.rotation_state == 1) ||
-            (piece.rotation_state + piece.center.row == 0) {
+        if (piece.center.col == 9 && piece.rotation_state == 3)
+            || (piece.center.col == 0 && piece.rotation_state == 1)
+            || (piece.rotation_state + piece.center.row == 0)
+        {
             back_count += 2;
         }
 
-        return if (front_count == 2 && back_count >= 1) || (front_count == 1 && back_count >= 2 && piece.last_kick == 4) {
+        return if (front_count == 2 && back_count >= 1)
+            || (front_count == 1 && back_count >= 2 && piece.last_kick == 4)
+        {
             TSpinType::Full
         } else if front_count == 1 && back_count >= 2 {
             TSpinType::Mini
@@ -254,7 +283,6 @@ impl Board {
         let mut holes_count = 0;
         let mut cell_covered_count = 0;
 
-
         for col in 0..self.width {
             // only counting when you find a filled block
             let mut counting = true;
@@ -273,7 +301,6 @@ impl Board {
                         holes_count += 1;
                         counting = false;
                     }
-
                 } else {
                     covered_counter += 1;
                     counting = true;
@@ -295,8 +322,8 @@ impl Board {
     pub fn get_height_differences(&self) -> Vec<usize> {
         // maybe make output an array
 
-        self.heights_for_each_column.
-            windows(2)
+        self.heights_for_each_column
+            .windows(2)
             .map(|w| w[0].abs_diff(w[1]))
             .collect::<Vec<usize>>()
     }
@@ -313,7 +340,12 @@ impl Board {
         }
     }
 
-    pub fn top_out(&mut self, piece: &Placement, next: &Placement, max_height: usize) -> Result<(), GameError> {
+    pub fn top_out(
+        &mut self,
+        piece: &Placement,
+        next: &Placement,
+        max_height: usize,
+    ) -> Result<(), GameError> {
         self.set_piece(piece, false);
 
         if self.check_collision(next).is_err() {
@@ -322,11 +354,12 @@ impl Board {
 
         self.remove_piece(piece, false);
 
-        if piece.abs_locations()
+        if piece
+            .abs_locations()
             .unwrap()
             .iter()
-            .all(
-                |x| x.row >= max_height) {
+            .all(|x| x.row >= max_height)
+        {
             return Err(GameError::TopOut);
         }
 
@@ -340,9 +373,7 @@ impl Board {
     fn all_full_rows(&self) -> Vec<usize> {
         (0..self.max_filled_height())
             .into_iter()
-            .filter(
-                |x| self.full_row(*x)
-            )
+            .filter(|x| self.full_row(*x))
             .collect()
     }
 
@@ -400,7 +431,9 @@ impl Display for Board {
             for col in 0..self.width {
                 if self.get(row, col) {
                     write!(f, "■ ")?
-                } else { write!(f, "□ ")? }
+                } else {
+                    write!(f, "□ ")?
+                }
             }
             write!(f, "\n")?
         }
@@ -417,10 +450,22 @@ pub enum TSpinType {
 }
 
 const RELATIVE_CORNERS: [([MoveVector; 2], [MoveVector; 2]); 4] = [
-    ([MoveVector(1, -1), MoveVector(1, 1)], [MoveVector(-1, -1), MoveVector(-1, 1)]),
-    ([MoveVector(-1, 1), MoveVector(1, 1)], [MoveVector(-1, -1), MoveVector(1, -1)]),
-    ([MoveVector(-1, -1), MoveVector(-1, 1)], [MoveVector(1, -1), MoveVector(1, 1)]),
-    ([MoveVector(-1, -1), MoveVector(1, -1)], [MoveVector(-1, 1), MoveVector(1, 1)]),
+    (
+        [MoveVector(1, -1), MoveVector(1, 1)],
+        [MoveVector(-1, -1), MoveVector(-1, 1)],
+    ),
+    (
+        [MoveVector(-1, 1), MoveVector(1, 1)],
+        [MoveVector(-1, -1), MoveVector(1, -1)],
+    ),
+    (
+        [MoveVector(-1, -1), MoveVector(-1, 1)],
+        [MoveVector(1, -1), MoveVector(1, 1)],
+    ),
+    (
+        [MoveVector(-1, -1), MoveVector(1, -1)],
+        [MoveVector(-1, 1), MoveVector(1, 1)],
+    ),
 ];
 
 #[cfg(test)]
@@ -558,9 +603,7 @@ mod board_tests {
     }
 
     #[test]
-    fn test_t_slot() {
-
-    }
+    fn test_t_slot() {}
 
     fn create_l_spin_fuckery() -> Board {
         let mut board = Board::new();

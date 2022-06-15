@@ -1,16 +1,16 @@
+use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
 use std::collections::VecDeque;
 use std::fmt::{Display, Formatter};
-use serde_json::{json, Value};
-use serde::{Serialize, Deserialize};
 
 use crate::board::*;
+use crate::errors::GameError;
 use crate::placement::*;
 use crate::queue::*;
-use crate::errors::GameError;
 
-use crate::placement::piece_data::*;
 use crate::placement::piece_data::offset::*;
 use crate::placement::piece_data::rotation::*;
+use crate::placement::piece_data::*;
 
 #[derive(Serialize, Deserialize)]
 struct JsonBoard {
@@ -34,6 +34,7 @@ pub struct Game {
     last_piece_cleared: bool,
 
     pub game_data: GameData,
+    pub game_rules: GameRules,
 
     pub active_piece: Placement,
     pub hold_piece: Option<Piece>,
@@ -58,13 +59,15 @@ impl Display for Game {
 }
 
 impl Game {
-
     pub fn get_board_string(&self) -> String {
         self.board.to_string(&self.active_piece)
     }
 
     pub fn get_board_json(&self) -> Value {
-        json!( JsonBoard{kind: String::from("board"), board: self.get_board_string()} )
+        json!(JsonBoard {
+            kind: String::from("board"),
+            board: self.get_board_string()
+        })
     }
 
     pub fn get_piece_queue(&self) -> &PieceQueue {
@@ -72,7 +75,10 @@ impl Game {
     }
 
     pub fn get_piece_queue_json(&self) -> Value {
-        json!( JsonPieceQueue{kind: String::from("piecequeue"), queue: self.get_piece_queue().to_string()} )
+        json!(JsonPieceQueue {
+            kind: String::from("piecequeue"),
+            queue: self.get_piece_queue().to_string()
+        })
     }
 
     pub fn get_active_piece_type(&self) -> Piece {
@@ -98,11 +104,17 @@ impl Game {
     }
 
     pub fn valid_placement_for_active(&mut self) -> bool {
-        self.board.check_valid_placement(&mut self.active_piece).is_ok()
+        self.board
+            .check_valid_placement(&mut self.active_piece)
+            .is_ok()
     }
 
     pub fn set_piece(&mut self, update_heights: bool) -> Result<(), GameError> {
-        self.board.top_out(&self.active_piece, &Placement::new(self.piece_queue.peek()), 20)?;
+        self.board.top_out(
+            &self.active_piece,
+            &Placement::new(self.piece_queue.peek()),
+            self.game_rules.max_board_height,
+        )?;
 
         self.board.set_piece(&self.active_piece, update_heights);
         self.active_piece = Placement::new(self.piece_queue.next());
@@ -189,14 +201,16 @@ impl Game {
         let before = self.active_piece.rotation_state;
 
         let kicks;
-        if self.active_piece.piece_type == 4 {  // I piece is the special child
+        if self.active_piece.piece_type == 4 {
+            // I piece is the special child
             if dir == 2 {
                 kicks = FIVE_180_OFFSETS[before].to_vec()
             } else {
                 kicks = FIVE_OFFSETS[before][dir / 2].to_vec();
             }
-        } else if self.active_piece.piece_type == 2 { // O piece is the other special child
-            kicks = vec!(O_OFFSETS[before][dir - 1]);
+        } else if self.active_piece.piece_type == 2 {
+            // O piece is the other special child
+            kicks = vec![O_OFFSETS[before][dir - 1]];
         } else {
             if dir == 2 {
                 kicks = THREE_180_OFFSETS[before].to_vec()
@@ -226,7 +240,8 @@ impl Game {
         let lines_cleared = self.board.clear_lines(update_heights);
 
         let t_spin_type = self.board.get_t_spin_type(self.active_piece);
-        self.game_data.update(lines_cleared, t_spin_type, self.board.all_clear());
+        self.game_data
+            .update(lines_cleared, t_spin_type, self.board.all_clear());
 
         Ok(())
     }
@@ -236,7 +251,8 @@ impl Game {
     }
 
     pub fn add_garbage_to_board(&mut self, amt: usize, update_heights: bool) {
-        self.board.add_garbage(GarbageItem::new(amt), update_heights);
+        self.board
+            .add_garbage(GarbageItem::new(amt), update_heights);
     }
 
     fn reset(&mut self) {
@@ -269,6 +285,93 @@ impl Game {
 
     pub fn piece_queue_peek(&self) -> Piece {
         self.piece_queue.peek()
+    }
+}
+
+pub enum KickSet {
+    None,
+    SRSPlus,
+    SRS,
+    SRSX,
+    TetraX,
+    NRS,
+    ARS,
+    ASC,
+}
+
+impl Default for KickSet {
+    fn default() -> Self {
+        KickSet::SRSPlus
+    }
+}
+
+pub enum SpinBonus {
+    TSpin,
+    All,
+    Stupid,
+    None,
+}
+
+impl Default for SpinBonus {
+    fn default() -> Self {
+        SpinBonus::TSpin
+    }
+}
+
+pub struct GameRules {
+    seed: usize,
+    bag_type: BagType,
+    allow_180: bool,
+    allow_hard_drop: bool,
+    allow_b2b_chain: bool,
+    max_board_height: usize,
+    kick_set: KickSet,
+    spin_bonus: SpinBonus,
+}
+
+impl Default for GameRules {
+    fn default() -> Self {
+        Self {
+            seed: 0,
+            bag_type: BagType::SevenBag,
+            allow_180: true,
+            allow_hard_drop: true,
+            allow_b2b_chain: true,
+            max_board_height: 20,
+            kick_set: Default::default(),
+            spin_bonus: Default::default(),
+        }
+    }
+}
+
+impl GameRules {
+    fn new(
+        seed: usize,
+        bag_type: BagType,
+        allow_180: bool,
+        allow_hard_drop: bool,
+        allow_b2b_chain: bool,
+        max_board_height: usize,
+        kick_set: KickSet,
+        spin_bonus: SpinBonus,
+    ) -> Self {
+        Self {
+            seed,
+            bag_type,
+            allow_180,
+            allow_hard_drop,
+            allow_b2b_chain,
+            max_board_height,
+            kick_set,
+            spin_bonus,
+        }
+    }
+
+    fn new_seed(seed: usize) -> Self {
+        Self {
+            seed,
+            ..Default::default()
+        }
     }
 }
 
@@ -345,10 +448,36 @@ mod damage_calculations {
     const D_T_Q_MULTIPLIER: [f32; 3] = [0.25, 0.5, 1.0];
 
     const S_ATTACKS: [u8; 20] = [0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3];
-    const TM_ATTACKS: [[u8; 2]; 20] = [[0, 1], [0, 1], [1, 1], [1, 1], [1, 2], [1, 2], [2, 2],
-        [2, 2], [2, 3], [2, 3], [2, 3], [2, 3], [2, 4], [2, 4], [2, 4], [2, 4], [3, 5], [3, 5], [3, 5], [3, 5]];
+    const TM_ATTACKS: [[u8; 2]; 20] = [
+        [0, 1],
+        [0, 1],
+        [1, 1],
+        [1, 1],
+        [1, 2],
+        [1, 2],
+        [2, 2],
+        [2, 2],
+        [2, 3],
+        [2, 3],
+        [2, 3],
+        [2, 3],
+        [2, 4],
+        [2, 4],
+        [2, 4],
+        [2, 4],
+        [3, 5],
+        [3, 5],
+        [3, 5],
+        [3, 5],
+    ];
 
-    pub fn calculate_damage(lines_cleared: usize, t_spin: TSpinType, b2b: u8, combo: u8, all_clear: bool) -> u8 {
+    pub fn calculate_damage(
+        lines_cleared: usize,
+        t_spin: TSpinType,
+        b2b: u8,
+        combo: u8,
+        all_clear: bool,
+    ) -> u8 {
         let multiplier = 1.0;
         let all_clear_damage = all_clear as u8 * 10;
 
@@ -378,7 +507,7 @@ mod damage_calculations {
             68..=185 => b2b_multiplier = 2.25,
             186..=504 => b2b_multiplier = 2.5,
             505..=1370 => b2b_multiplier = 2.75,
-            _ => b2b_multiplier = 3.0
+            _ => b2b_multiplier = 3.0,
         }
 
         (D_T_Q_MULTIPLIER[lines_cleared - 2] * b2b_multiplier) as u8 * (combo + 4);
@@ -433,15 +562,29 @@ mod game_tests {
         game.piece_das_right();
         game.piece_down();
 
-        assert_eq!(game.active_piece.abs_locations().unwrap(),
-                   [Point { row: 21, col: 8 }, Point { row: 21, col: 9 }, Point { row: 20, col: 8 }, Point { row: 20, col: 9 }]);
+        assert_eq!(
+            game.active_piece.abs_locations().unwrap(),
+            [
+                Point { row: 21, col: 8 },
+                Point { row: 21, col: 9 },
+                Point { row: 20, col: 8 },
+                Point { row: 20, col: 9 }
+            ]
+        );
 
         game.piece_down();
         game.set_piece(false).expect("crash and burn");
         game.piece_soft_drop();
 
-        assert_eq!(game.active_piece.abs_locations().unwrap(),
-                   [Point { row: 0, col: 3 }, Point { row: 0, col: 4 }, Point { row: 0, col: 5 }, Point { row: 0, col: 6 }]);
+        assert_eq!(
+            game.active_piece.abs_locations().unwrap(),
+            [
+                Point { row: 0, col: 3 },
+                Point { row: 0, col: 4 },
+                Point { row: 0, col: 5 },
+                Point { row: 0, col: 6 }
+            ]
+        );
     }
 
     #[test]
@@ -451,26 +594,54 @@ mod game_tests {
 
         game.piece_rotate_cw();
 
-        assert_eq!(game.active_piece.abs_locations().unwrap(),
-                   [Point { row: 21, col: 5 }, Point { row: 22, col: 4 }, Point { row: 21, col: 4 }, Point { row: 20, col: 4 }]);
+        assert_eq!(
+            game.active_piece.abs_locations().unwrap(),
+            [
+                Point { row: 21, col: 5 },
+                Point { row: 22, col: 4 },
+                Point { row: 21, col: 4 },
+                Point { row: 20, col: 4 }
+            ]
+        );
 
         game.piece_rotate_cw();
 
-        assert_eq!(game.active_piece.abs_locations().unwrap(),
-                   [Point { row: 20, col: 4 }, Point { row: 21, col: 5 }, Point { row: 21, col: 4 }, Point { row: 21, col: 3 }]);
+        assert_eq!(
+            game.active_piece.abs_locations().unwrap(),
+            [
+                Point { row: 20, col: 4 },
+                Point { row: 21, col: 5 },
+                Point { row: 21, col: 4 },
+                Point { row: 21, col: 3 }
+            ]
+        );
 
         game.piece_rotate_ccw();
 
-        assert_eq!(game.active_piece.abs_locations().unwrap(),
-                   [Point { row: 21, col: 5 }, Point { row: 22, col: 4 }, Point { row: 21, col: 4 }, Point { row: 20, col: 4 }]);
+        assert_eq!(
+            game.active_piece.abs_locations().unwrap(),
+            [
+                Point { row: 21, col: 5 },
+                Point { row: 22, col: 4 },
+                Point { row: 21, col: 4 },
+                Point { row: 20, col: 4 }
+            ]
+        );
 
         game.piece_soft_drop();
         game.set_piece(false).expect("crash and burn 2");
 
         game.piece_rotate_180();
 
-        assert_eq!(game.active_piece.abs_locations().unwrap(),
-                   [Point { row: 20, col: 3 }, Point { row: 21, col: 5 }, Point { row: 21, col: 4 }, Point { row: 21, col: 3 }]);
+        assert_eq!(
+            game.active_piece.abs_locations().unwrap(),
+            [
+                Point { row: 20, col: 3 },
+                Point { row: 21, col: 5 },
+                Point { row: 21, col: 4 },
+                Point { row: 21, col: 3 }
+            ]
+        );
     }
 
     #[test]
@@ -506,8 +677,15 @@ mod game_tests {
 
         assert!(game.piece_rotate_ccw());
 
-        assert_eq!(game.active_piece.abs_locations().unwrap(),
-                   [Point { row: 22, col: 1 }, Point { row: 21, col: 0 }, Point { row: 21, col: 1 }, Point { row: 21, col: 2 }]);
+        assert_eq!(
+            game.active_piece.abs_locations().unwrap(),
+            [
+                Point { row: 22, col: 1 },
+                Point { row: 21, col: 0 },
+                Point { row: 21, col: 1 },
+                Point { row: 21, col: 2 }
+            ]
+        );
 
         let mut game = Game::new(Some(1337));
         game.piece_soft_drop();
@@ -518,8 +696,15 @@ mod game_tests {
         game.piece_das_right();
 
         assert!(game.piece_rotate_ccw());
-        assert_eq!(game.active_piece.abs_locations().unwrap(),
-                   [Point { row: 20, col: 9 }, Point { row: 20, col: 8 }, Point { row: 20, col: 7 }, Point { row: 20, col: 6 }]);
+        assert_eq!(
+            game.active_piece.abs_locations().unwrap(),
+            [
+                Point { row: 20, col: 9 },
+                Point { row: 20, col: 8 },
+                Point { row: 20, col: 7 },
+                Point { row: 20, col: 6 }
+            ]
+        );
     }
 
     #[test]
@@ -532,8 +717,15 @@ mod game_tests {
 
         println!("{} {:?}", game, game.active_piece.abs_locations());
 
-        assert_eq!(game.active_piece.abs_locations().unwrap(),
-                   [Point { row: 1, col: 4 }, Point { row: 2, col: 3 }, Point { row: 1, col: 3 }, Point { row: 0, col: 3 }]);
+        assert_eq!(
+            game.active_piece.abs_locations().unwrap(),
+            [
+                Point { row: 1, col: 4 },
+                Point { row: 2, col: 3 },
+                Point { row: 1, col: 3 },
+                Point { row: 0, col: 3 }
+            ]
+        );
     }
 
     #[test]
@@ -546,13 +738,19 @@ mod game_tests {
         assert_eq!(game.active_piece.piece_type, 3);
         game.piece_soft_drop();
 
-        assert_eq!(game.active_piece.abs_locations().unwrap(),
-                   [Point { row: 4, col: 4 }, Point { row: 4, col: 5 }, Point { row: 3, col: 3 }, Point { row: 3, col: 4 }]);
+        assert_eq!(
+            game.active_piece.abs_locations().unwrap(),
+            [
+                Point { row: 4, col: 4 },
+                Point { row: 4, col: 5 },
+                Point { row: 3, col: 3 },
+                Point { row: 3, col: 4 }
+            ]
+        );
     }
 
     #[test]
     fn test_srs_jank() {
-
         // z spin 1
         let mut game = Game::new(None);
         game.active_piece = Placement::new(0);
@@ -581,8 +779,15 @@ mod game_tests {
         game.piece_rotate_ccw();
         println!("{}", game);
 
-        assert_eq!(game.active_piece.abs_locations().unwrap(),
-                   [Point { row: 0, col: 5 }, Point { row: 0, col: 4 }, Point { row: 1, col: 4 }, Point { row: 1, col: 3 }]);
+        assert_eq!(
+            game.active_piece.abs_locations().unwrap(),
+            [
+                Point { row: 0, col: 5 },
+                Point { row: 0, col: 4 },
+                Point { row: 1, col: 4 },
+                Point { row: 1, col: 3 }
+            ]
+        );
 
         // z spin 2
         let mut game = Game::new(None);
@@ -619,8 +824,15 @@ mod game_tests {
         game.piece_rotate_cw();
         println!("{}", game);
 
-        assert_eq!([Point { row: 0, col: 6 }, Point { row: 0, col: 5 }, Point { row: 1, col: 5 }, Point { row: 1, col: 4 }],
-                   game.active_piece.abs_locations().unwrap());
+        assert_eq!(
+            [
+                Point { row: 0, col: 6 },
+                Point { row: 0, col: 5 },
+                Point { row: 1, col: 5 },
+                Point { row: 1, col: 4 }
+            ],
+            game.active_piece.abs_locations().unwrap()
+        );
 
         // s spin 1
         let mut game = Game::new(None);
@@ -649,8 +861,15 @@ mod game_tests {
         game.piece_rotate_cw();
         println!("{}", game);
 
-        assert_eq!([Point { row: 0, col: 5 }, Point { row: 0, col: 4 }, Point { row: 1, col: 6 }, Point { row: 1, col: 5 }],
-                   game.active_piece.abs_locations().unwrap());
+        assert_eq!(
+            [
+                Point { row: 0, col: 5 },
+                Point { row: 0, col: 4 },
+                Point { row: 1, col: 6 },
+                Point { row: 1, col: 5 }
+            ],
+            game.active_piece.abs_locations().unwrap()
+        );
 
         // s spin 2
         let mut game = Game::new(None);
@@ -688,8 +907,15 @@ mod game_tests {
         game.piece_rotate_ccw();
         println!("{}", game);
 
-        assert_eq!([Point { row: 0, col: 4 }, Point { row: 0, col: 3 }, Point { row: 1, col: 5 }, Point { row: 1, col: 4 }],
-                   game.active_piece.abs_locations().unwrap());
+        assert_eq!(
+            [
+                Point { row: 0, col: 4 },
+                Point { row: 0, col: 3 },
+                Point { row: 1, col: 5 },
+                Point { row: 1, col: 4 }
+            ],
+            game.active_piece.abs_locations().unwrap()
+        );
 
         // l spin 1
         let mut game = Game::new(None);
@@ -727,8 +953,15 @@ mod game_tests {
         game.piece_rotate_ccw();
         println!("{}", game);
 
-        assert_eq!([Point { row: 0, col: 3 }, Point { row: 1, col: 5 }, Point { row: 1, col: 4 }, Point { row: 1, col: 3 }],
-                   game.active_piece.abs_locations().unwrap());
+        assert_eq!(
+            [
+                Point { row: 0, col: 3 },
+                Point { row: 1, col: 5 },
+                Point { row: 1, col: 4 },
+                Point { row: 1, col: 3 }
+            ],
+            game.active_piece.abs_locations().unwrap()
+        );
 
         // l spin 2
         let mut game = Game::new(None);
@@ -760,8 +993,15 @@ mod game_tests {
         game.piece_rotate_cw();
         println!("{}", game);
 
-        assert_eq!([Point { row: 0, col: 4 }, Point { row: 1, col: 6 }, Point { row: 1, col: 5 }, Point { row: 1, col: 4 }],
-                   game.active_piece.abs_locations().unwrap());
+        assert_eq!(
+            [
+                Point { row: 0, col: 4 },
+                Point { row: 1, col: 6 },
+                Point { row: 1, col: 5 },
+                Point { row: 1, col: 4 }
+            ],
+            game.active_piece.abs_locations().unwrap()
+        );
 
         // l spin 3
         let mut game = Game::new(None);
@@ -795,8 +1035,15 @@ mod game_tests {
         game.piece_rotate_ccw();
         println!("{}", game);
 
-        assert_eq!([Point { row: 1, col: 6 }, Point { row: 0, col: 4 }, Point { row: 0, col: 5 }, Point { row: 0, col: 6 }],
-                   game.active_piece.abs_locations().unwrap());
+        assert_eq!(
+            [
+                Point { row: 1, col: 6 },
+                Point { row: 0, col: 4 },
+                Point { row: 0, col: 5 },
+                Point { row: 0, col: 6 }
+            ],
+            game.active_piece.abs_locations().unwrap()
+        );
 
         // j spin 1
         let mut game = Game::new(None);
@@ -825,8 +1072,15 @@ mod game_tests {
         game.piece_rotate_ccw();
         println!("{}", game);
 
-        assert_eq!([Point { row: 1, col: 4 }, Point { row: 0, col: 4 }, Point { row: 0, col: 5 }, Point { row: 0, col: 6 }],
-                   game.active_piece.abs_locations().unwrap());
+        assert_eq!(
+            [
+                Point { row: 1, col: 4 },
+                Point { row: 0, col: 4 },
+                Point { row: 0, col: 5 },
+                Point { row: 0, col: 6 }
+            ],
+            game.active_piece.abs_locations().unwrap()
+        );
 
         // j spin 2
         let mut game = Game::new(None);
@@ -863,8 +1117,15 @@ mod game_tests {
         game.piece_rotate_cw();
         println!("{}", game);
 
-        assert_eq!([Point { row: 0, col: 6 }, Point { row: 1, col: 6 }, Point { row: 1, col: 5 }, Point { row: 1, col: 4 }],
-                   game.active_piece.abs_locations().unwrap());
+        assert_eq!(
+            [
+                Point { row: 0, col: 6 },
+                Point { row: 1, col: 6 },
+                Point { row: 1, col: 5 },
+                Point { row: 1, col: 4 }
+            ],
+            game.active_piece.abs_locations().unwrap()
+        );
 
         // j spin 3
         let mut game = Game::new(None);
@@ -902,8 +1163,15 @@ mod game_tests {
         game.piece_rotate_ccw();
         println!("{}", game);
 
-        assert_eq!([Point { row: 0, col: 5 }, Point { row: 1, col: 5 }, Point { row: 1, col: 4 }, Point { row: 1, col: 3 }],
-                   game.active_piece.abs_locations().unwrap());
+        assert_eq!(
+            [
+                Point { row: 0, col: 5 },
+                Point { row: 1, col: 5 },
+                Point { row: 1, col: 4 },
+                Point { row: 1, col: 3 }
+            ],
+            game.active_piece.abs_locations().unwrap()
+        );
 
         // s spin triple 1
         let mut game = Game::new(None);
@@ -946,8 +1214,15 @@ mod game_tests {
         game.piece_rotate_ccw();
         println!("{}", game);
 
-        assert_eq!([Point { row: 1, col: 3 }, Point { row: 2, col: 3 }, Point { row: 0, col: 4 }, Point { row: 1, col: 4 }],
-                   game.active_piece.abs_locations().unwrap());
+        assert_eq!(
+            [
+                Point { row: 1, col: 3 },
+                Point { row: 2, col: 3 },
+                Point { row: 0, col: 4 },
+                Point { row: 1, col: 4 }
+            ],
+            game.active_piece.abs_locations().unwrap()
+        );
 
         // s spin triple 2
         let mut game = Game::new(None);
@@ -992,8 +1267,15 @@ mod game_tests {
         game.piece_rotate_cw();
         println!("{}", game);
 
-        assert_eq!([Point { row: 1, col: 5 }, Point { row: 0, col: 5 }, Point { row: 2, col: 4 }, Point { row: 1, col: 4 }],
-                   game.active_piece.abs_locations().unwrap());
+        assert_eq!(
+            [
+                Point { row: 1, col: 5 },
+                Point { row: 0, col: 5 },
+                Point { row: 2, col: 4 },
+                Point { row: 1, col: 4 }
+            ],
+            game.active_piece.abs_locations().unwrap()
+        );
 
         // s spin triple 3
         let mut game = Game::new(None);
@@ -1053,8 +1335,15 @@ mod game_tests {
         game.piece_rotate_cw();
         println!("{}", game);
 
-        assert_eq!([Point { row: 1, col: 4 }, Point { row: 0, col: 4 }, Point { row: 2, col: 3 }, Point { row: 1, col: 3 }],
-                   game.active_piece.abs_locations().unwrap());
+        assert_eq!(
+            [
+                Point { row: 1, col: 4 },
+                Point { row: 0, col: 4 },
+                Point { row: 2, col: 3 },
+                Point { row: 1, col: 3 }
+            ],
+            game.active_piece.abs_locations().unwrap()
+        );
 
         // z spin triple 1
         let mut game = Game::new(None);
@@ -1103,8 +1392,15 @@ mod game_tests {
         game.piece_rotate_ccw();
         println!("{}", game);
 
-        assert_eq!([Point { row: 0, col: 4 }, Point { row: 1, col: 4 }, Point { row: 1, col: 5 }, Point { row: 2, col: 5 }],
-                   game.active_piece.abs_locations().unwrap());
+        assert_eq!(
+            [
+                Point { row: 0, col: 4 },
+                Point { row: 1, col: 4 },
+                Point { row: 1, col: 5 },
+                Point { row: 2, col: 5 }
+            ],
+            game.active_piece.abs_locations().unwrap()
+        );
 
         // j spin 1
         let mut game = Game::new(None);
@@ -1132,8 +1428,15 @@ mod game_tests {
         game.piece_rotate_cw();
         println!("{}", game);
 
-        assert_eq!([Point { row: 1, col: 3 }, Point { row: 0, col: 3 }, Point { row: 0, col: 4 }, Point { row: 0, col: 5 }],
-                   game.active_piece.abs_locations().unwrap());
+        assert_eq!(
+            [
+                Point { row: 1, col: 3 },
+                Point { row: 0, col: 3 },
+                Point { row: 0, col: 4 },
+                Point { row: 0, col: 5 }
+            ],
+            game.active_piece.abs_locations().unwrap()
+        );
 
         // j spin triple
         let mut game = Game::new(None);
@@ -1192,8 +1495,15 @@ mod game_tests {
         game.piece_rotate_ccw();
         println!("{}", game);
 
-        assert_eq!([Point { row: 0, col: 4 }, Point { row: 0, col: 5 }, Point { row: 1, col: 5 }, Point { row: 2, col: 5 }],
-                   game.active_piece.abs_locations().unwrap());
+        assert_eq!(
+            [
+                Point { row: 0, col: 4 },
+                Point { row: 0, col: 5 },
+                Point { row: 1, col: 5 },
+                Point { row: 2, col: 5 }
+            ],
+            game.active_piece.abs_locations().unwrap()
+        );
 
         // l spin 180 (?)
         let mut game = Game::new(None);
@@ -1262,8 +1572,15 @@ mod game_tests {
         game.piece_rotate_ccw();
         println!("{}", game);
 
-        assert_eq!([Point { row: 0, col: 5 }, Point { row: 2, col: 4 }, Point { row: 1, col: 4 }, Point { row: 0, col: 4 }],
-                   game.active_piece.abs_locations().unwrap());
+        assert_eq!(
+            [
+                Point { row: 0, col: 5 },
+                Point { row: 2, col: 4 },
+                Point { row: 1, col: 4 },
+                Point { row: 0, col: 4 }
+            ],
+            game.active_piece.abs_locations().unwrap()
+        );
 
         // l spin fuckery
         let mut game = Game::new(None);
@@ -1394,8 +1711,15 @@ mod game_tests {
         game.piece_rotate_ccw();
         println!("{}", game);
 
-        assert_eq!([Point { row: 0, col: 2 }, Point { row: 2, col: 1 }, Point { row: 1, col: 1 }, Point { row: 0, col: 1 }],
-                   game.active_piece.abs_locations().unwrap());
+        assert_eq!(
+            [
+                Point { row: 0, col: 2 },
+                Point { row: 2, col: 1 },
+                Point { row: 1, col: 1 },
+                Point { row: 0, col: 1 }
+            ],
+            game.active_piece.abs_locations().unwrap()
+        );
     }
 
     #[test]
@@ -1408,7 +1732,12 @@ mod game_tests {
         game.add_garbage_to_board(3, false);
 
         // testing if stuff moves up properly
-        for location in [Point { row: 4, col: 4 }, Point { row: 4, col: 5 }, Point { row: 3, col: 4 }, Point { row: 3, col: 5 }] {
+        for location in [
+            Point { row: 4, col: 4 },
+            Point { row: 4, col: 5 },
+            Point { row: 3, col: 4 },
+            Point { row: 3, col: 5 },
+        ] {
             assert!(game.board.get(location.row, location.col));
         }
 

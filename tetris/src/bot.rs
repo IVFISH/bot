@@ -4,10 +4,11 @@ use std::iter::zip;
 
 use polynomial::Polynomial;
 
+use crate::communications::*;
 use crate::game::*;
-use crate::players::*;
-use crate::placement::*;
 use crate::placement::piece_data::*;
+use crate::placement::*;
+use crate::players::*;
 
 use rand::Rng;
 
@@ -42,11 +43,10 @@ impl Player for Bot {
 
         // let num = rand::thread_rng().gen_range(0..moves.len());
         let min_score = scores.iter().min().unwrap();
-        let num = scores.iter().position(|x| x==min_score).unwrap();
+        let num = scores.iter().position(|x| x == min_score).unwrap();
 
         let mut action = moves.remove(num);
         action.push(Command::HardDrop);
-
         action
     }
 }
@@ -54,6 +54,20 @@ impl Player for Bot {
 pub type Score = usize;
 
 impl Bot {
+    fn suggest_next_move(&mut self) -> Suggestion {
+        let action = self.get_next_move();
+        let action = move_list_to_string(&action);
+
+        Suggestion {
+            input_list: action,
+            info: "".to_string(),
+        }
+    }
+
+    pub fn game_over(&mut self) {
+        self.game.game_data.game_over = true;
+    }
+
     pub fn score(&mut self, set_piece: bool) -> Score {
         // todo: add versus weights, such as combo/b2b/attack
 
@@ -66,10 +80,9 @@ impl Bot {
             // println!("{} {:?}", self.game, self.game.board.heights_for_each_column);
         }
 
-        let out =
-            self.get_holes_and_cell_covered_score() +
-                self.get_height_score() +
-                self.get_height_differences_score();
+        let out = self.get_holes_and_cell_covered_score()
+            + self.get_height_score()
+            + self.get_height_differences_score();
 
         if set_piece {
             self.game.board.remove_piece(&self.game.active_piece, true);
@@ -84,7 +97,9 @@ impl Bot {
     }
 
     fn get_height_differences_score(&self) -> usize {
-        self.game.board.get_height_differences()
+        self.game
+            .board
+            .get_height_differences()
             .iter()
             .map(|x| self.weight.adjacent_height_differences_weight.eval(*x))
             .sum()
@@ -224,8 +239,13 @@ impl Bot {
         self.game.active_piece = start.clone();
     }
 
-    fn do_undo_action(&mut self, action: fn(&mut Game) -> bool, command: Command, current_move: &Vec<Command>, used_placements: &Vec<Placement>)
-                      -> (Vec<MoveList>, Vec<Placement>, Vec<Score>) {
+    fn do_undo_action(
+        &mut self,
+        action: fn(&mut Game) -> bool,
+        command: Command,
+        current_move: &Vec<Command>,
+        used_placements: &Vec<Placement>,
+    ) -> (Vec<MoveList>, Vec<Placement>, Vec<Score>) {
         // saves the start state
 
         // while it can apply the action on the piece
@@ -247,8 +267,9 @@ impl Bot {
 
             self.game.piece_soft_drop();
 
-            if Bot::new_placement(&self.game.active_piece, &used_placements) &&
-                Bot::new_placement(&self.game.active_piece, &added_used) {
+            if Bot::new_placement(&self.game.active_piece, &used_placements)
+                && Bot::new_placement(&self.game.active_piece, &added_used)
+            {
                 added_moves.push(add_list.clone());
                 added_used.push(self.game.active_piece.clone());
                 added_scores.push(self.score(true));
@@ -268,7 +289,12 @@ impl Bot {
         let mut trivial_placements = Vec::new();
         let mut trivial_scores = Vec::new();
 
-        let rotations = [Command::None, Command::RotateCW, Command::Rotate180, Command::RotateCCW];
+        let rotations = [
+            Command::None,
+            Command::RotateCW,
+            Command::Rotate180,
+            Command::RotateCCW,
+        ];
 
         let row = self.game.active_piece.center.row;
 
@@ -302,13 +328,29 @@ impl Bot {
         (trivial_moves, trivial_placements, trivial_scores)
     }
 
-    fn add_non_trivial(&mut self, mut trivial: Vec<MoveList>, mut used_placements: Vec<Placement>, mut trivial_scores: Vec<Score>)
-                       -> (Vec<MoveList>, Vec<Placement>, Vec<Score>) {
+    fn add_non_trivial(
+        &mut self,
+        mut trivial: Vec<MoveList>,
+        mut used_placements: Vec<Placement>,
+        mut trivial_scores: Vec<Score>,
+    ) -> (Vec<MoveList>, Vec<Placement>, Vec<Score>) {
         let mut unchecked_moves = VecDeque::from(trivial.clone());
         let mut unchecked_placements = VecDeque::from(used_placements.clone());
 
-        let commands = [Command::MoveRight, Command::MoveLeft, Command::RotateCW, Command::RotateCCW, Command::Rotate180];
-        let actions = [Game::piece_right, Game::piece_left, Game::piece_rotate_cw, Game::piece_rotate_ccw, Game::piece_rotate_180];
+        let commands = [
+            Command::MoveRight,
+            Command::MoveLeft,
+            Command::RotateCW,
+            Command::RotateCCW,
+            Command::Rotate180,
+        ];
+        let actions = [
+            Game::piece_right,
+            Game::piece_left,
+            Game::piece_rotate_cw,
+            Game::piece_rotate_ccw,
+            Game::piece_rotate_180,
+        ];
 
         while !unchecked_moves.is_empty() {
             let current_move = unchecked_moves.pop_front().unwrap();
@@ -448,25 +490,97 @@ mod move_gen_tests {
 
         let non_trivial: Vec<&MoveList> = all_moves
             .iter()
-            .filter(
-                |x| !trivial_only.contains(*x)
-            ).collect();
+            .filter(|x| !trivial_only.contains(*x))
+            .collect();
 
         assert_eq!(non_trivial.len(), 12);
 
         let expected_out = vec![
-            vec![Command::None, Command::None, Command::SoftDrop, Command::MoveRight],
-            vec![Command::None, Command::None, Command::SoftDrop, Command::MoveRight, Command::MoveRight],
-            vec![Command::None, Command::None, Command::SoftDrop, Command::MoveRight, Command::MoveRight, Command::MoveRight],
-            vec![Command::None, Command::None, Command::SoftDrop, Command::MoveLeft],
-            vec![Command::None, Command::None, Command::SoftDrop, Command::MoveLeft, Command::MoveLeft],
-            vec![Command::None, Command::None, Command::SoftDrop, Command::MoveLeft, Command::MoveLeft, Command::MoveLeft],
-            vec![Command::Rotate180, Command::MoveRight, Command::SoftDrop, Command::MoveRight],
-            vec![Command::Rotate180, Command::MoveRight, Command::SoftDrop, Command::MoveRight, Command::MoveRight],
-            vec![Command::Rotate180, Command::MoveRight, Command::SoftDrop, Command::MoveRight, Command::MoveRight, Command::MoveRight],
-            vec![Command::Rotate180, Command::MoveRight, Command::SoftDrop, Command::MoveLeft],
-            vec![Command::Rotate180, Command::MoveRight, Command::SoftDrop, Command::MoveLeft, Command::MoveLeft],
-            vec![Command::Rotate180, Command::MoveRight, Command::SoftDrop, Command::MoveLeft, Command::MoveLeft, Command::MoveLeft]];
+            vec![
+                Command::None,
+                Command::None,
+                Command::SoftDrop,
+                Command::MoveRight,
+            ],
+            vec![
+                Command::None,
+                Command::None,
+                Command::SoftDrop,
+                Command::MoveRight,
+                Command::MoveRight,
+            ],
+            vec![
+                Command::None,
+                Command::None,
+                Command::SoftDrop,
+                Command::MoveRight,
+                Command::MoveRight,
+                Command::MoveRight,
+            ],
+            vec![
+                Command::None,
+                Command::None,
+                Command::SoftDrop,
+                Command::MoveLeft,
+            ],
+            vec![
+                Command::None,
+                Command::None,
+                Command::SoftDrop,
+                Command::MoveLeft,
+                Command::MoveLeft,
+            ],
+            vec![
+                Command::None,
+                Command::None,
+                Command::SoftDrop,
+                Command::MoveLeft,
+                Command::MoveLeft,
+                Command::MoveLeft,
+            ],
+            vec![
+                Command::Rotate180,
+                Command::MoveRight,
+                Command::SoftDrop,
+                Command::MoveRight,
+            ],
+            vec![
+                Command::Rotate180,
+                Command::MoveRight,
+                Command::SoftDrop,
+                Command::MoveRight,
+                Command::MoveRight,
+            ],
+            vec![
+                Command::Rotate180,
+                Command::MoveRight,
+                Command::SoftDrop,
+                Command::MoveRight,
+                Command::MoveRight,
+                Command::MoveRight,
+            ],
+            vec![
+                Command::Rotate180,
+                Command::MoveRight,
+                Command::SoftDrop,
+                Command::MoveLeft,
+            ],
+            vec![
+                Command::Rotate180,
+                Command::MoveRight,
+                Command::SoftDrop,
+                Command::MoveLeft,
+                Command::MoveLeft,
+            ],
+            vec![
+                Command::Rotate180,
+                Command::MoveRight,
+                Command::SoftDrop,
+                Command::MoveLeft,
+                Command::MoveLeft,
+                Command::MoveLeft,
+            ],
+        ];
 
         for out in expected_out {
             assert!(non_trivial.contains(&&out));
@@ -480,9 +594,13 @@ mod move_gen_tests {
         let (moves, used, score) = bot.find_trivial(false);
         let (_, placements, _) = bot.add_non_trivial(moves, used, score);
 
-        assert!(placements.iter().
-            any(|x|
-                x.abs_locations().unwrap() == [Point { row: 0, col: 5 }, Point { row: 0, col: 4 }, Point { row: 1, col: 4 }, Point { row: 1, col: 3 }]));
+        assert!(placements.iter().any(|x| x.abs_locations().unwrap()
+            == [
+                Point { row: 0, col: 5 },
+                Point { row: 0, col: 4 },
+                Point { row: 1, col: 4 },
+                Point { row: 1, col: 3 }
+            ]));
     }
 
     #[test]
@@ -492,9 +610,13 @@ mod move_gen_tests {
         let (moves, used, score) = bot.find_trivial(false);
         let (_, placements, _) = bot.add_non_trivial(moves, used, score);
 
-        assert!(placements.iter().
-            any(|x|
-                x.abs_locations().unwrap() == [Point { row: 1, col: 2 }, Point { row: 0, col: 3 }, Point { row: 1, col: 3 }, Point { row: 2, col: 3 }]));
+        assert!(placements.iter().any(|x| x.abs_locations().unwrap()
+            == [
+                Point { row: 1, col: 2 },
+                Point { row: 0, col: 3 },
+                Point { row: 1, col: 3 },
+                Point { row: 2, col: 3 }
+            ]));
     }
 
     #[test]
@@ -504,9 +626,13 @@ mod move_gen_tests {
         let (moves, used, score) = bot.find_trivial(false);
         let (_, placements, _) = bot.add_non_trivial(moves, used, score);
 
-        assert!(placements.iter().
-            any(|x|
-                x.abs_locations().unwrap() == [Point { row: 0, col: 2 }, Point { row: 2, col: 1 }, Point { row: 1, col: 1 }, Point { row: 0, col: 1 }]));
+        assert!(placements.iter().any(|x| x.abs_locations().unwrap()
+            == [
+                Point { row: 0, col: 2 },
+                Point { row: 2, col: 1 },
+                Point { row: 1, col: 1 },
+                Point { row: 0, col: 1 }
+            ]));
     }
 
     fn test_weights() -> Weights {
@@ -697,4 +823,3 @@ mod move_gen_tests {
         bot
     }
 }
-

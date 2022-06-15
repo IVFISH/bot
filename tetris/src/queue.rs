@@ -1,5 +1,5 @@
-use std::fmt::{Display, Formatter};
 use std::collections::VecDeque;
+use std::fmt::{Display, Formatter};
 
 use rand::Rng;
 
@@ -9,7 +9,7 @@ pub struct PieceQueue {
     min_queue_length: usize,
 
     queue: VecDeque<Piece>,
-    randomizer: RNG,
+    randomizer: BagType,
 
     // starts with seed
     num: usize,
@@ -33,7 +33,7 @@ impl Default for PieceQueue {
         Self {
             min_queue_length: 6,
             queue: VecDeque::new(),
-            randomizer: RNG::SevenBag,
+            randomizer: BagType::SevenBag,
             num: 1,
             a: 16807,
             m: 2147483647,
@@ -43,7 +43,6 @@ impl Default for PieceQueue {
 
 impl PieceQueue {
     pub fn new(optional_seed: Option<usize>) -> Self {
-
         let num = optional_seed.unwrap_or_else(|| rand::thread_rng().gen_range(0..2147483646));
 
         Self {
@@ -61,7 +60,7 @@ impl PieceQueue {
         arr[piece].to_owned()
     }
 
-    pub fn new_alt_randomizer(seed: usize, randomizer: RNG) -> Self {
+    pub fn new_alt_randomizer(seed: usize, randomizer: BagType) -> Self {
         Self {
             num: seed,
             randomizer,
@@ -85,11 +84,11 @@ impl PieceQueue {
 
     fn next_bag(&mut self) {
         match self.randomizer {
-            RNG::SevenBag => self.seven_bag(),
-            RNG::FourteenBag => self.fourteen_bag(),
-            RNG::Classic => self.classic(),
-            RNG::Pairs => self.pairs(),
-            RNG::Mayhem => self.total_mayhem()
+            BagType::SevenBag => self.seven_bag(),
+            BagType::FourteenBag => self.fourteen_bag(),
+            BagType::Classic => self.classic(),
+            BagType::Pairs => self.pairs(),
+            BagType::Mayhem => self.total_mayhem(),
         }
     }
 
@@ -164,7 +163,7 @@ impl Default for GarbageQueue {
     }
 }
 
-pub enum RNG {
+pub enum BagType {
     SevenBag,
     FourteenBag,
     Classic,
@@ -175,7 +174,6 @@ pub enum RNG {
 #[cfg(test)]
 mod piece_queue_tests {
     use super::*;
-
 
     #[test]
     fn test_seven_bag() {
@@ -196,8 +194,7 @@ mod piece_queue_tests {
     fn test_match_with_osk() {
         let mut queue = PieceQueue::new(Some(15));
         // ITOSLJZS JOTZLIL
-        let osk_queue =
-            [4, 6, 2, 3, 1, 5, 0, 3, 5, 2, 6, 0, 1, 4];
+        let osk_queue = [4, 6, 2, 3, 1, 5, 0, 3, 5, 2, 6, 0, 1, 4];
 
         for piece in osk_queue {
             assert_eq!(queue.next(), piece);
@@ -205,8 +202,7 @@ mod piece_queue_tests {
 
         let mut queue = PieceQueue::new(Some(7000));
         // TSJOLIZ ITLSJZO
-        let osk_queue =
-            [6, 3, 5, 2, 1, 4, 0, 4, 6, 1, 3, 5, 0, 2];
+        let osk_queue = [6, 3, 5, 2, 1, 4, 0, 4, 6, 1, 3, 5, 0, 2];
 
         for piece in osk_queue {
             assert_eq!(queue.next(), piece);
@@ -228,8 +224,5 @@ mod garbage_item_test {
 
         // checks that not everything is the same
         assert!(!arr.windows(2).all(|w| w[0] == w[1]));
-
-
-
     }
 }

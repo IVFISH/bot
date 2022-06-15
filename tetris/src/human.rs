@@ -1,10 +1,9 @@
 use crate::game::*;
-use crate::players::*;
-use crate::placement::*;
 use crate::placement::piece_data::*;
+use crate::placement::*;
+use crate::players::*;
 use crate::queue::PieceQueue;
 use std::fmt::{Display, Formatter};
-
 
 pub struct Human {
     pub game: Game,
@@ -34,11 +33,11 @@ impl Player for Human {
 
     fn get_next_move(&mut self) -> MoveList {
         if let Some(eshan) = &self.next_move {
-            let out = vec!(string_to_command(eshan.clone()));
+            let out = vec![string_to_command(eshan.clone())];
             self.next_move = None;
             return out;
         }
-        return vec!(Command::None);
+        return vec![Command::None];
     }
 }
 
@@ -62,15 +61,15 @@ fn string_to_command(command_str: String) -> Command {
         "HardDrop" => Command::HardDrop,
         "SoftDrop" => Command::SoftDrop,
         "HoldPiece" => Command::Hold,
-        _ => Command::None
+        _ => Command::None,
     }
 }
 
-use tungstenite::{connect, Message};
-use url::Url;
+use serde::{Deserialize, Serialize};
 use serde_json;
 use serde_json::json;
-use serde::{Serialize, Deserialize};
+use tungstenite::{connect, Message};
+use url::Url;
 
 #[derive(Serialize, Deserialize)]
 struct Information {
@@ -83,20 +82,25 @@ pub fn human_play() {
     let empty_board = serde_json::to_string(&human.get_game().get_board_json());
     let new_queue = serde_json::to_string(&human.get_game().get_piece_queue_json());
 
-
     // Connect to the WS server locally
-    let (mut socket, _response) = connect(Url::parse("ws://localhost:5678").unwrap()).expect("Can't connect");
+    let (mut socket, _response) =
+        connect(Url::parse("ws://localhost:5678").unwrap()).expect("Can't connect");
 
-    socket.write_message(Message::Text(new_queue.unwrap())).unwrap();
-    socket.write_message(Message::Text(empty_board.unwrap())).unwrap();
-
+    socket
+        .write_message(Message::Text(new_queue.unwrap()))
+        .unwrap();
+    socket
+        .write_message(Message::Text(empty_board.unwrap()))
+        .unwrap();
 
     // Loop forever, handling parsing each message
     loop {
         let msg = socket.read_message().expect("Error reading message");
         let msg = match msg {
-            Message::Text(s) => { s }
-            _ => { panic!("Cannot connect to GUI. Consider running main.py") }
+            Message::Text(s) => s,
+            _ => {
+                panic!("Cannot connect to GUI. Consider running main.py")
+            }
         };
 
         let parsed: Information = serde_json::from_str(&msg).expect("Can't parse to JSON");
@@ -112,13 +116,14 @@ pub fn human_play() {
         socket.write_message(Message::Text(queue.unwrap())).unwrap();
 
         if let Some(hold) = human.get_game().hold_piece {
-            let hold = serde_json::to_string(
-                &json!({
+            let hold = serde_json::to_string(&json!({
                         "hold": PieceQueue::int_to_piece(hold),
                         "kind": String::from("hold")}));
             socket.write_message(Message::Text(hold.unwrap())).unwrap();
         }
 
-        socket.write_message(Message::Text(board_state.unwrap())).unwrap();
+        socket
+            .write_message(Message::Text(board_state.unwrap()))
+            .unwrap();
     }
 }
