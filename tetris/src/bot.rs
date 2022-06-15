@@ -38,8 +38,11 @@ impl Player for Bot {
     }
 
     fn get_next_move(&mut self) -> MoveList {
-        let mut moves = self.all_moves();
-        let num = rand::thread_rng().gen_range(0..moves.len());
+        let (mut moves, scores) = self.all_moves();
+
+        // let num = rand::thread_rng().gen_range(0..moves.len());
+        let min_score = scores.iter().min().unwrap();
+        let num = scores.iter().position(|x| x==min_score).unwrap();
 
         let mut action = moves.remove(num);
         action.push(Command::HardDrop);
@@ -54,12 +57,13 @@ impl Bot {
     pub fn score(&mut self, set_piece: bool) -> Score {
         // todo: add versus weights, such as combo/b2b/attack
 
-        self.score_board(set_piece)
+        self.score_board(set_piece) + self.score_game()
     }
 
     fn score_board(&mut self, set_piece: bool) -> Score {
         if set_piece {
             self.game.board.set_piece(&self.game.active_piece, true);
+            // println!("{} {:?}", self.game, self.game.board.heights_for_each_column);
         }
 
         let out =
@@ -69,6 +73,7 @@ impl Bot {
 
         if set_piece {
             self.game.board.remove_piece(&self.game.active_piece, true);
+            // println!("{} {:?}", self.game, self.game.board.heights_for_each_column);
         }
 
         out
@@ -108,7 +113,7 @@ impl Bot {
         }
     }
 
-    pub fn all_moves(&mut self) -> Vec<MoveList> {
+    pub fn all_moves(&mut self) -> (Vec<MoveList>, Vec<Score>) {
         let start_piece = self.game.get_active_piece_type();
         let hold_piece;
 
@@ -118,19 +123,20 @@ impl Bot {
             hold_piece = self.game.piece_queue_peek();
         }
 
-        let (moves, used) = self.find_trivial(false);
-        let (mut moves, _) = self.add_non_trivial(moves, used);
+        let (moves, used, scores) = self.find_trivial(false);
+        let (mut moves, _, mut scores) = self.add_non_trivial(moves, used, scores);
 
         self.game.active_piece = Placement::new(hold_piece);
 
-        let (hold_moves, used) = self.find_trivial(true);
-        let (hold_moves, _) = self.add_non_trivial(hold_moves, used);
+        let (hold_moves, used, hold_scores) = self.find_trivial(true);
+        let (hold_moves, _, hold_scores) = self.add_non_trivial(hold_moves, used, hold_scores);
 
         moves.extend(hold_moves);
+        scores.extend(hold_scores);
 
         self.game.active_piece = Placement::new(start_piece);
 
-        moves
+        (moves, scores)
     }
 
     fn all_placements(&mut self) -> Vec<Placement> {
@@ -145,13 +151,13 @@ impl Bot {
             hold_piece = self.game.piece_queue_peek();
         }
 
-        let (moves, used) = self.find_trivial(false);
-        let (_, mut placements) = self.add_non_trivial(moves, used);
+        let (moves, used, score) = self.find_trivial(false);
+        let (_, mut placements, _) = self.add_non_trivial(moves, used, score);
 
         self.game.active_piece = Placement::new(hold_piece);
 
-        let (hold_moves, used) = self.find_trivial(true);
-        let (_, hold_placements) = self.add_non_trivial(hold_moves, used);
+        let (hold_moves, used, hold_score) = self.find_trivial(true);
+        let (_, hold_placements, _) = self.add_non_trivial(hold_moves, used, hold_score);
 
         placements.extend(hold_placements);
 
@@ -219,7 +225,7 @@ impl Bot {
     }
 
     fn do_undo_action(&mut self, action: fn(&mut Game) -> bool, command: Command, current_move: &Vec<Command>, used_placements: &Vec<Placement>)
-                      -> (Vec<MoveList>, Vec<Placement>) {
+                      -> (Vec<MoveList>, Vec<Placement>, Vec<Score>) {
         // saves the start state
 
         // while it can apply the action on the piece
@@ -231,6 +237,7 @@ impl Bot {
 
         let mut added_moves = vec![];
         let mut added_used = vec![];
+        let mut added_scores = vec![];
 
         let mut add_list = current_move.clone();
         add_list.push(Command::SoftDrop);
@@ -244,6 +251,7 @@ impl Bot {
                 Bot::new_placement(&self.game.active_piece, &added_used) {
                 added_moves.push(add_list.clone());
                 added_used.push(self.game.active_piece.clone());
+                added_scores.push(self.score(true));
                 continue;
             }
 
@@ -252,12 +260,13 @@ impl Bot {
 
         self.game.active_piece = save;
 
-        (added_moves, added_used)
+        (added_moves, added_used, added_scores)
     }
 
-    fn find_trivial(&mut self, hold: bool) -> (Vec<MoveList>, Vec<Placement>) {
+    fn find_trivial(&mut self, hold: bool) -> (Vec<MoveList>, Vec<Placement>, Vec<Score>) {
         let mut trivial_moves = Vec::new();
         let mut trivial_placements = Vec::new();
+        let mut trivial_scores = Vec::new();
 
         let rotations = [Command::None, Command::RotateCW, Command::Rotate180, Command::RotateCCW];
 
@@ -278,6 +287,7 @@ impl Bot {
                     trivial_moves.push(inputs);
 
                     self.game.piece_soft_drop();
+                    trivial_scores.push(self.score(true));
                     trivial_placements.push(self.game.active_piece.clone());
                     self.game.active_piece.center.row = row;
                 }
@@ -289,11 +299,11 @@ impl Bot {
 
         self.game.reset_active_piece();
 
-        (trivial_moves, trivial_placements)
+        (trivial_moves, trivial_placements, trivial_scores)
     }
 
-    fn add_non_trivial(&mut self, mut trivial: Vec<MoveList>, mut used_placements: Vec<Placement>)
-                       -> (Vec<MoveList>, Vec<Placement>) {
+    fn add_non_trivial(&mut self, mut trivial: Vec<MoveList>, mut used_placements: Vec<Placement>, mut trivial_scores: Vec<Score>)
+                       -> (Vec<MoveList>, Vec<Placement>, Vec<Score>) {
         let mut unchecked_moves = VecDeque::from(trivial.clone());
         let mut unchecked_placements = VecDeque::from(used_placements.clone());
 
@@ -305,19 +315,20 @@ impl Bot {
             self.game.active_piece = unchecked_placements.pop_front().unwrap();
 
             for (command, action) in zip(commands, actions) {
-                let (new_trivial, new_used_placements) =
+                let (new_trivial, new_used_placements, new_scores) =
                     self.do_undo_action(action, command, &current_move, &used_placements);
 
                 unchecked_moves.append(&mut VecDeque::from(new_trivial.clone()));
                 unchecked_placements.append(&mut VecDeque::from(new_used_placements.clone()));
                 trivial.extend(new_trivial);
                 used_placements.extend(new_used_placements);
+                trivial_scores.extend(new_scores)
             }
         }
 
         self.game.reset_active_piece();
 
-        (trivial, used_placements)
+        (trivial, used_placements, trivial_scores)
     }
 
     fn new_placement(placement: &Placement, used_placements: &Vec<Placement>) -> bool {
@@ -349,11 +360,11 @@ pub struct Weights {
 impl Default for Weights {
     fn default() -> Self {
         Self {
-            height_weight: Polynomial::new(vec![0, 5, 1]),
+            height_weight: Polynomial::new(vec![0, 0, 1]),
 
-            adjacent_height_differences_weight: Polynomial::new(vec![0, 2, 1]),
-            num_hole_weight: Polynomial::new(vec![0, 12, 0]),
-            cell_covered_weight: Polynomial::new(vec![0, 10, 1]),
+            adjacent_height_differences_weight: Polynomial::new(vec![0, 3, 0]),
+            num_hole_weight: Polynomial::new(vec![0, 5, 0]),
+            cell_covered_weight: Polynomial::new(vec![0, 0, 1]),
 
             b2b_weight: Polynomial::new(vec![0, -1, -5]),
             combo_weight: Polynomial::new(vec![0, -2, -2]),
@@ -373,7 +384,7 @@ pub fn bot_play() {
         bot.make_move();
         println!("{}", bot.game);
 
-        thread::sleep(time::Duration::from_millis(500));
+        thread::sleep(time::Duration::from_millis(100));
     }
 }
 
@@ -431,9 +442,9 @@ mod move_gen_tests {
         bot.game.piece_das_right();
         bot.game.piece_hard_drop(true).expect("die");
 
-        let (trivial, used) = bot.find_trivial(false);
+        let (trivial, used, score) = bot.find_trivial(false);
         let trivial_only = trivial.clone();
-        let (all_moves, _) = bot.add_non_trivial(trivial, used);
+        let (all_moves, _, _) = bot.add_non_trivial(trivial, used, score);
 
         let non_trivial: Vec<&MoveList> = all_moves
             .iter()
@@ -466,8 +477,8 @@ mod move_gen_tests {
     fn test_z_spin() {
         let mut bot = make_z_spin_1();
 
-        let (moves, used) = bot.find_trivial(false);
-        let (_, placements) = bot.add_non_trivial(moves, used);
+        let (moves, used, score) = bot.find_trivial(false);
+        let (_, placements, _) = bot.add_non_trivial(moves, used, score);
 
         assert!(placements.iter().
             any(|x|
@@ -478,8 +489,8 @@ mod move_gen_tests {
     fn test_tst() {
         let mut bot = make_tst();
 
-        let (moves, used) = bot.find_trivial(false);
-        let (_, placements) = bot.add_non_trivial(moves, used);
+        let (moves, used, score) = bot.find_trivial(false);
+        let (_, placements, _) = bot.add_non_trivial(moves, used, score);
 
         assert!(placements.iter().
             any(|x|
@@ -490,8 +501,8 @@ mod move_gen_tests {
     fn test_l_spin_jank() {
         let mut bot = make_fuckery();
 
-        let (moves, used) = bot.find_trivial(false);
-        let (_, placements) = bot.add_non_trivial(moves, used);
+        let (moves, used, score) = bot.find_trivial(false);
+        let (_, placements, _) = bot.add_non_trivial(moves, used, score);
 
         assert!(placements.iter().
             any(|x|
