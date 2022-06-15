@@ -51,27 +51,30 @@ impl Player for Bot {
 pub type Score = usize;
 
 impl Bot {
-    pub fn score(&mut self) -> Score {
+    pub fn score(&mut self, set_piece: bool) -> Score {
         // todo: add versus weights, such as combo/b2b/attack
 
-        self.score_board()
+        self.score_board(set_piece)
     }
 
-    fn score_board(&mut self) -> Score {
-        self.game.board.set_piece(&self.game.active_piece, false);
+    fn score_board(&mut self, set_piece: bool) -> Score {
+        if set_piece {
+            self.game.board.set_piece(&self.game.active_piece, true);
+        }
 
         let out =
             self.get_holes_and_cell_covered_score() +
-            self.get_height_score() +
-            self.get_height_differences_score();
+                self.get_height_score() +
+                self.get_height_differences_score();
 
-        self.game.board.remove_piece(&self.game.active_piece, false);
+        if set_piece {
+            self.game.board.remove_piece(&self.game.active_piece, true);
+        }
 
         out
     }
 
     fn score_game(&mut self) -> Score {
-
         0
     }
 
@@ -83,19 +86,8 @@ impl Bot {
     }
 
     pub fn get_height_score(&self) -> usize {
-        let mut out = 0;
         let total_height = self.game.board.max_filled_height();
-        out += self.weight.height_weight.eval(total_height);
-
-        if let Some(half_height) = out.checked_sub(10) {
-            out += self.weight.top_half_height_weight.eval(half_height);
-
-            if let Some(quarter_height) = out.checked_sub(15) {
-                out += self.weight.top_quarter_height_weight.eval(quarter_height);
-            }
-        }
-
-        out
+        self.weight.height_weight.eval(total_height)
     }
 
     pub fn get_holes_and_cell_covered_score(&self) -> usize {
@@ -344,24 +336,20 @@ impl Bot {
 }
 
 pub struct Weights {
-    top_quarter_height_weight: Polynomial<usize>,
-    top_half_height_weight: Polynomial<usize>,
-    height_weight: Polynomial<usize>,
+    pub height_weight: Polynomial<usize>,
 
-    adjacent_height_differences_weight: Polynomial<usize>,
-    num_hole_weight: Polynomial<usize>,
-    cell_covered_weight: Polynomial<usize>,
+    pub adjacent_height_differences_weight: Polynomial<usize>,
+    pub num_hole_weight: Polynomial<usize>,
+    pub cell_covered_weight: Polynomial<usize>,
 
-    b2b_weight: Polynomial<i8>,
-    combo_weight: Polynomial<i8>
+    pub b2b_weight: Polynomial<i8>,
+    pub combo_weight: Polynomial<i8>,
 }
 
 impl Default for Weights {
     fn default() -> Self {
         Self {
-            top_quarter_height_weight: Polynomial::new(vec![0, 5, 10]),
-            top_half_height_weight: Polynomial::new(vec![0, 3, 1]),
-            height_weight: Polynomial::new(vec![0, 5, 0]),
+            height_weight: Polynomial::new(vec![0, 5, 1]),
 
             adjacent_height_differences_weight: Polynomial::new(vec![0, 2, 1]),
             num_hole_weight: Polynomial::new(vec![0, 12, 0]),
@@ -369,7 +357,6 @@ impl Default for Weights {
 
             b2b_weight: Polynomial::new(vec![0, -1, -5]),
             combo_weight: Polynomial::new(vec![0, -2, -2]),
-
         }
     }
 }
@@ -400,6 +387,34 @@ pub fn bot_debug() {
 #[cfg(test)]
 mod move_gen_tests {
     use super::*;
+
+    #[test]
+    fn test_score_board() {
+        let mut bot = Bot::new(None, test_weights());
+
+        bot.game.board.add(1, 1, true);
+        bot.game.board.add(1, 2, true);
+        bot.game.board.add(5, 1, true);
+        bot.game.board.add(3, 7, true);
+
+        assert_eq!(bot.score_board(false), 344)
+    }
+
+    #[test]
+    fn test_score_fuckery_board() {
+        let mut bot = make_fuckery();
+
+        // 15^2 + 5(15) = 300
+        // println!("{}", bot.get_height_score());
+
+        // [5, 3] = 35 + 15 = 50
+        // println!("{}", bot.get_height_differences_score());
+
+        // 13 * 6 = 78
+        // 113^2 + 5(113) = 13334
+
+        assert_eq!(bot.score_board(false), 13762);
+    }
 
     #[test]
     fn test_tucks() {
@@ -483,6 +498,19 @@ mod move_gen_tests {
                 x.abs_locations().unwrap() == [Point { row: 0, col: 2 }, Point { row: 2, col: 1 }, Point { row: 1, col: 1 }, Point { row: 0, col: 1 }]));
     }
 
+    fn test_weights() -> Weights {
+        Weights {
+            height_weight: Polynomial::new(vec![0, 5, 1]),
+
+            adjacent_height_differences_weight: Polynomial::new(vec![0, 2, 1]),
+            num_hole_weight: Polynomial::new(vec![0, 6, 0]),
+            cell_covered_weight: Polynomial::new(vec![0, 5, 1]),
+
+            b2b_weight: Polynomial::new(vec![0, -1, -5]),
+            combo_weight: Polynomial::new(vec![0, -2, -2]),
+        }
+    }
+
     fn make_z_spin_1() -> Bot {
         let mut bot = Bot::new(None, Weights::default());
         bot.game.active_piece = Placement::new(0);
@@ -548,112 +576,112 @@ mod move_gen_tests {
     }
 
     fn make_fuckery() -> Bot {
-        let mut bot = Bot::new(None, Weights::default());
+        let mut bot = Bot::new(None, test_weights());
         bot.game.active_piece = Placement::new(1);
 
-        bot.game.add(0, 0, false);
-        bot.game.add(1, 0, false);
-        bot.game.add(2, 0, false);
-        bot.game.add(3, 0, false);
-        bot.game.add(4, 0, false);
-        bot.game.add(5, 0, false);
-        bot.game.add(6, 0, false);
-        bot.game.add(7, 0, false);
-        bot.game.add(8, 0, false);
-        bot.game.add(9, 0, false);
-        bot.game.add(10, 0, false);
-        bot.game.add(11, 0, false);
-        bot.game.add(12, 0, false);
-        bot.game.add(13, 0, false);
-        bot.game.add(14, 0, false);
-        bot.game.add(4, 1, false);
-        bot.game.add(5, 1, false);
-        bot.game.add(6, 1, false);
-        bot.game.add(7, 1, false);
-        bot.game.add(8, 1, false);
-        bot.game.add(9, 1, false);
-        bot.game.add(10, 1, false);
-        bot.game.add(11, 1, false);
-        bot.game.add(12, 1, false);
-        bot.game.add(14, 1, false);
-        bot.game.add(1, 2, false);
-        bot.game.add(2, 2, false);
-        bot.game.add(5, 2, false);
-        bot.game.add(6, 2, false);
-        bot.game.add(7, 2, false);
-        bot.game.add(8, 2, false);
-        bot.game.add(9, 2, false);
-        bot.game.add(0, 3, false);
-        bot.game.add(1, 3, false);
-        bot.game.add(6, 3, false);
-        bot.game.add(7, 3, false);
-        bot.game.add(8, 3, false);
-        bot.game.add(9, 3, false);
-        bot.game.add(11, 3, false);
-        bot.game.add(12, 3, false);
-        bot.game.add(0, 4, false);
-        bot.game.add(1, 4, false);
-        bot.game.add(3, 4, false);
-        bot.game.add(4, 4, false);
-        bot.game.add(6, 4, false);
-        bot.game.add(9, 4, false);
-        bot.game.add(12, 4, false);
-        bot.game.add(0, 5, false);
-        bot.game.add(1, 5, false);
-        bot.game.add(2, 5, false);
-        bot.game.add(3, 5, false);
-        bot.game.add(4, 5, false);
-        bot.game.add(12, 5, false);
-        bot.game.add(0, 6, false);
-        bot.game.add(1, 6, false);
-        bot.game.add(2, 6, false);
-        bot.game.add(3, 6, false);
-        bot.game.add(4, 6, false);
-        bot.game.add(5, 6, false);
-        bot.game.add(6, 6, false);
-        bot.game.add(7, 6, false);
-        bot.game.add(9, 6, false);
-        bot.game.add(10, 6, false);
-        bot.game.add(11, 6, false);
-        bot.game.add(12, 6, false);
-        bot.game.add(0, 7, false);
-        bot.game.add(1, 7, false);
-        bot.game.add(2, 7, false);
-        bot.game.add(3, 7, false);
-        bot.game.add(4, 7, false);
-        bot.game.add(5, 7, false);
-        bot.game.add(6, 7, false);
-        bot.game.add(7, 7, false);
-        bot.game.add(9, 7, false);
-        bot.game.add(10, 7, false);
-        bot.game.add(11, 7, false);
-        bot.game.add(12, 7, false);
-        bot.game.add(0, 8, false);
-        bot.game.add(1, 8, false);
-        bot.game.add(2, 8, false);
-        bot.game.add(3, 8, false);
-        bot.game.add(4, 8, false);
-        bot.game.add(5, 8, false);
-        bot.game.add(6, 8, false);
-        bot.game.add(7, 8, false);
-        bot.game.add(8, 8, false);
-        bot.game.add(9, 8, false);
-        bot.game.add(10, 8, false);
-        bot.game.add(11, 8, false);
-        bot.game.add(12, 8, false);
-        bot.game.add(0, 9, false);
-        bot.game.add(1, 9, false);
-        bot.game.add(2, 9, false);
-        bot.game.add(3, 9, false);
-        bot.game.add(4, 9, false);
-        bot.game.add(5, 9, false);
-        bot.game.add(6, 9, false);
-        bot.game.add(7, 9, false);
-        bot.game.add(8, 9, false);
-        bot.game.add(9, 9, false);
-        bot.game.add(10, 9, false);
-        bot.game.add(11, 9, false);
-        bot.game.add(12, 9, false);
+        bot.game.add(0, 0, true);
+        bot.game.add(1, 0, true);
+        bot.game.add(2, 0, true);
+        bot.game.add(3, 0, true);
+        bot.game.add(4, 0, true);
+        bot.game.add(5, 0, true);
+        bot.game.add(6, 0, true);
+        bot.game.add(7, 0, true);
+        bot.game.add(8, 0, true);
+        bot.game.add(9, 0, true);
+        bot.game.add(10, 0, true);
+        bot.game.add(11, 0, true);
+        bot.game.add(12, 0, true);
+        bot.game.add(13, 0, true);
+        bot.game.add(14, 0, true);
+        bot.game.add(4, 1, true);
+        bot.game.add(5, 1, true);
+        bot.game.add(6, 1, true);
+        bot.game.add(7, 1, true);
+        bot.game.add(8, 1, true);
+        bot.game.add(9, 1, true);
+        bot.game.add(10, 1, true);
+        bot.game.add(11, 1, true);
+        bot.game.add(12, 1, true);
+        bot.game.add(14, 1, true);
+        bot.game.add(1, 2, true);
+        bot.game.add(2, 2, true);
+        bot.game.add(5, 2, true);
+        bot.game.add(6, 2, true);
+        bot.game.add(7, 2, true);
+        bot.game.add(8, 2, true);
+        bot.game.add(9, 2, true);
+        bot.game.add(0, 3, true);
+        bot.game.add(1, 3, true);
+        bot.game.add(6, 3, true);
+        bot.game.add(7, 3, true);
+        bot.game.add(8, 3, true);
+        bot.game.add(9, 3, true);
+        bot.game.add(11, 3, true);
+        bot.game.add(12, 3, true);
+        bot.game.add(0, 4, true);
+        bot.game.add(1, 4, true);
+        bot.game.add(3, 4, true);
+        bot.game.add(4, 4, true);
+        bot.game.add(6, 4, true);
+        bot.game.add(9, 4, true);
+        bot.game.add(12, 4, true);
+        bot.game.add(0, 5, true);
+        bot.game.add(1, 5, true);
+        bot.game.add(2, 5, true);
+        bot.game.add(3, 5, true);
+        bot.game.add(4, 5, true);
+        bot.game.add(12, 5, true);
+        bot.game.add(0, 6, true);
+        bot.game.add(1, 6, true);
+        bot.game.add(2, 6, true);
+        bot.game.add(3, 6, true);
+        bot.game.add(4, 6, true);
+        bot.game.add(5, 6, true);
+        bot.game.add(6, 6, true);
+        bot.game.add(7, 6, true);
+        bot.game.add(9, 6, true);
+        bot.game.add(10, 6, true);
+        bot.game.add(11, 6, true);
+        bot.game.add(12, 6, true);
+        bot.game.add(0, 7, true);
+        bot.game.add(1, 7, true);
+        bot.game.add(2, 7, true);
+        bot.game.add(3, 7, true);
+        bot.game.add(4, 7, true);
+        bot.game.add(5, 7, true);
+        bot.game.add(6, 7, true);
+        bot.game.add(7, 7, true);
+        bot.game.add(9, 7, true);
+        bot.game.add(10, 7, true);
+        bot.game.add(11, 7, true);
+        bot.game.add(12, 7, true);
+        bot.game.add(0, 8, true);
+        bot.game.add(1, 8, true);
+        bot.game.add(2, 8, true);
+        bot.game.add(3, 8, true);
+        bot.game.add(4, 8, true);
+        bot.game.add(5, 8, true);
+        bot.game.add(6, 8, true);
+        bot.game.add(7, 8, true);
+        bot.game.add(8, 8, true);
+        bot.game.add(9, 8, true);
+        bot.game.add(10, 8, true);
+        bot.game.add(11, 8, true);
+        bot.game.add(12, 8, true);
+        bot.game.add(0, 9, true);
+        bot.game.add(1, 9, true);
+        bot.game.add(2, 9, true);
+        bot.game.add(3, 9, true);
+        bot.game.add(4, 9, true);
+        bot.game.add(5, 9, true);
+        bot.game.add(6, 9, true);
+        bot.game.add(7, 9, true);
+        bot.game.add(8, 9, true);
+        bot.game.add(9, 9, true);
+        bot.game.add(10, 9, true);
+        bot.game.add(11, 9, true);
+        bot.game.add(12, 9, true);
 
         bot
     }
