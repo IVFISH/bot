@@ -17,7 +17,7 @@ pub struct Board {
     height: usize,
 
     arr: [[bool; BOARD_WIDTH]; BOARD_HEIGHT],
-    heights_for_each_column: [usize; BOARD_WIDTH],
+    pub heights_for_each_column: [usize; BOARD_WIDTH],
 }
 
 impl Board {

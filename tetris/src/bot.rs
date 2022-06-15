@@ -38,8 +38,20 @@ impl Player for Bot {
     }
 
     fn get_next_move(&mut self) -> MoveList {
-        let mut moves = self.all_moves();
-        let num = rand::thread_rng().gen_range(0..moves.len());
+        let (mut moves, placements) = self.all_moves_and_placements();
+
+        let mut scores = vec![];
+
+        for placement in placements {
+            self.game.active_piece = placement;
+            scores.push(self.score_board(true));
+        }
+
+        self.game.reset_active_piece();
+
+        let min_score = scores.iter().min().unwrap();
+        let num = scores.iter().position(|x| x==min_score).unwrap();
+        // println!("BEST: {} INDEX {}", min_score, num);
 
         let mut action = moves.remove(num);
         action.push(Command::HardDrop);
@@ -68,6 +80,8 @@ impl Bot {
                 self.get_height_differences_score();
 
         if set_piece {
+            // println!("{:?}", self.game.board.heights_for_each_column);
+            // println!("{} SCORE = {}", self.game, out);
             self.game.board.remove_piece(&self.game.active_piece, true);
         }
 
@@ -106,6 +120,32 @@ impl Bot {
             game: Game::new(optional_seed),
             weight,
         }
+    }
+
+    pub fn all_moves_and_placements(&mut self) -> (Vec<MoveList>, Vec<Placement>) {
+        let start_piece = self.game.get_active_piece_type();
+        let hold_piece;
+
+        if let Some(piece) = self.game.hold_piece {
+            hold_piece = piece
+        } else {
+            hold_piece = self.game.piece_queue_peek();
+        }
+
+        let (moves, used) = self.find_trivial(false);
+        let (mut moves, mut used) = self.add_non_trivial(moves, used);
+
+        // self.game.active_piece = Placement::new(hold_piece);
+        //
+        // let (hold_moves, hold_used) = self.find_trivial(true);
+        // let (hold_moves, hold_used) = self.add_non_trivial(hold_moves, hold_used);
+        //
+        // moves.extend(hold_moves);
+        // used.extend(hold_used);
+
+        self.game.active_piece = Placement::new(start_piece);
+
+        (moves, used)
     }
 
     pub fn all_moves(&mut self) -> Vec<MoveList> {
@@ -362,6 +402,7 @@ impl Default for Weights {
 }
 
 use std::{thread, time};
+use itertools::min;
 
 pub fn bot_play() {
     let mut bot = Bot::default();
@@ -373,7 +414,7 @@ pub fn bot_play() {
         bot.make_move();
         println!("{}", bot.game);
 
-        thread::sleep(time::Duration::from_millis(500));
+        thread::sleep(time::Duration::from_millis(1000));
     }
 }
 
