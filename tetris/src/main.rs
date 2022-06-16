@@ -50,11 +50,12 @@ async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
                         if msg.is_text() ||msg.is_binary() {
                             let parsed: serde_json::Value = serde_json::from_str(msg.to_text().unwrap()).unwrap();
                                 match parsed["type"].as_str().unwrap(){
-                                    "play" => (|| {
+                                    "play" => {
                                         println!("seed is {}, current seed is {}, {} pieces placed", parsed["seed"], parsed["currentseed"], parsed["placed"]);
                                         // println!("play received with board of {}", parsed["board"]);
-                                        // parsed["board"].as_array().unwrap();
-                                    })(),
+                                        let converted: Vec<Vec<bool>> = parsed["board"].as_array().unwrap().iter().map(|wrappedvec: &serde_json::Value| {wrappedvec.as_array().unwrap().iter().map(|wrappedbool: &serde_json::Value| {wrappedbool.as_bool().unwrap()}).collect()}).collect();
+                                        bot.get_game().board.set_board(converted);
+                                    },
                                     "stop" => println!("stop game"),
                                     "rules" => (|bot: &mut bot::Bot| {
                                      *bot = Bot::create(Game::create(
