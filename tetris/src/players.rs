@@ -21,6 +21,7 @@ pub type MoveList = Vec<Command>;
 pub fn move_list_to_string(move_list: &MoveList) -> Vec<String> {
     move_list
         .iter()
+        .filter(|command| **command != Command::None)
         .map(|command| command.to_string())
         .collect()
 }

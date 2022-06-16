@@ -45,7 +45,6 @@ impl Board {
             .flatten()
             .zip(new_arr.iter_mut().flatten())
             .for_each(|(a, b)| std::mem::swap(a, b));
-        println!("{} {:?}", self, new_arr);
     }
 
     pub fn get_board_array(&self) -> [[bool; BOARD_WIDTH]; BOARD_HEIGHT] {

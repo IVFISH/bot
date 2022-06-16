@@ -1,5 +1,7 @@
 use crate::placement::piece_data::*;
+use serde::{Deserialize, Serialize};
 
+#[derive(Serialize, Deserialize)]
 pub struct Suggestion {
     pub input_list: Vec<String>,
     pub info: String,

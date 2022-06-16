@@ -54,14 +54,25 @@ impl Player for Bot {
 pub type Score = usize;
 
 impl Bot {
-    fn suggest_next_move(&mut self) -> Suggestion {
+    pub fn suggest_next_move(&mut self) -> Suggestion {
         let action = self.get_next_move();
         let action = move_list_to_string(&action);
 
         Suggestion {
             input_list: action,
-            info: "".to_string(),
-        }
+            info: "".to_string()}
+
+    }
+
+    pub fn suggest_and_move(&mut self) -> Suggestion {
+        let action = self.get_next_move();
+        let action = move_list_to_string(&action);
+
+        let out = Suggestion {
+            input_list: action,
+            info: "".to_string()};
+        self.make_move();
+        out
     }
 
     pub fn game_over(&mut self) {

@@ -60,19 +60,20 @@ async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
                     "rules" => bot = create_bot_from_parsed(&parsed),
                     "play" => {
                         let converted: Vec<Vec<bool>> = parsed["board"].as_array().unwrap().iter().map(|wrappedvec: &serde_json::Value| {wrappedvec.as_array().unwrap().iter().map(|wrappedbool: &serde_json::Value| {wrappedbool.as_bool().unwrap()}).collect()}).collect();
-                        bot.get_game().board.set_board(converted);},
+                        bot.get_game().board.set_board(converted);
+                        // println!("{}", bot);
+                        ws_sender.send(Message::Text(serde_json::to_string(&json!(bot.suggest_and_move())).unwrap())).await?;
+                    },
                     "stop" => println!("stop game"),
-                    "start" => println!("start game"),
+                    "start" => ws_sender.send(Message::Text(serde_json::to_string(&json!(bot.suggest_and_move())).unwrap())).await?,
                     other => eprintln!("unexpected packet of type {}", other),
                 }
 
-                println!("packet of type {} was recieved!", parsed["type"]);
+                eprintln!("packet of type {} was recieved!", parsed["type"]);
 
-                ws_sender.send(msg).await?;
+                // ws_sender.send(msg).await?; Echo response back to client
             }
         }
-        // interval.tick();
-        // ws_sender.send(Message::Text("tick".to_owned())).await?;
     }
     Ok(())
 }

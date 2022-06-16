@@ -29,7 +29,7 @@ struct JsonPieceQueue {
 pub struct Game {
     pub board: Board,
 
-    piece_queue: PieceQueue,
+    pub piece_queue: PieceQueue,
     garbage_queue: GarbageQueue,
 
     last_piece_cleared: bool,
@@ -54,7 +54,6 @@ impl Display for Game {
 
         write!(f, "{}", self.board.to_string(&self.active_piece))?;
         write!(f, "{}", self.game_data.to_string())?;
-
         Ok(())
     }
 }
