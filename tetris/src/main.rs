@@ -56,10 +56,14 @@ async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
                 let parsed: serde_json::Value = serde_json::from_str(msg.to_text().unwrap()).unwrap();
                 let parsed_type = parsed["type"].as_str().unwrap();
 
-                if parsed_type == "rules" {
-                    bot = create_bot_from_parsed(&parsed);
-                } else {
-                    print_start_message(parsed_type, &parsed);
+                match parsed_type {
+                    "rules" => bot = create_bot_from_parsed(&parsed),
+                    "play" => {
+                        let converted: Vec<Vec<bool>> = parsed["board"].as_array().unwrap().iter().map(|wrappedvec: &serde_json::Value| {wrappedvec.as_array().unwrap().iter().map(|wrappedbool: &serde_json::Value| {wrappedbool.as_bool().unwrap()}).collect()}).collect();
+                        bot.get_game().board.set_board(converted);},
+                    "stop" => println!("stop game"),
+                    "start" => println!("start game"),
+                    other => eprintln!("unexpected packet of type {}", other),
                 }
 
                 println!("packet of type {} was recieved!", parsed["type"]);
@@ -83,15 +87,6 @@ fn create_bot_from_parsed(parsed: &serde_json::Value) -> Bot {
         parsed["boardheight"].as_u64().unwrap() as usize,
         parsed["kickset"].as_str().unwrap(),
         parsed["spinbonuses"].as_str().unwrap_or("singleplayer")))
-}
-
-fn print_start_message(message_type: &str, parsed: &serde_json::Value) {
-    match message_type {
-        "play" => println!("seed is {}, current seed is {}, {} pieces placed", parsed["seed"], parsed["currentseed"], parsed["placed"]),
-        "stop" => println!("stop game"),
-        "start" => println!("start game"),
-        other => eprintln!("unexpected packet of type {}", other),
-    }
 }
 
 
