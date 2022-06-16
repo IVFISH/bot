@@ -99,6 +99,67 @@ impl Game {
         out
     }
 
+    pub fn create(
+        seed: usize,
+        bagtype: &str,
+        allow_180: bool,
+        allow_hard_drop: bool,
+        allow_b2b_chain: bool,
+        max_board_height: usize,
+        kickset: &str,
+        spinbonus: &str,
+    ) -> Self {
+        let mut out = Self {
+            piece_queue: PieceQueue::new(Some(seed)),
+            game_rules: GameRules {
+                seed,
+                bag_type: match bagtype {
+                    "7-bag" => BagType::SevenBag,
+                    "14-bag" => BagType::FourteenBag,
+                    "classic" => BagType::Classic,
+                    "pairs" => BagType::Pairs,
+                    "total mayhem" => BagType::Mayhem,
+                    other => (|| {
+                        eprintln!("unknown bagtype '{}'", other);
+                        BagType::SevenBag
+                    })(),
+                },
+                allow_180,
+                allow_hard_drop,
+                allow_b2b_chain,
+                max_board_height,
+                kick_set: match kickset {
+                    "SRS+" => KickSet::SRSPlus,
+                    "SRS" => KickSet::SRS,
+                    "SRS-X" => KickSet::SRSX,
+                    "TETRA-X" => KickSet::TetraX,
+                    "NRS" => KickSet::NRS,
+                    "ARS" => KickSet::ARS,
+                    "ASC" => KickSet::ASC,
+                    "none" => KickSet::None,
+                    other => (|| {
+                        eprintln!("unknown kickset '{}'", other);
+                        KickSet::SRSPlus
+                    })(),
+                },
+                spin_bonus: match spinbonus {
+                    "T-spins" => SpinBonus::TSpin,
+                    "all" => SpinBonus::All,
+                    "stupid" => SpinBonus::Stupid,
+                    "none" => SpinBonus::None,
+                    other => (|| {
+                        eprintln!("unknown spinbonus '{}'", other);
+                        SpinBonus::TSpin
+                    })(),
+                },
+            },
+            ..Default::default()
+        };
+
+        out.active_piece = Placement::new(out.piece_queue.next());
+        out
+    }
+
     pub fn valid_location_for_active(&self) -> bool {
         self.board.check_valid_location(&self.active_piece).is_ok()
     }
@@ -319,7 +380,7 @@ impl Default for SpinBonus {
 }
 
 pub struct GameRules {
-    seed: usize,
+    pub seed: usize,
     bag_type: BagType,
     allow_180: bool,
     allow_hard_drop: bool,
