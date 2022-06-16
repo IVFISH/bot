@@ -44,53 +44,56 @@ async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
     loop {
         tokio::select! {
             msg = ws_receiver.next() => {
-                match msg {
-                    Some(msg) => {
-                        let msg = msg?;
-                        if msg.is_text() ||msg.is_binary() {
-                            let parsed: serde_json::Value = serde_json::from_str(msg.to_text().unwrap()).unwrap();
-                                match parsed["type"].as_str().unwrap(){
-                                    "play" => {
-                                        println!("seed is {}, current seed is {}, {} pieces placed", parsed["seed"], parsed["currentseed"], parsed["placed"]);
-                                        // println!("play received with board of {}", parsed["board"]);
-                                        let converted: Vec<Vec<bool>> = parsed["board"].as_array().unwrap().iter().map(|wrappedvec: &serde_json::Value| {wrappedvec.as_array().unwrap().iter().map(|wrappedbool: &serde_json::Value| {wrappedbool.as_bool().unwrap()}).collect()}).collect();
-                                        bot.get_game().board.set_board(converted);
-                                    },
-                                    "stop" => println!("stop game"),
-                                    "rules" => (|bot: &mut bot::Bot| {
-                                     *bot = Bot::create(Game::create(
-                                        parsed["seed"].as_u64().unwrap() as usize,
-                                        parsed["bagtype"].as_str().unwrap_or_else(|| {"singleplayer"}),
-                                        parsed["allow180"].as_bool().unwrap(),
-                                        parsed["allow_harddrop"].as_bool().unwrap_or_else(|| {true}),
-                                        parsed["b2bchaining"].as_bool().unwrap_or_else(|| {true}),
-                                        parsed["boardheight"].as_u64().unwrap() as usize,
-                                        parsed["kickset"].as_str().unwrap(),
-                                        parsed["spinbonuses"].as_str().unwrap_or_else(|| {"singleplayer"})));
-                                    })(&mut bot),
-                                    "start" => println!("start game"),
-                                    other => println!("unexpected packet of type {}", other),
-                                }
-
-                                println!("packet of type {} was recieved!", parsed["type"]);
-
-
-                            ws_sender.send(msg).await?;
-                        } else if msg.is_close() {
-                            break;
-                        }
-                    }
-                    None => break,
+                if msg.is_none() {
+                    break
                 }
-            }
-            _ = interval.tick() => {
-                ws_sender.send(Message::Text("tick".to_owned())).await?;
+                let msg = msg.unwrap().unwrap();
+
+                if msg.is_close() {
+                    break;
+                }
+
+                let parsed: serde_json::Value = serde_json::from_str(msg.to_text().unwrap()).unwrap();
+                let parsed_type = parsed["type"].as_str().unwrap();
+
+                if parsed_type == "rules" {
+                    bot = create_bot_from_parsed(&parsed);
+                } else {
+                    print_start_message(parsed_type, &parsed);
+                }
+
+                println!("packet of type {} was recieved!", parsed["type"]);
+
+                ws_sender.send(msg).await?;
             }
         }
+        // interval.tick();
+        // ws_sender.send(Message::Text("tick".to_owned())).await?;
     }
-
     Ok(())
 }
+
+fn create_bot_from_parsed(parsed: &serde_json::Value) -> Bot {
+    Bot::create(Game::create(
+        parsed["seed"].as_u64().unwrap() as usize,
+        parsed["bagtype"].as_str().unwrap_or("singleplayer"),
+        parsed["allow180"].as_bool().unwrap(),
+        parsed["allow_harddrop"].as_bool().unwrap_or(true),
+        parsed["b2bchaining"].as_bool().unwrap_or(true),
+        parsed["boardheight"].as_u64().unwrap() as usize,
+        parsed["kickset"].as_str().unwrap(),
+        parsed["spinbonuses"].as_str().unwrap_or("singleplayer")))
+}
+
+fn print_start_message(message_type: &str, parsed: &serde_json::Value) {
+    match message_type {
+        "play" => println!("seed is {}, current seed is {}, {} pieces placed", parsed["seed"], parsed["currentseed"], parsed["placed"]),
+        "stop" => println!("stop game"),
+        "start" => println!("start game"),
+        other => eprintln!("unexpected packet of type {}", other),
+    }
+}
+
 
 #[tokio::main]
 async fn main() {

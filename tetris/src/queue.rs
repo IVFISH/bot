@@ -1,8 +1,10 @@
 use std::collections::VecDeque;
 use std::fmt::{Display, Formatter};
+use std::str::FromStr;
 
 use rand::Rng;
 
+use crate::errors::GameError;
 use crate::placement::piece_data::Piece;
 
 pub struct PieceQueue {
@@ -169,6 +171,27 @@ pub enum BagType {
     Classic,
     Pairs,
     Mayhem,
+}
+
+impl FromStr for BagType {
+    type Err = GameError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let out = match s {
+            "7-bag" => BagType::SevenBag,
+            "14-bag" => BagType::FourteenBag,
+            "classic" => BagType::Classic,
+            "pairs" => BagType::Pairs,
+            "total mayhem" => BagType::Mayhem,
+            other => {
+                // return Err(GameError::UnknownBag);
+                eprintln!("unknown bagtype '{}'", other);
+                BagType::SevenBag
+            }
+        };
+
+        Ok(out)
+    }
 }
 
 #[cfg(test)]
