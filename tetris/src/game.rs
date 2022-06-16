@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::VecDeque;
 use std::fmt::{Display, Formatter};
+use std::str::FromStr;
 
 use crate::board::*;
 use crate::errors::GameError;
@@ -113,45 +114,13 @@ impl Game {
             piece_queue: PieceQueue::new(Some(seed)),
             game_rules: GameRules {
                 seed,
-                bag_type: match bagtype {
-                    "7-bag" => BagType::SevenBag,
-                    "14-bag" => BagType::FourteenBag,
-                    "classic" => BagType::Classic,
-                    "pairs" => BagType::Pairs,
-                    "total mayhem" => BagType::Mayhem,
-                    other => (|| {
-                        eprintln!("unknown bagtype '{}'", other);
-                        BagType::SevenBag
-                    })(),
-                },
                 allow_180,
                 allow_hard_drop,
                 allow_b2b_chain,
                 max_board_height,
-                kick_set: match kickset {
-                    "SRS+" => KickSet::SRSPlus,
-                    "SRS" => KickSet::SRS,
-                    "SRS-X" => KickSet::SRSX,
-                    "TETRA-X" => KickSet::TetraX,
-                    "NRS" => KickSet::NRS,
-                    "ARS" => KickSet::ARS,
-                    "ASC" => KickSet::ASC,
-                    "none" => KickSet::None,
-                    other => (|| {
-                        eprintln!("unknown kickset '{}'", other);
-                        KickSet::SRSPlus
-                    })(),
-                },
-                spin_bonus: match spinbonus {
-                    "T-spins" => SpinBonus::TSpin,
-                    "all" => SpinBonus::All,
-                    "stupid" => SpinBonus::Stupid,
-                    "none" => SpinBonus::None,
-                    other => (|| {
-                        eprintln!("unknown spinbonus '{}'", other);
-                        SpinBonus::TSpin
-                    })(),
-                },
+                bag_type: BagType::from_str(bagtype).unwrap(),
+                kick_set: KickSet::from_str(kickset).unwrap(),
+                spin_bonus: SpinBonus::from_str(spinbonus).unwrap(),
             },
             ..Default::default()
         };
@@ -360,6 +329,27 @@ pub enum KickSet {
     ASC,
 }
 
+impl FromStr for KickSet {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "SRS+" => KickSet::SRSPlus,
+            "SRS" => KickSet::SRS,
+            "SRS-X" => KickSet::SRSX,
+            "TETRA-X" => KickSet::TetraX,
+            "NRS" => KickSet::NRS,
+            "ARS" => KickSet::ARS,
+            "ASC" => KickSet::ASC,
+            "none" => KickSet::None,
+            other => {
+                eprintln!("unknown kickset '{}'", other);
+                KickSet::SRSPlus
+            }
+        })
+    }
+}
+
 impl Default for KickSet {
     fn default() -> Self {
         KickSet::SRSPlus
@@ -371,6 +361,23 @@ pub enum SpinBonus {
     All,
     Stupid,
     None,
+}
+
+impl FromStr for SpinBonus {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "T-spins" => SpinBonus::TSpin,
+            "all" => SpinBonus::All,
+            "stupid" => SpinBonus::Stupid,
+            "none" => SpinBonus::None,
+            other => (|| {
+                eprintln!("unknown spinbonus '{}'", other);
+                SpinBonus::TSpin
+            })(),
+        })
+    }
 }
 
 impl Default for SpinBonus {

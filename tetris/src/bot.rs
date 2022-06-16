@@ -120,9 +120,12 @@ impl Bot {
 
         out
     }
-    
+
     pub fn create(game: Game) -> Self {
-        Self { game, weight: Default::default() }
+        Self {
+            game,
+            weight: Default::default(),
+        }
     }
 
     pub fn new(optional_seed: Option<usize>, weight: Weights) -> Self {
