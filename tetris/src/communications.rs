@@ -1,9 +1,8 @@
 use crate::bot::*;
-use crate::human::*;
-use crate::players::*;
-use crate::placement::piece_data::*;
 use crate::game::Game;
-
+use crate::human::*;
+use crate::placement::piece_data::*;
+use crate::players::*;
 
 use futures_util::{SinkExt, StreamExt};
 use log::*;
@@ -47,11 +46,8 @@ async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
 
     loop {
         tokio::select! {
-            msg = ws_receiver.next() => {
-                if msg.is_none() {
-                    break
-                }
-                let msg = msg.unwrap().unwrap();
+            Some(msg) = ws_receiver.next() => {
+                let msg = msg.unwrap();
 
                 if msg.is_close() {
                     break;
@@ -91,9 +87,9 @@ fn create_bot_from_parsed(parsed: &serde_json::Value) -> Bot {
         parsed["b2bchaining"].as_bool().unwrap_or(true),
         parsed["boardheight"].as_u64().unwrap() as usize,
         parsed["kickset"].as_str().unwrap(),
-        parsed["spinbonuses"].as_str().unwrap_or("singleplayer")))
+        parsed["spinbonuses"].as_str().unwrap_or("singleplayer"),
+    ))
 }
-
 
 #[tokio::main]
 pub async fn init() {

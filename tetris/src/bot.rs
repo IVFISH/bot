@@ -60,8 +60,8 @@ impl Bot {
 
         Suggestion {
             input_list: action,
-            info: "".to_string()}
-
+            info: "".to_string(),
+        }
     }
 
     pub fn suggest_and_move(&mut self) -> Suggestion {
@@ -70,7 +70,8 @@ impl Bot {
 
         let out = Suggestion {
             input_list: action,
-            info: "".to_string()};
+            info: "".to_string(),
+        };
         self.make_move();
         out
     }

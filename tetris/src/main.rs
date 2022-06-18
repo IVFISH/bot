@@ -9,14 +9,14 @@ mod players;
 mod queue;
 
 use crate::bot::*;
-use crate::human::*;
-use crate::players::*;
-use crate::placement::piece_data::*;
 use crate::game::Game;
+use crate::human::*;
+use crate::placement::piece_data::*;
+use crate::players::*;
 
 fn main() {
     // communications::init();
     bot_play();
     // bot_debug();
-    println!("proccess has ended.");
+    println!("process has ended.");
 }

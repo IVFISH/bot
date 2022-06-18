@@ -41,7 +41,8 @@ impl Board {
         // });
 
         self.arr
-            .iter_mut().rev()
+            .iter_mut()
+            .rev()
             .flatten()
             .zip(new_arr.iter_mut().flatten())
             .for_each(|(a, b)| std::mem::swap(a, b));
