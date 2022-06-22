@@ -234,18 +234,18 @@ impl Board {
         let highest = self.max_filled_height();
 
         for row in &full_rows {
-            self.remove_row(*row, false);
+            self.remove_row(*row, true);
         }
 
         for row in full_rows.iter().rev() {
-            for r in *row..highest {
-                self.set_row(r, self.get_row(r + 1), false);
+            for r in *row..(highest + num_full_rows) {
+                self.set_row(r, self.get_row(r + 1), true);
             }
         }
 
-        if update_heights {
-            self.sub_to_heights(num_full_rows);
-        }
+        // if update_heights {
+        //     self.sub_to_heights(num_full_rows);
+        // }
 
         num_full_rows
     }

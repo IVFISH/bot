@@ -584,6 +584,13 @@ mod game_tests {
         assert_eq!(game.active_piece.abs_locations().unwrap(),
                    [Point { row: 0, col: 5 }, Point { row: 0, col: 4 }, Point { row: 1, col: 4 }, Point { row: 1, col: 3 }]);
 
+        game.board.clear_lines(true);
+        println!("{}", game);
+
+        println!("{:?}", game.board.heights_for_each_column);
+
+        assert!(false);
+
         // z spin 2
         let mut game = Game::new(None);
         game.active_piece = Placement::new(0);

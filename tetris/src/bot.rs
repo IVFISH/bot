@@ -42,11 +42,15 @@ impl Player for Bot {
 
         let mut scores = vec![];
 
+        let piece = self.game.active_piece.clone();
+
         for placement in placements {
             self.game.active_piece = placement;
+            self.game.piece_soft_drop();
             scores.push(self.score_board(true));
         }
 
+        self.game.active_piece = piece;
         self.game.reset_active_piece();
 
         let min_score = scores.iter().min().unwrap();
@@ -161,12 +165,12 @@ impl Bot {
         let (moves, used) = self.find_trivial(false);
         let (mut moves, _) = self.add_non_trivial(moves, used);
 
-        self.game.active_piece = Placement::new(hold_piece);
+        // self.game.active_piece = Placement::new(hold_piece);
 
-        let (hold_moves, used) = self.find_trivial(true);
-        let (hold_moves, _) = self.add_non_trivial(hold_moves, used);
-
-        moves.extend(hold_moves);
+        // let (hold_moves, used) = self.find_trivial(true);
+        // let (hold_moves, _) = self.add_non_trivial(hold_moves, used);
+        //
+        // moves.extend(hold_moves);
 
         self.game.active_piece = Placement::new(start_piece);
 
@@ -206,7 +210,7 @@ impl Bot {
 
         for placement in all_placements {
             self.show_placement(&placement, clear, &start);
-            thread::sleep(time::Duration::from_millis(1000));
+            thread::sleep(time::Duration::from_millis(100));
         }
     }
 
@@ -254,6 +258,7 @@ impl Bot {
         }
 
         self.game.active_piece = target_placement.clone();
+        println!("SCORE IS: {}", self.score_board(true));
         println!("{}", self);
         self.game.active_piece = start.clone();
     }
@@ -391,9 +396,9 @@ impl Default for Weights {
         Self {
             height_weight: Polynomial::new(vec![0, 5, 1]),
 
-            adjacent_height_differences_weight: Polynomial::new(vec![0, 2, 1]),
+            adjacent_height_differences_weight: Polynomial::new(vec![0, 3, 1]),
             num_hole_weight: Polynomial::new(vec![0, 12, 0]),
-            cell_covered_weight: Polynomial::new(vec![0, 10, 1]),
+            cell_covered_weight: Polynomial::new(vec![0, 0, 1]),
 
             b2b_weight: Polynomial::new(vec![0, -1, -5]),
             combo_weight: Polynomial::new(vec![0, -2, -2]),
@@ -422,6 +427,12 @@ pub fn bot_debug() {
     let mut bot = Bot::default();
 
     // bot.show_all_placements_on_timer(true);
+    for _ in 0..15 {
+        bot.make_move()
+    }
+    println!("{}", bot.game);
+    println!("{}", bot.score_board(false));
+
     bot.show_all_placements_on_input(true);
 }
 
