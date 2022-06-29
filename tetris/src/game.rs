@@ -207,6 +207,15 @@ impl Game {
         kicks
     }
 
+    pub fn piece_rotate_direction(&mut self, direction: RotationDirection) -> bool {
+        match direction {
+            0 => true,
+            1 => self.piece_rotate_cw(),
+            2 => self.piece_rotate_180(),
+            3 => self.piece_rotate_ccw(),
+            _ => false
+        }
+    }
     pub fn piece_rotate_cw(&mut self) -> bool {
         self.rotate_with_kick(1, self.get_kicks(1))
     }

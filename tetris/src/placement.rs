@@ -6,7 +6,7 @@ use std::fmt::{Display, Formatter};
 use piece_data::*;
 use piece_data::rotation::*;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Placement {
     pub piece_type: Piece,
     pub rotation_state: RotationState,

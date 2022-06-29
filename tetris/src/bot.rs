@@ -57,6 +57,7 @@ impl Player for Bot {
         // println!("BEST: {} INDEX {}", min_score, num);
 
         let mut action = moves.remove(num);
+        // println!("{:?}", action);
         action.push(Command::HardDrop);
 
         action
@@ -136,15 +137,15 @@ impl Bot {
         }
 
         let (moves, used) = self.find_trivial(false);
-        // let (mut moves, mut used) = self.add_non_trivial(moves, used);
+        let (mut moves, mut used) = self.add_non_trivial(moves, used);
 
-        // self.game.active_piece = Placement::new(hold_piece);
-        //
-        // let (hold_moves, hold_used) = self.find_trivial(true);
-        // let (hold_moves, hold_used) = self.add_non_trivial(hold_moves, hold_used);
-        //
-        // moves.extend(hold_moves);
-        // used.extend(hold_used);
+        self.game.active_piece = Placement::new(hold_piece);
+
+        let (hold_moves, hold_used) = self.find_trivial(true);
+        let (hold_moves, hold_used) = self.add_non_trivial(hold_moves, hold_used);
+
+        moves.extend(hold_moves);
+        used.extend(hold_used);
 
         self.game.active_piece = Placement::new(start_piece);
 
@@ -164,12 +165,12 @@ impl Bot {
         let (moves, used) = self.find_trivial(false);
         let (mut moves, _) = self.add_non_trivial(moves, used);
 
-        // self.game.active_piece = Placement::new(hold_piece);
+        self.game.active_piece = Placement::new(hold_piece);
 
-        // let (hold_moves, used) = self.find_trivial(true);
-        // let (hold_moves, _) = self.add_non_trivial(hold_moves, used);
-        //
-        // moves.extend(hold_moves);
+        let (hold_moves, used) = self.find_trivial(true);
+        let (hold_moves, _) = self.add_non_trivial(hold_moves, used);
+
+        moves.extend(hold_moves);
 
         self.game.active_piece = Placement::new(start_piece);
 
@@ -299,6 +300,18 @@ impl Bot {
         (added_moves, added_used)
     }
 
+    fn add_to_moves(mut moves: Vec<MoveList>, base_move: &MoveList, add_move: &mut MoveList) -> Vec<MoveList> {
+        let mut to_add = base_move.clone();
+        to_add.append(add_move);
+        moves.push(to_add);
+        moves
+    }
+
+    fn add_to_placements(mut placements: Vec<Placement>, add_placement: &Placement) -> Vec<Placement> {
+        placements.push(add_placement.clone());
+        return placements
+    }
+
     fn find_trivial(&mut self, hold: bool) -> (Vec<MoveList>, Vec<Placement>) {
         let mut trivial_moves = Vec::new();
         let mut trivial_placements = Vec::new();
@@ -307,31 +320,64 @@ impl Bot {
 
         let row = self.game.active_piece.center.row;
 
-        for rotation in rotations {
-            self.game.active_piece.move_center_to_column(0);
-            for col in 0..10 {
-                if self.game.valid_location_for_active() {
-                    let mut inputs: MoveList;
-                    if hold {
-                        inputs = vec![Command::Hold, rotation];
-                    } else {
-                        inputs = vec![rotation];
-                    }
 
-                    inputs.append(Bot::column_to_move_list(col).as_mut());
-                    trivial_moves.push(inputs);
+        for direction in 0..NUM_ROTATE_STATES {
+            // TODO: PROBABLY SIMPLIFY
+            self.game.reset_active_piece();
 
-                    self.game.piece_soft_drop();
-                    trivial_placements.push(self.game.active_piece.clone());
-                    self.game.active_piece.center.row = row;
+            if !self.game.piece_rotate_direction(direction) {
+                continue
+            }
+
+            let mut base_move;
+            if hold {
+                base_move = vec![Command::Hold, rotations[direction]];
+            } else {
+                base_move = vec![rotations[direction]];
+            }
+
+            self.game.piece_soft_drop();
+            trivial_placements = Bot::add_to_placements(trivial_placements, &self.game.active_piece);
+            trivial_moves = Bot::add_to_moves(trivial_moves, &base_move, &mut vec![Command::SoftDrop]);
+            self.game.active_piece.center.row = row;
+
+            let mut add_moves = vec![];
+            let mut counter = 0;
+            while self.game.piece_left() {
+                counter += 1;
+                for _ in 0..counter {
+                    add_moves.push(Command::MoveLeft);
                 }
 
-                self.game.active_piece.move_by_vector(MoveVector(0, 1));
-            }
-            self.game.active_piece.rotate(1);
-        }
+                self.game.piece_soft_drop();
+                trivial_placements = Bot::add_to_placements(trivial_placements, &self.game.active_piece);
+                self.game.active_piece.center.row = row;
 
-        self.game.reset_active_piece();
+                add_moves.push(Command::SoftDrop);
+                trivial_moves = Bot::add_to_moves(trivial_moves, &base_move, &mut add_moves);
+                // add_moves.pop();
+            }
+
+            self.game.reset_active_piece();
+            self.game.piece_rotate_direction(direction);
+
+            let mut add_moves = vec![];
+            let mut counter = 0;
+            while self.game.piece_right() {
+                counter += 1;
+                for _ in 0..counter {
+                    add_moves.push(Command::MoveRight);
+                }
+
+                self.game.piece_soft_drop();
+                trivial_placements = Bot::add_to_placements(trivial_placements, &self.game.active_piece);
+                self.game.active_piece.center.row = row;
+
+                add_moves.push(Command::SoftDrop);
+                trivial_moves = Bot::add_to_moves(trivial_moves, &base_move, &mut add_moves);
+                add_moves.pop();
+            }
+        }
 
         (trivial_moves, trivial_placements)
     }
@@ -368,14 +414,14 @@ impl Bot {
         !used_placements.contains(placement)
     }
 
-    fn column_to_move_list(col: usize) -> MoveList {
-        if col == SPAWN_COL {
+    fn column_to_move_list(col: usize, start_col: usize) -> MoveList {
+        if col == start_col {
             return vec![Command::None];
         }
-        if col < SPAWN_COL {
-            return vec![Command::MoveLeft; SPAWN_COL - col];
+        if col < start_col {
+            return vec![Command::MoveLeft; start_col - col];
         }
-        return vec![Command::MoveRight; col - SPAWN_COL];
+        return vec![Command::MoveRight; col - start_col];
     }
 }
 
@@ -418,7 +464,7 @@ pub fn bot_play() {
         bot.make_move();
         println!("{}", bot.game);
 
-        thread::sleep(time::Duration::from_millis(1000));
+        thread::sleep(time::Duration::from_millis(200));
     }
 }
 
@@ -426,7 +472,7 @@ pub fn bot_debug() {
     let mut bot = Bot::default();
 
     // bot.show_all_placements_on_timer(true);
-    for _ in 0..15 {
+    for _ in 0..30 {
         bot.make_move()
     }
     println!("{}", bot.game);
