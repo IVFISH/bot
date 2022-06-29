@@ -74,10 +74,8 @@ impl Bot {
 
     fn score_board(&mut self, set_piece: bool) -> Score {
         if set_piece {
-            self.game.board.set_piece(&self.game.active_piece, false);
+            self.game.board.set_piece(&self.game.active_piece, true);
         }
-
-        self.game.board.update_all_heights();
         let out =
             self.get_holes_and_cell_covered_score() +
                 self.get_height_score() +
@@ -86,13 +84,8 @@ impl Bot {
         if set_piece {
             // println!("{:?}", self.game.board.heights_for_each_column);
             // println!("{} SCORE = {}", self.game, out);
-            self.game.board.remove_piece(&self.game.active_piece, false);
+            self.game.board.remove_piece(&self.game.active_piece, true);
         }
-
-        self.game.board.update_all_heights();
-
-        println!("aaaaa {}", self.game);
-        println!("{:?}", self.game.board.heights_for_each_column);
         out
     }
 
@@ -101,10 +94,12 @@ impl Bot {
     }
 
     fn get_height_differences_score(&self) -> usize {
-        self.game.board.get_height_differences()
+        let out = self.game.board.get_height_differences()
             .iter()
             .map(|x| self.weight.adjacent_height_differences_weight.eval(*x))
-            .sum()
+            .sum();
+        // println!("{} {:?} {}", self.game.board, self.game.board.heights_for_each_column, out);
+        out
     }
 
     pub fn get_height_score(&self) -> usize {
@@ -139,9 +134,6 @@ impl Bot {
         } else {
             hold_piece = self.game.piece_queue_peek();
         }
-
-        println!("{}", self.game);
-        println!("{:?}", self.game.board.heights_for_each_column);
 
         let (moves, used) = self.find_trivial(false);
         // let (mut moves, mut used) = self.add_non_trivial(moves, used);
@@ -401,11 +393,11 @@ pub struct Weights {
 impl Default for Weights {
     fn default() -> Self {
         Self {
-            height_weight: Polynomial::new(vec![0, 5, 1]),
+            height_weight: Polynomial::new(vec![0, 2, 0]),
 
-            adjacent_height_differences_weight: Polynomial::new(vec![0, 3, 1]),
-            num_hole_weight: Polynomial::new(vec![0, 12, 0]),
-            cell_covered_weight: Polynomial::new(vec![0, 0, 1]),
+            adjacent_height_differences_weight: Polynomial::new(vec![0, 12, 1]),
+            num_hole_weight: Polynomial::new(vec![0, 6, 0]),
+            cell_covered_weight: Polynomial::new(vec![0, 5, 1]),
 
             b2b_weight: Polynomial::new(vec![0, -1, -5]),
             combo_weight: Polynomial::new(vec![0, -2, -2]),
@@ -424,7 +416,7 @@ pub fn bot_play() {
         print!("{}[2J", 27 as char);
 
         bot.make_move();
-        // println!("{}", bot.game);
+        println!("{}", bot.game);
 
         thread::sleep(time::Duration::from_millis(1000));
     }

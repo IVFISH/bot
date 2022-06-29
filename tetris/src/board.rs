@@ -26,6 +26,7 @@ impl Board {
     }
 
     pub fn update_all_heights(&mut self) {
+        self.heights_for_each_column = [0; BOARD_WIDTH];
         for col in 0..self.width {
             for row in (0..20).rev() {
                 if self.get(row, col) {
@@ -93,11 +94,21 @@ impl Board {
         for location in piece.abs_locations().unwrap() {
             self.add(location.row, location.col, update_heights);
         }
+
+        // TODO: remove
+        if update_heights {
+            self.update_all_heights();
+        }
     }
 
     pub fn remove_piece(&mut self, piece: &Placement, update_heights: bool) {
         for location in piece.abs_locations().unwrap() {
             self.remove(location.row, location.col, update_heights);
+        }
+
+        // TODO: remove
+        if update_heights {
+            self.update_all_heights();
         }
     }
 
