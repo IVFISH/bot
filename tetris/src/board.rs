@@ -25,6 +25,16 @@ impl Board {
         self.arr
     }
 
+    pub fn update_all_heights(&mut self) {
+        for col in 0..self.width {
+            for row in (0..20).rev() {
+                if self.get(row, col) {
+                    self.heights_for_each_column[col] = row + 1;
+                    break;
+                }
+            }
+        }
+    }
     pub fn add(&mut self, row: usize, col: usize, update_heights: bool) {
         self.arr[row][col] = true;
 
@@ -47,6 +57,16 @@ impl Board {
 
     pub fn get_row(&self, row: usize) -> [bool; BOARD_WIDTH] {
         self.arr[row]
+    }
+
+    pub fn get_col(&self, col: usize) -> [bool; BOARD_HEIGHT] {
+        let mut out = [false; BOARD_HEIGHT];
+
+        for row in 0..BOARD_HEIGHT {
+            out[row] = self.get(row, col);
+        }
+
+        out
     }
 
     pub fn set_row(&mut self, row: usize, new_row: [bool; BOARD_WIDTH], update_heights: bool) {
@@ -229,23 +249,28 @@ impl Board {
     }
 
     pub fn clear_lines(&mut self, update_heights: bool) -> usize {
+        // println!("aa");
+        // println!("{}", self);
+        // println!("{:?}", self.heights_for_each_column);
+
         let full_rows = self.all_full_rows();
         let num_full_rows = self.all_full_rows().len();
         let highest = self.max_filled_height();
 
         for row in &full_rows {
-            self.remove_row(*row, true);
+            self.remove_row(*row, false);
         }
 
         for row in full_rows.iter().rev() {
-            for r in *row..(highest + num_full_rows) {
-                self.set_row(r, self.get_row(r + 1), true);
+            for r in *row..highest {
+                self.set_row(r, self.get_row(r + 1), false);
             }
         }
 
-        // if update_heights {
-        //     self.sub_to_heights(num_full_rows);
-        // }
+        if update_heights {
+            self.update_all_heights();
+            // self.sub_to_heights(num_full_rows);
+        }
 
         num_full_rows
     }

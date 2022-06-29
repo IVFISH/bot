@@ -39,7 +39,6 @@ impl Player for Bot {
 
     fn get_next_move(&mut self) -> MoveList {
         let (mut moves, placements) = self.all_moves_and_placements();
-
         let mut scores = vec![];
 
         let piece = self.game.active_piece.clone();
@@ -75,9 +74,10 @@ impl Bot {
 
     fn score_board(&mut self, set_piece: bool) -> Score {
         if set_piece {
-            self.game.board.set_piece(&self.game.active_piece, true);
+            self.game.board.set_piece(&self.game.active_piece, false);
         }
 
+        self.game.board.update_all_heights();
         let out =
             self.get_holes_and_cell_covered_score() +
                 self.get_height_score() +
@@ -86,9 +86,13 @@ impl Bot {
         if set_piece {
             // println!("{:?}", self.game.board.heights_for_each_column);
             // println!("{} SCORE = {}", self.game, out);
-            self.game.board.remove_piece(&self.game.active_piece, true);
+            self.game.board.remove_piece(&self.game.active_piece, false);
         }
 
+        self.game.board.update_all_heights();
+
+        println!("aaaaa {}", self.game);
+        println!("{:?}", self.game.board.heights_for_each_column);
         out
     }
 
@@ -136,8 +140,11 @@ impl Bot {
             hold_piece = self.game.piece_queue_peek();
         }
 
+        println!("{}", self.game);
+        println!("{:?}", self.game.board.heights_for_each_column);
+
         let (moves, used) = self.find_trivial(false);
-        let (mut moves, mut used) = self.add_non_trivial(moves, used);
+        // let (mut moves, mut used) = self.add_non_trivial(moves, used);
 
         // self.game.active_piece = Placement::new(hold_piece);
         //
@@ -417,7 +424,7 @@ pub fn bot_play() {
         print!("{}[2J", 27 as char);
 
         bot.make_move();
-        println!("{}", bot.game);
+        // println!("{}", bot.game);
 
         thread::sleep(time::Duration::from_millis(1000));
     }
