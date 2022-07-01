@@ -31,7 +31,6 @@ pub enum Command {
     DasLeft,
     DasRight,
     Hold,
-
 }
 
 pub fn do_move_list(game: &mut Game, commands: MoveList) {

@@ -1,23 +1,20 @@
 mod board;
-mod placement;
+mod bot;
+mod communications;
 mod errors;
 mod game;
-mod queue;
-mod players;
-mod bot;
 mod human;
-mod communications;
+mod placement;
+mod players;
+mod queue;
 
 use crate::bot::*;
 use crate::human::*;
 use crate::players::*;
-
-
 
 fn main() {
     // human_play();
 
     bot_play();
     // bot_debug();
-
 }

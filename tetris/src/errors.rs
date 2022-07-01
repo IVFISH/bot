@@ -1,4 +1,4 @@
-use std::{error::Error};
+use std::error::Error;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug)]
@@ -13,7 +13,7 @@ impl Display for GameError {
         match self {
             GameError::NotInBounds => write!(f, "Not In Bounds")?,
             GameError::Collision => write!(f, "Collision")?,
-            GameError::TopOut => write!(f, "Thank you for playing.")?
+            GameError::TopOut => write!(f, "Thank you for playing.")?,
         }
         Ok(())
     }

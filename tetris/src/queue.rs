@@ -1,5 +1,5 @@
-use std::fmt::{Display, Formatter};
 use std::collections::VecDeque;
+use std::fmt::{Display, Formatter};
 
 use rand::Rng;
 
@@ -43,7 +43,6 @@ impl Default for PieceQueue {
 
 impl PieceQueue {
     pub fn new(optional_seed: Option<usize>) -> Self {
-
         let num = optional_seed.unwrap_or_else(|| rand::thread_rng().gen_range(0..2147483646));
 
         Self {
@@ -89,7 +88,7 @@ impl PieceQueue {
             RNG::FourteenBag => self.fourteen_bag(),
             RNG::Classic => self.classic(),
             RNG::Pairs => self.pairs(),
-            RNG::Mayhem => self.total_mayhem()
+            RNG::Mayhem => self.total_mayhem(),
         }
     }
 
@@ -176,7 +175,6 @@ pub enum RNG {
 mod piece_queue_tests {
     use super::*;
 
-
     #[test]
     fn test_seven_bag() {
         let mut queue = PieceQueue::default();
@@ -196,8 +194,7 @@ mod piece_queue_tests {
     fn test_match_with_osk() {
         let mut queue = PieceQueue::new(Some(15));
         // ITOSLJZS JOTZLIL
-        let osk_queue =
-            [4, 6, 2, 3, 1, 5, 0, 3, 5, 2, 6, 0, 1, 4];
+        let osk_queue = [4, 6, 2, 3, 1, 5, 0, 3, 5, 2, 6, 0, 1, 4];
 
         for piece in osk_queue {
             assert_eq!(queue.next(), piece);
@@ -205,8 +202,7 @@ mod piece_queue_tests {
 
         let mut queue = PieceQueue::new(Some(7000));
         // TSJOLIZ ITLSJZO
-        let osk_queue =
-            [6, 3, 5, 2, 1, 4, 0, 4, 6, 1, 3, 5, 0, 2];
+        let osk_queue = [6, 3, 5, 2, 1, 4, 0, 4, 6, 1, 3, 5, 0, 2];
 
         for piece in osk_queue {
             assert_eq!(queue.next(), piece);
@@ -228,8 +224,5 @@ mod garbage_item_test {
 
         // checks that not everything is the same
         assert!(!arr.windows(2).all(|w| w[0] == w[1]));
-
-
-
     }
 }

@@ -3,7 +3,7 @@ use crate::placement::piece_data::*;
 struct Suggestion {
     input_list: Vec<String>,
     num_pieces_placed: usize,
-    info: String
+    info: String,
 }
 
 impl Suggestion {
@@ -11,7 +11,7 @@ impl Suggestion {
         Self {
             input_list,
             num_pieces_placed,
-            info
+            info,
         }
     }
 }
