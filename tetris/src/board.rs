@@ -328,13 +328,17 @@ impl Board {
         self.max_filled_height() - self.min_filled_height()
     }
 
-    pub fn get_height_differences(&self) -> Vec<usize> {
+    pub fn get_adjacent_height_differences(&self) -> Vec<usize> {
         // maybe make output an array
 
         self.heights_for_each_column.
             windows(2)
             .map(|w| w[0].abs_diff(w[1]))
             .collect::<Vec<usize>>()
+    }
+
+    pub fn get_total_height_differences(&self) -> usize{
+        self.max_filled_height() - self.min_filled_height()
     }
 
     fn add_to_heights(&mut self, amt: usize) {
@@ -565,7 +569,7 @@ mod board_tests {
     fn test_adjacent_spikes() {
         let mut board = create_preset_board();
 
-        let heights = board.get_height_differences();
+        let heights = board.get_adjacent_height_differences();
         assert_eq!(heights, vec![6, 4, 2, 0, 0, 0, 4, 4, 0]);
     }
 

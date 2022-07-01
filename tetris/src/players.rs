@@ -8,6 +8,7 @@ pub trait Player {
         }
 
         let action = self.get_next_move();
+        println!("{:?}", action);
         do_move_list(&mut self.get_game(), action);
     }
 
@@ -50,11 +51,7 @@ fn do_command(game: &mut Game, command: Command) {
         Command::Rotate180 => game.piece_rotate_180(),
         Command::DasLeft => game.piece_das_left(),
         Command::DasRight => game.piece_das_right(),
-        Command::Hold => {
-            println!("HOLDING");
-            game.hold()
-        },
-
+        Command::Hold => game.hold(),
         Command::HardDrop => {
             game.game_over = game.piece_hard_drop(true).is_err();
             true

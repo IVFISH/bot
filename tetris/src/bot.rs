@@ -53,7 +53,7 @@ impl Player for Bot {
         self.game.reset_active_piece();
 
         let min_score = scores.iter().min().unwrap();
-        let num = scores.iter().position(|x| x==min_score).unwrap();
+        let num = scores.iter().position(|x| x == min_score).unwrap();
         // println!("BEST: {} INDEX {}", min_score, num);
 
         let mut action = moves.remove(num);
@@ -95,11 +95,12 @@ impl Bot {
     }
 
     fn get_height_differences_score(&self) -> usize {
-        let out = self.game.board.get_height_differences()
+        let mut out = self.game.board.get_adjacent_height_differences()
             .iter()
             .map(|x| self.weight.adjacent_height_differences_weight.eval(*x))
             .sum();
-        // println!("{} {:?} {}", self.game.board, self.game.board.heights_for_each_column, out);
+
+        out += self.weight.total_height_difference_weight.eval(self.game.board.get_total_height_differences());
         out
     }
 
@@ -127,6 +128,10 @@ impl Bot {
     }
 
     pub fn all_moves_and_placements(&mut self) -> (Vec<MoveList>, Vec<Placement>) {
+        use std::time::Instant;
+
+        let start = Instant::now();
+
         let start_piece = self.game.get_active_piece_type();
         let hold_piece;
 
@@ -148,6 +153,9 @@ impl Bot {
         used.extend(hold_used);
 
         self.game.active_piece = Placement::new(start_piece);
+
+        let elapsed = start.elapsed().as_micros();
+        println!("Move gen took {} microseconds.", elapsed);
 
         (moves, used)
     }
@@ -217,7 +225,7 @@ impl Bot {
     pub fn show_all_placements_on_input(&mut self, clear: bool) {
         use std::io;
 
-        let all_placements = self.all_placements();
+        let (all_moves, all_placements) = self.all_moves_and_placements();
         let start = self.game.active_piece.clone();
         let num_moves = all_placements.len();
         let mut index = num_moves - 1;
@@ -240,13 +248,20 @@ impl Bot {
 
                 let placement = &all_placements.get(index).unwrap().clone();
                 self.show_placement(placement, clear, &start);
+                println!("{:?}", all_moves.get(index));
             } else if input == String::from(".") {
                 index += 1;
                 index %= num_moves;
 
                 let placement = &all_placements.get(index).unwrap().clone();
                 self.show_placement(placement, clear, &start);
+                println!("{:?}", all_moves.get(index));
             } else if input == String::from("exit") {
+                break;
+            } else if input == String::from("make move") {
+                self.game.reset_active_piece();
+                self.make_move();
+                println!("{}", self.game);
                 break;
             }
         }
@@ -309,7 +324,7 @@ impl Bot {
 
     fn add_to_placements(mut placements: Vec<Placement>, add_placement: &Placement) -> Vec<Placement> {
         placements.push(add_placement.clone());
-        return placements
+        return placements;
     }
 
     fn find_trivial(&mut self, hold: bool) -> (Vec<MoveList>, Vec<Placement>) {
@@ -326,7 +341,7 @@ impl Bot {
             self.game.reset_active_piece();
 
             if !self.game.piece_rotate_direction(direction) {
-                continue
+                continue;
             }
 
             let mut base_move;
@@ -429,6 +444,7 @@ pub struct Weights {
     pub height_weight: Polynomial<usize>,
 
     pub adjacent_height_differences_weight: Polynomial<usize>,
+    pub total_height_difference_weight: Polynomial<usize>,
     pub num_hole_weight: Polynomial<usize>,
     pub cell_covered_weight: Polynomial<usize>,
 
@@ -439,9 +455,10 @@ pub struct Weights {
 impl Default for Weights {
     fn default() -> Self {
         Self {
-            height_weight: Polynomial::new(vec![0, 2, 0]),
+            height_weight: Polynomial::new(vec![0, 50, 0]),
 
             adjacent_height_differences_weight: Polynomial::new(vec![0, 12, 1]),
+            total_height_difference_weight: Polynomial::new(vec![0, 0, 3]),
             num_hole_weight: Polynomial::new(vec![0, 6, 0]),
             cell_covered_weight: Polynomial::new(vec![0, 5, 1]),
 
@@ -461,7 +478,10 @@ pub fn bot_play() {
         // clears the console
         print!("{}[2J", 27 as char);
 
+        let start = time::Instant::now();
         bot.make_move();
+        let elapsed = start.elapsed().as_micros();
+        println!("Making a move took {} microseconds.", elapsed);
         println!("{}", bot.game);
 
         thread::sleep(time::Duration::from_millis(200));
@@ -469,16 +489,55 @@ pub fn bot_play() {
 }
 
 pub fn bot_debug() {
-    let mut bot = Bot::default();
+    let mut bot = bot_debug_board();
+    bot.game.active_piece = Placement::new(4);
+    bot.game.add_garbage_to_board(8, true);
 
     // bot.show_all_placements_on_timer(true);
-    for _ in 0..30 {
-        bot.make_move()
-    }
+    // for _ in 0..30 {
+    //     bot.make_move()
+    // }
     println!("{}", bot.game);
     println!("{}", bot.score_board(false));
 
-    bot.show_all_placements_on_input(true);
+    loop {
+        bot.show_all_placements_on_input(true);
+    }
+}
+
+fn bot_debug_board() -> Bot {
+    let mut bot = Bot::default();
+    bot.game.board.add(0, 1, true);
+    bot.game.board.add(1, 1, true);
+    bot.game.board.add(2, 1, true);
+    bot.game.board.add(3, 1, true);
+    bot.game.board.add(0, 2, true);
+    bot.game.board.add(1, 2, true);
+    bot.game.board.add(0, 3, true);
+    bot.game.board.add(1, 3, true);
+    bot.game.board.add(0, 4, true);
+    bot.game.board.add(1, 4, true);
+    bot.game.board.add(2, 4, true);
+    bot.game.board.add(0, 5, true);
+    bot.game.board.add(1, 5, true);
+    bot.game.board.add(2, 5, true);
+    bot.game.board.add(0, 6, true);
+    bot.game.board.add(1, 6, true);
+    bot.game.board.add(2, 6, true);
+    bot.game.board.add(3, 6, true);
+    bot.game.board.add(0, 7, true);
+    bot.game.board.add(1, 7, true);
+    bot.game.board.add(2, 7, true);
+    bot.game.board.add(3, 7, true);
+    bot.game.board.add(4, 7, true);
+    bot.game.board.add(0, 8, true);
+    bot.game.board.add(1, 8, true);
+    bot.game.board.add(2, 8, true);
+    bot.game.board.add(3, 8, true);
+    bot.game.board.add(4, 8, true);
+    bot.game.board.add(5, 8, true);
+
+    bot
 }
 
 #[cfg(test)]
@@ -600,6 +659,7 @@ mod move_gen_tests {
             height_weight: Polynomial::new(vec![0, 5, 1]),
 
             adjacent_height_differences_weight: Polynomial::new(vec![0, 2, 1]),
+            total_height_difference_weight: Polynomial::new(vec![0, 2, 1]),
             num_hole_weight: Polynomial::new(vec![0, 6, 0]),
             cell_covered_weight: Polynomial::new(vec![0, 5, 1]),
 
