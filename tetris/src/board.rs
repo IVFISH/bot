@@ -295,7 +295,7 @@ impl Board {
 
         for col in 0..self.width {
             // only counting when you find a filled block
-            let mut counting = true;
+            // let mut counting = true;
 
             let mut covered_counter = 0;
 
@@ -307,13 +307,15 @@ impl Board {
                 if !spot {
                     cell_covered_count += covered_counter;
 
-                    if counting {
-                        holes_count += 1;
-                        counting = false;
-                    }
+                    holes_count += 1;
+
+                    // if counting {
+                    //     holes_count += 1;
+                    //     counting = false;
+                    // }
                 } else {
                     covered_counter += 1;
-                    counting = true;
+                    // counting = true;
                 }
             }
         }

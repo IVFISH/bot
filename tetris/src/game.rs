@@ -302,7 +302,7 @@ pub struct GameData {
     pub combo: i8,
     pub b2b: i8,
 
-    pub pieces_placed: u8,
+    pub pieces_placed: u16,
     pub lines_cleared: usize,
     pub lines_sent: u8,
 

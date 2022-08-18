@@ -489,12 +489,12 @@ pub struct Weights {
 impl Default for Weights {
     fn default() -> Self {
         Self {
-            height_weight: Polynomial::new(vec![0, 40, 0]),
+            height_weight: Polynomial::new(vec![0, 2, 0]),
 
-            adjacent_height_differences_weight: Polynomial::new(vec![0, 12, 1]),
+            adjacent_height_differences_weight: Polynomial::new(vec![0, 2, 1]),
             total_height_difference_weight: Polynomial::new(vec![0, 0, 1]),
-            num_hole_weight: Polynomial::new(vec![0, 10, 0]),
-            cell_covered_weight: Polynomial::new(vec![0, 5, 1]),
+            num_hole_weight: Polynomial::new(vec![0, 12, 0]),
+            cell_covered_weight: Polynomial::new(vec![0, 10, 1]),
 
             b2b_weight: Polynomial::new(vec![0, -1, -5]),
             combo_weight: Polynomial::new(vec![0, -2, -2]),
@@ -514,6 +514,7 @@ pub fn bot_play() {
 
         bot.make_move();
         println!("{}", bot.game);
+        println!("height: {}", bot.game.board.max_filled_height());
 
         thread::sleep(time::Duration::from_millis(200));
     }
