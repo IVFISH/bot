@@ -117,9 +117,10 @@ impl Bot {
     pub fn get_holes_and_cell_covered_score(&self) -> usize {
         let mut out = 0;
 
-        let (holes, covered) = self.game.board.holes_and_cell_covered();
+        let (holes_t, holes_w, covered) = self.game.board.holes_and_cell_covered();
 
-        out += self.weight.num_hole_weight.eval(holes);
+        out += self.weight.num_hole_total_weight.eval(holes_t);
+        out += self.weight.num_hole_weighted_weight.eval(holes_w);
         out += self.weight.cell_covered_weight.eval(covered);
 
         out
@@ -479,7 +480,8 @@ pub struct Weights {
 
     pub adjacent_height_differences_weight: Polynomial<usize>,
     pub total_height_difference_weight: Polynomial<usize>,
-    pub num_hole_weight: Polynomial<usize>,
+    pub num_hole_total_weight: Polynomial<usize>,
+     pub num_hole_weighted_weight: Polynomial<usize>,
     pub cell_covered_weight: Polynomial<usize>,
 
     pub b2b_weight: Polynomial<i8>,
@@ -493,7 +495,8 @@ impl Default for Weights {
 
             adjacent_height_differences_weight: Polynomial::new(vec![0, 2, 1]),
             total_height_difference_weight: Polynomial::new(vec![0, 0, 1]),
-            num_hole_weight: Polynomial::new(vec![0, 12, 0]),
+            num_hole_total_weight: Polynomial::new(vec![0, 5, 0]),
+            num_hole_weighted_weight: Polynomial::new(vec![0, 6, 0]),
             cell_covered_weight: Polynomial::new(vec![0, 10, 1]),
 
             b2b_weight: Polynomial::new(vec![0, -1, -5]),

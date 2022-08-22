@@ -289,13 +289,14 @@ impl Board {
         num_full_rows
     }
 
-    pub fn holes_and_cell_covered(&self) -> (usize, usize) {
-        let mut holes_count = 0;
+    pub fn holes_and_cell_covered(&self) -> (usize, usize, usize) {
+        let mut holes_count_total = 0;
+        let mut holes_count_weighted = 0;
         let mut cell_covered_count = 0;
 
         for col in 0..self.width {
             // only counting when you find a filled block
-            // let mut counting = true;
+            let mut counting = true;
 
             let mut covered_counter = 0;
 
@@ -307,20 +308,20 @@ impl Board {
                 if !spot {
                     cell_covered_count += covered_counter;
 
-                    holes_count += 1;
+                    holes_count_total += 1;
 
-                    // if counting {
-                    //     holes_count += 1;
-                    //     counting = false;
-                    // }
+                    if counting {
+                        holes_count_weighted += 1;
+                        counting = false;
+                    }
                 } else {
                     covered_counter += 1;
-                    // counting = true;
+                    counting = true;
                 }
             }
         }
 
-        (holes_count, cell_covered_count)
+        (holes_count_total, holes_count_weighted, cell_covered_count)
     }
 
     pub fn t_slot(&self) -> usize {
