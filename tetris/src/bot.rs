@@ -52,8 +52,8 @@ impl Player for Bot {
         self.game.active_piece = piece;
         self.game.reset_active_piece();
 
-        let min_score = scores.iter().min().unwrap();
-        let num = scores.iter().position(|x| x == min_score).unwrap();
+        let min_score = scores.iter().fold(f32::INFINITY, |a, &b| a.min(b));
+        let num = scores.iter().position(|x| x == &min_score).unwrap();
         // println!("BEST: {} INDEX {}", min_score, num);
 
         let mut action = moves.remove(num);
@@ -64,9 +64,16 @@ impl Player for Bot {
     }
 }
 
-pub type Score = usize;
+pub type Score = f32;
 
 impl Bot {
+    pub fn give_birth(&self) -> Self {
+        Self {
+            game: Game::new(None),
+            weight: self.weight.mutate()
+        }
+    }
+
     pub fn score(&mut self, set_piece: bool) -> Score {
         // todo: add versus weights, such as combo/b2b/attack
 
@@ -90,38 +97,38 @@ impl Bot {
     }
 
     fn score_game(&mut self) -> Score {
-        0
+        0.0
     }
 
-    fn get_height_differences_score(&self) -> usize {
+    fn get_height_differences_score(&self) -> f32 {
         let mut out = self
             .game
             .board
             .get_adjacent_height_differences()
             .iter()
-            .map(|x| self.weight.adjacent_height_differences_weight.eval(*x))
+            .map(|x| self.weight.adjacent_height_differences_weight.eval(*x as f32))
             .sum();
 
         out += self
             .weight
             .total_height_difference_weight
-            .eval(self.game.board.get_total_height_differences());
+            .eval(self.game.board.get_total_height_differences() as f32);
         out
     }
 
-    pub fn get_height_score(&self) -> usize {
+    pub fn get_height_score(&self) -> f32 {
         let total_height = self.game.board.max_filled_height();
-        self.weight.height_weight.eval(total_height)
+        self.weight.height_weight.eval(total_height as f32)
     }
 
-    pub fn get_holes_and_cell_covered_score(&self) -> usize {
-        let mut out = 0;
+    pub fn get_holes_and_cell_covered_score(&self) -> f32 {
+        let mut out = 0.0;
 
         let (holes_t, holes_w, covered) = self.game.board.holes_and_cell_covered();
 
-        out += self.weight.num_hole_total_weight.eval(holes_t);
-        out += self.weight.num_hole_weighted_weight.eval(holes_w);
-        out += self.weight.cell_covered_weight.eval(covered);
+        out += self.weight.num_hole_total_weight.eval(holes_t as f32);
+        out += self.weight.num_hole_weighted_weight.eval(holes_w as f32);
+        out += self.weight.cell_covered_weight.eval(covered as f32);
 
         out
     }
@@ -476,34 +483,65 @@ impl Bot {
 }
 
 pub struct Weights {
-    pub height_weight: Polynomial<usize>,
+    pub height_weight: Polynomial<f32>,
 
-    pub adjacent_height_differences_weight: Polynomial<usize>,
-    pub total_height_difference_weight: Polynomial<usize>,
-    pub num_hole_total_weight: Polynomial<usize>,
-     pub num_hole_weighted_weight: Polynomial<usize>,
-    pub cell_covered_weight: Polynomial<usize>,
+    pub adjacent_height_differences_weight: Polynomial<f32>,
+    pub total_height_difference_weight: Polynomial<f32>,
+    pub num_hole_total_weight: Polynomial<f32>,
+     pub num_hole_weighted_weight: Polynomial<f32>,
+    pub cell_covered_weight: Polynomial<f32>,
 
-    pub b2b_weight: Polynomial<i8>,
-    pub combo_weight: Polynomial<i8>,
+    pub b2b_weight: Polynomial<f32>,
+    pub combo_weight: Polynomial<f32>,
 }
 
 impl Default for Weights {
     fn default() -> Self {
         Self {
-            height_weight: Polynomial::new(vec![0, 2, 0]),
+            height_weight: Polynomial::new(vec![0.0, 2.0, 2.0]),
 
-            adjacent_height_differences_weight: Polynomial::new(vec![0, 2, 1]),
-            total_height_difference_weight: Polynomial::new(vec![0, 0, 1]),
-            num_hole_total_weight: Polynomial::new(vec![0, 5, 0]),
-            num_hole_weighted_weight: Polynomial::new(vec![0, 6, 0]),
-            cell_covered_weight: Polynomial::new(vec![0, 10, 1]),
+            adjacent_height_differences_weight: Polynomial::new(vec![0.0, 2.0, 1.0]),
+            total_height_difference_weight: Polynomial::new(vec![0.0, 0.0, 1.0]),
+            num_hole_total_weight: Polynomial::new(vec![0.0, 5.0, 0.0]),
+            num_hole_weighted_weight: Polynomial::new(vec![0.0, 6.0, 0.0]),
+            cell_covered_weight: Polynomial::new(vec![0.0, 10.0, 1.0]),
 
-            b2b_weight: Polynomial::new(vec![0, -1, -5]),
-            combo_weight: Polynomial::new(vec![0, -2, -2]),
+            b2b_weight: Polynomial::new(vec![0.0, -1.0, -5.0]),
+            combo_weight: Polynomial::new(vec![0.0, -2.0, -2.0]),
         }
     }
 }
+
+impl Weights {
+    pub const MAX_MUTATION: f32 = 0.1;
+
+    pub fn mutate(&self) -> Self {
+        Self {
+            height_weight: Self::mutate_polynomial(&self.height_weight),
+
+            adjacent_height_differences_weight: Self::mutate_polynomial(&self.adjacent_height_differences_weight),
+            total_height_difference_weight: Self::mutate_polynomial(&self.total_height_difference_weight),
+            num_hole_total_weight: Self::mutate_polynomial(&self.num_hole_total_weight),
+            num_hole_weighted_weight: Self::mutate_polynomial(&self.num_hole_weighted_weight),
+            cell_covered_weight: Self::mutate_polynomial(&self.cell_covered_weight),
+
+            b2b_weight: Self::mutate_polynomial(&self.b2b_weight),
+            combo_weight: Self::mutate_polynomial(&self.combo_weight),
+        }
+    }
+
+    fn mutate_polynomial(poly: &Polynomial<f32>) -> Polynomial<f32> {
+        Polynomial::new(poly.data().iter().map(|x| Weights::mutate_numb(*x)).collect())
+    }
+
+    fn mutate_numb(x: f32) -> f32 {
+        let mut rng = rand::thread_rng();
+        let n: f32 = rng.gen();
+        let y: f32 = (n - 0.5) * Weights::MAX_MUTATION + 1.0;
+        x * y
+    }
+}
+
 
 use itertools::min;
 use std::{thread, time};

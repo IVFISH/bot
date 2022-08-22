@@ -189,9 +189,9 @@ checksum = "d4fd5641d01c8f18a23da7b6fe29298ff4b55afcccdf78973b24cf3175fee32e"
 
 [[package]]
 name = "polynomial"
-version = "0.1.0"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46ebc7c666205149d35465f25cdbae1626096aa61e3aa4ab00b1382a77dc0ddb"
+checksum = "e4a3d64b1fee2683727dafccbf279a1425a0b5d1306b3b9caa80ecc2b9d32e2f"
 dependencies = [
  "num-traits",
 ]
