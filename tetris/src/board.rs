@@ -17,29 +17,11 @@ pub struct Board {
     height: usize,
 
     arr: [[bool; BOARD_WIDTH]; BOARD_HEIGHT],
-    heights_for_each_column: [usize; BOARD_WIDTH],
+    pub heights_for_each_column: [usize; BOARD_WIDTH],
 }
 
 impl Board {
     pub fn set_board(&mut self, mut new_arr: Vec<Vec<bool>>) {
-        // for row in 0..self.height {
-        //     for col in 0..self.width {
-        //         self.arr[row][col] = *new_arr.get(row).unwrap().get(col).unwrap();
-        //     }
-        // }
-
-        // for (row_num, row) in new_arr.iter().enumerate() {
-        //     for (col_num, col) in row.iter().enumerate() {
-        //         self.arr[row_num][col_num] = *col;
-        //     }
-        // }
-
-        // let _ = new_arr.iter().enumerate().for_each(|(row_num, row)| {
-        //     row.iter()
-        //         .enumerate()
-        //         .for_each(|(col_num, col)| self.arr[row_num][col_num] = *col)
-        // });
-
         self.arr
             .iter_mut()
             .rev()
@@ -50,6 +32,18 @@ impl Board {
 
     pub fn get_board_array(&self) -> [[bool; BOARD_WIDTH]; BOARD_HEIGHT] {
         self.arr
+    }
+
+    pub fn update_all_heights(&mut self) {
+        self.heights_for_each_column = [0; BOARD_WIDTH];
+        for col in 0..self.width {
+            for row in (0..20).rev() {
+                if self.get(row, col) {
+                    self.heights_for_each_column[col] = row + 1;
+                    break;
+                }
+            }
+        }
     }
 
     pub fn add(&mut self, row: usize, col: usize, update_heights: bool) {
@@ -76,6 +70,16 @@ impl Board {
         self.arr[row]
     }
 
+    pub fn get_col(&self, col: usize) -> [bool; BOARD_HEIGHT] {
+        let mut out = [false; BOARD_HEIGHT];
+
+        for row in 0..BOARD_HEIGHT {
+            out[row] = self.get(row, col);
+        }
+
+        out
+    }
+
     pub fn set_row(&mut self, row: usize, new_row: [bool; BOARD_WIDTH], update_heights: bool) {
         self.arr[row] = new_row;
 
@@ -100,11 +104,21 @@ impl Board {
         for location in piece.abs_locations().unwrap() {
             self.add(location.row, location.col, update_heights);
         }
+
+        // TODO: remove
+        if update_heights {
+            self.update_all_heights();
+        }
     }
 
     pub fn remove_piece(&mut self, piece: &Placement, update_heights: bool) {
         for location in piece.abs_locations().unwrap() {
             self.remove(location.row, location.col, update_heights);
+        }
+
+        // TODO: remove
+        if update_heights {
+            self.update_all_heights();
         }
     }
 
@@ -259,29 +273,35 @@ impl Board {
     }
 
     pub fn clear_lines(&mut self, update_heights: bool) -> usize {
+        // println!("aa");
+        // println!("{}", self);
+        // println!("{:?}", self.heights_for_each_column);
+
         let full_rows = self.all_full_rows();
         let num_full_rows = self.all_full_rows().len();
         let highest = self.max_filled_height();
 
         for row in &full_rows {
-            self.remove_row(*row, true);
+            self.remove_row(*row, false);
         }
 
         for row in full_rows.iter().rev() {
             for r in *row..highest {
-                self.set_row(r, self.get_row(r + 1), true);
+                self.set_row(r, self.get_row(r + 1), false);
             }
         }
 
-        // if update_heights {
-        //     self.sub_to_heights(num_full_rows);
-        // }
+        if update_heights {
+            self.update_all_heights();
+            // self.sub_to_heights(num_full_rows);
+        }
 
         num_full_rows
     }
 
-    pub fn holes_and_cell_covered(&self) -> (usize, usize) {
-        let mut holes_count = 0;
+    pub fn holes_and_cell_covered(&self) -> (usize, usize, usize) {
+        let mut holes_count_total = 0;
+        let mut holes_count_weighted = 0;
         let mut cell_covered_count = 0;
 
         for col in 0..self.width {
@@ -298,8 +318,10 @@ impl Board {
                 if !spot {
                     cell_covered_count += covered_counter;
 
+                    holes_count_total += 1;
+
                     if counting {
-                        holes_count += 1;
+                        holes_count_weighted += 1;
                         counting = false;
                     }
                 } else {
@@ -309,7 +331,7 @@ impl Board {
             }
         }
 
-        (holes_count, cell_covered_count)
+        (holes_count_total, holes_count_weighted, cell_covered_count)
     }
 
     pub fn t_slot(&self) -> usize {
@@ -320,13 +342,17 @@ impl Board {
         self.max_filled_height() - self.min_filled_height()
     }
 
-    pub fn get_height_differences(&self) -> Vec<usize> {
+    pub fn get_adjacent_height_differences(&self) -> Vec<usize> {
         // maybe make output an array
 
         self.heights_for_each_column
             .windows(2)
             .map(|w| w[0].abs_diff(w[1]))
             .collect::<Vec<usize>>()
+    }
+
+    pub fn get_total_height_differences(&self) -> usize {
+        self.max_filled_height() - self.min_filled_height()
     }
 
     fn add_to_heights(&mut self, amt: usize) {
@@ -575,7 +601,7 @@ mod board_tests {
     fn test_adjacent_spikes() {
         let mut board = create_preset_board();
 
-        let heights = board.get_height_differences();
+        let heights = board.get_adjacent_height_differences();
         assert_eq!(heights, vec![6, 4, 2, 0, 0, 0, 4, 4, 0]);
     }
 

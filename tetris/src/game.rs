@@ -250,6 +250,15 @@ impl Game {
         kicks
     }
 
+    pub fn piece_rotate_direction(&mut self, direction: RotationDirection) -> bool {
+        match direction {
+            0 => true,
+            1 => self.piece_rotate_cw(),
+            2 => self.piece_rotate_180(),
+            3 => self.piece_rotate_ccw(),
+            _ => false,
+        }
+    }
     pub fn piece_rotate_cw(&mut self) -> bool {
         self.rotate_with_kick(1, self.get_kicks(1))
     }
@@ -448,9 +457,9 @@ pub struct GameData {
     pub combo: i8,
     pub b2b: i8,
 
-    pub pieces_placed: u8,
+    pub pieces_placed: u16,
     pub lines_cleared: usize,
-    pub lines_sent: u8,
+    pub lines_sent: u16,
 
     pub game_over: bool,
     init_time: f32,
@@ -855,6 +864,13 @@ mod game_tests {
                 Point { row: 1, col: 3 }
             ]
         );
+
+        game.board.clear_lines(true);
+        println!("{}", game);
+
+        println!("{:?}", game.board.heights_for_each_column);
+
+        assert!(false);
 
         // z spin 2
         let mut game = Game::new(None);
