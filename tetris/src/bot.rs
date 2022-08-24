@@ -432,34 +432,36 @@ impl Bot {
         mut placement: Placement) {
 
         let commands = [
+            Command::RotateCW,
             Command::MoveRight,
             Command::MoveLeft,
-            Command::RotateCW,
             Command::RotateCCW,
             Command::Rotate180,
+            Command::SoftDrop,
         ];
         let actions = [
+            Game::piece_rotate_cw,
             Game::piece_right,
             Game::piece_left,
-            Game::piece_rotate_cw,
             Game::piece_rotate_ccw,
             Game::piece_rotate_180,
+            Game::piece_soft_drop,
         ];
+
+        Game::piece_soft_drop(&mut self.game);
 
         for (command, action) in zip(commands, actions)  {
             action(&mut self.game);
-            // println!("unga");
+            Game::piece_soft_drop(&mut self.game);
             if Bot::new_placement(&self.game.active_piece, placement_list){
                 moove.push(command);
                 move_list.push(moove.clone());
-                placement_list.push(self.game.active_piece);
-                // println!("called");
-                self.find_non_trivial(moove.clone(), move_list, placement_list, placement);
+                placement_list.push(self.game.active_piece.clone());
+                self.find_non_trivial(moove.clone(), move_list, placement_list, self.game.active_piece.clone());
                 // println!("finished :D");
             }
             self.game.active_piece = placement;
         }
-
     }
 
     fn add_non_trivial(
@@ -484,14 +486,13 @@ impl Bot {
         // }
         //
         // self.game.reset_active_piece();
-        let firstmove = move_list.pop().unwrap();
-        let firstplace = placement_list.pop().unwrap();
 
-        // println!("len before nontriv {}", move_list.len());
+        let trivialmoves = move_list.clone();
+        let trivialplaces = placement_list.clone();
 
-        self.find_non_trivial(firstmove, &mut move_list, &mut placement_list, firstplace);
-
-        // println!("len after nontriv {}", move_list.len());
+        for (amove, aplace) in zip(trivialmoves, trivialplaces) {
+            self.find_non_trivial(amove, &mut move_list, &mut placement_list, aplace);
+        }
 
         (move_list, placement_list)
     }
@@ -574,6 +575,7 @@ impl Weights {
 
 use itertools::min;
 use std::{thread, time};
+use crate::Command::SoftDrop;
 
 pub fn bot_play() {
     let mut bot = Bot::default();
@@ -593,14 +595,15 @@ pub fn bot_play() {
 pub fn bot_debug() {
     let mut bot = bot_debug_board();
     bot.game.active_piece = Placement::new(4);
-    bot.game.add_garbage_to_board(8, true);
+    bot.game.active_piece.piece_type = 4;
+    // bot.game.add_garbage_to_board(8, true);
 
     // bot.show_all_placements_on_timer(true);
     // for _ in 0..30 {
     //     bot.make_move()
     // }
-    println!("{}", bot.game);
-    println!("{}", bot.score_board(false));
+    // println!("{}", bot.game);
+    // println!("{}", bot.score_board(false));
 
     loop {
         bot.show_all_placements_on_input(true);
@@ -609,35 +612,9 @@ pub fn bot_debug() {
 
 fn bot_debug_board() -> Bot {
     let mut bot = Bot::default();
-    bot.game.board.add(0, 1, true);
+    bot.game.board.add(1, 0, true);
     bot.game.board.add(1, 1, true);
-    bot.game.board.add(2, 1, true);
-    bot.game.board.add(3, 1, true);
-    bot.game.board.add(0, 2, true);
     bot.game.board.add(1, 2, true);
-    bot.game.board.add(0, 3, true);
-    bot.game.board.add(1, 3, true);
-    bot.game.board.add(0, 4, true);
-    bot.game.board.add(1, 4, true);
-    bot.game.board.add(2, 4, true);
-    bot.game.board.add(0, 5, true);
-    bot.game.board.add(1, 5, true);
-    bot.game.board.add(2, 5, true);
-    bot.game.board.add(0, 6, true);
-    bot.game.board.add(1, 6, true);
-    bot.game.board.add(2, 6, true);
-    bot.game.board.add(3, 6, true);
-    bot.game.board.add(0, 7, true);
-    bot.game.board.add(1, 7, true);
-    bot.game.board.add(2, 7, true);
-    bot.game.board.add(3, 7, true);
-    bot.game.board.add(4, 7, true);
-    bot.game.board.add(0, 8, true);
-    bot.game.board.add(1, 8, true);
-    bot.game.board.add(2, 8, true);
-    bot.game.board.add(3, 8, true);
-    bot.game.board.add(4, 8, true);
-    bot.game.board.add(5, 8, true);
 
     bot
 }
