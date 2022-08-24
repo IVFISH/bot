@@ -431,13 +431,14 @@ impl Bot {
         placement_list: &mut Vec<Placement>,
         mut placement: Placement) {
 
+
+        // TODO: move these somewhere
         let commands = [
             Command::RotateCW,
             Command::MoveRight,
             Command::MoveLeft,
             Command::RotateCCW,
             Command::Rotate180,
-            Command::SoftDrop,
         ];
         let actions = [
             Game::piece_rotate_cw,
@@ -445,20 +446,19 @@ impl Bot {
             Game::piece_left,
             Game::piece_rotate_ccw,
             Game::piece_rotate_180,
-            Game::piece_soft_drop,
         ];
-
-        Game::piece_soft_drop(&mut self.game);
 
         for (command, action) in zip(commands, actions)  {
             action(&mut self.game);
-            Game::piece_soft_drop(&mut self.game);
+            Game::piece_soft_drop(&mut self.game); // TODO: use check_grounded instead of SDing every time
             if Bot::new_placement(&self.game.active_piece, placement_list){
                 moove.push(command);
+                moove.push(SoftDrop);
+
                 move_list.push(moove.clone());
-                placement_list.push(self.game.active_piece.clone());
-                self.find_non_trivial(moove.clone(), move_list, placement_list, self.game.active_piece.clone());
-                // println!("finished :D");
+                placement_list.push(self.game.active_piece); // NEED TO CLONE?
+
+                self.find_non_trivial(moove.clone(), move_list, placement_list, self.game.active_piece); // NEED TO CLONE ACTIVE PIECE?
             }
             self.game.active_piece = placement;
         }
@@ -470,6 +470,7 @@ impl Bot {
         mut placement_list: Vec<Placement>,
     ) -> (Vec<MoveList>, Vec<Placement>) {
 
+        // OLD IMPLEMENTATION
         // while !unchecked_moves.is_empty() {
         //     let current_move = unchecked_moves.pop_front().unwrap();
         //     self.game.active_piece = unchecked_placements.pop_front().unwrap();
