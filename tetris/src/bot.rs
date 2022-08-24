@@ -150,7 +150,7 @@ impl Bot {
             hold_piece = self.game.piece_queue_peek();
         }
 
-        let (moves, used) = self.find_trivial(false);
+        let (mut moves, mut used) = self.find_trivial(false);
         let (mut moves, mut used) = self.add_non_trivial(moves, used);
 
         self.game.active_piece = Placement::new(hold_piece);
@@ -424,13 +424,12 @@ impl Bot {
         (trivial_moves, trivial_placements)
     }
 
-    fn add_non_trivial(
+    fn find_non_trivial(
         &mut self,
-        mut trivial: Vec<MoveList>,
-        mut used_placements: Vec<Placement>,
-    ) -> (Vec<MoveList>, Vec<Placement>) {
-        let mut unchecked_moves = VecDeque::from(trivial.clone());
-        let mut unchecked_placements = VecDeque::from(used_placements.clone());
+        mut moove: MoveList,
+        move_list: &mut Vec<MoveList>,
+        placement_list: &mut Vec<Placement>,
+        mut placement: Placement) {
 
         let commands = [
             Command::MoveRight,
@@ -447,24 +446,54 @@ impl Bot {
             Game::piece_rotate_180,
         ];
 
-        while !unchecked_moves.is_empty() {
-            let current_move = unchecked_moves.pop_front().unwrap();
-            self.game.active_piece = unchecked_placements.pop_front().unwrap();
-
-            for (command, action) in zip(commands, actions) {
-                let (new_trivial, new_used_placements) =
-                    self.do_undo_action(action, command, &current_move, &used_placements);
-
-                unchecked_moves.append(&mut VecDeque::from(new_trivial.clone()));
-                unchecked_placements.append(&mut VecDeque::from(new_used_placements.clone()));
-                trivial.extend(new_trivial);
-                used_placements.extend(new_used_placements);
+        for (command, action) in zip(commands, actions)  {
+            action(&mut self.game);
+            // println!("unga");
+            if Bot::new_placement(&self.game.active_piece, placement_list){
+                moove.push(command);
+                move_list.push(moove.clone());
+                placement_list.push(self.game.active_piece);
+                // println!("called");
+                self.find_non_trivial(moove.clone(), move_list, placement_list, placement);
+                // println!("finished :D");
             }
+            self.game.active_piece = placement;
         }
 
-        self.game.reset_active_piece();
+    }
 
-        (trivial, used_placements)
+    fn add_non_trivial(
+        &mut self,
+        mut move_list: Vec<MoveList>,
+        mut placement_list: Vec<Placement>,
+    ) -> (Vec<MoveList>, Vec<Placement>) {
+
+        // while !unchecked_moves.is_empty() {
+        //     let current_move = unchecked_moves.pop_front().unwrap();
+        //     self.game.active_piece = unchecked_placements.pop_front().unwrap();
+        //
+        //     for (command, action) in zip(commands, actions) {
+        //         let (new_trivial, new_used_placements) =
+        //             self.do_undo_action(action, command, &current_move, &used_placements);
+        //
+        //         unchecked_moves.append(&mut VecDeque::from(new_trivial.clone()));
+        //         unchecked_placements.append(&mut VecDeque::from(new_used_placements.clone()));
+        //         trivial.extend(new_trivial);
+        //         used_placements.extend(new_used_placements);
+        //     }
+        // }
+        //
+        // self.game.reset_active_piece();
+        let firstmove = move_list.pop().unwrap();
+        let firstplace = placement_list.pop().unwrap();
+
+        // println!("len before nontriv {}", move_list.len());
+
+        self.find_non_trivial(firstmove, &mut move_list, &mut placement_list, firstplace);
+
+        // println!("len after nontriv {}", move_list.len());
+
+        (move_list, placement_list)
     }
 
     fn new_placement(placement: &Placement, used_placements: &Vec<Placement>) -> bool {
@@ -498,12 +527,12 @@ pub struct Weights {
 impl Default for Weights {
     fn default() -> Self {
         Self {
-            height_weight: Polynomial::new(vec![0.0, 2.0, 2.0]),
+            height_weight: Polynomial::new(vec![0.0, 2.0, 0.0]),
 
             adjacent_height_differences_weight: Polynomial::new(vec![0.0, 2.0, 1.0]),
-            total_height_difference_weight: Polynomial::new(vec![0.0, 0.0, 1.0]),
-            num_hole_total_weight: Polynomial::new(vec![0.0, 5.0, 0.0]),
-            num_hole_weighted_weight: Polynomial::new(vec![0.0, 6.0, 0.0]),
+            total_height_difference_weight: Polynomial::new(vec![0.0, 0.0, 0.0]),
+            num_hole_total_weight: Polynomial::new(vec![0.0, 12.0, 0.0]),
+            num_hole_weighted_weight: Polynomial::new(vec![0.0, 0.0, 0.0]),
             cell_covered_weight: Polynomial::new(vec![0.0, 10.0, 1.0]),
 
             b2b_weight: Polynomial::new(vec![0.0, -1.0, -5.0]),
@@ -557,7 +586,7 @@ pub fn bot_play() {
         println!("{}", bot.game);
         println!("height: {}", bot.game.board.max_filled_height());
 
-        thread::sleep(time::Duration::from_millis(200));
+        thread::sleep(time::Duration::from_millis(0));
     }
 }
 
@@ -626,7 +655,7 @@ mod move_gen_tests {
         bot.game.board.add(5, 1, true);
         bot.game.board.add(3, 7, true);
 
-        assert_eq!(bot.score_board(false), 344)
+        assert_eq!(bot.score_board(false), 344.0)
     }
 
     #[test]
@@ -642,7 +671,7 @@ mod move_gen_tests {
         // 13 * 6 = 78
         // 113^2 + 5(113) = 13334
 
-        assert_eq!(bot.score_board(false), 13762);
+        assert_eq!(bot.score_board(false), 13762.0);
     }
 
     #[test]
@@ -813,15 +842,16 @@ mod move_gen_tests {
 
     fn test_weights() -> Weights {
         Weights {
-            height_weight: Polynomial::new(vec![0, 5, 1]),
+            height_weight: Polynomial::new(vec![0.0, 5.0, 1.0]),
 
-            adjacent_height_differences_weight: Polynomial::new(vec![0, 2, 1]),
-            total_height_difference_weight: Polynomial::new(vec![0, 2, 1]),
-            num_hole_weight: Polynomial::new(vec![0, 6, 0]),
-            cell_covered_weight: Polynomial::new(vec![0, 5, 1]),
+            adjacent_height_differences_weight: Polynomial::new(vec![0.0, 2.0, 1.0]),
+            total_height_difference_weight: Polynomial::new(vec![0.0, 2.0, 1.0]),
+            num_hole_total_weight: Polynomial::new(vec![0.0, 5.0, 0.0]),
+            num_hole_weighted_weight: Polynomial::new(vec![0.0, 6.0, 0.0]),
+            cell_covered_weight: Polynomial::new(vec![0.0, 5.0, 1.0]),
 
-            b2b_weight: Polynomial::new(vec![0, -1, -5]),
-            combo_weight: Polynomial::new(vec![0, -2, -2]),
+            b2b_weight: Polynomial::new(vec![0.0, -1.0, -5.0]),
+            combo_weight: Polynomial::new(vec![0.0, -2.0, -2.0])
         }
     }
 

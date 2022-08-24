@@ -304,7 +304,7 @@ pub struct GameData {
 
     pub pieces_placed: u16,
     pub lines_cleared: usize,
-    pub lines_sent: u8,
+    pub lines_sent: u16,
 
     pub game_over: bool,
     init_time: f32,
