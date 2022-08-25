@@ -567,6 +567,7 @@ pub struct Weights {
 
     pub b2b_weight: Polynomial<f32>,
     pub combo_weight: Polynomial<f32>,
+    pub damage_weight: Polynomial<f32>
 }
 
 impl Default for Weights {
@@ -581,7 +582,8 @@ impl Default for Weights {
             cell_covered_weight: Polynomial::new(vec![0.0, 10.0, 1.0]),
 
             b2b_weight: Polynomial::new(vec![0.0, -1.0, -5.0]),
-            combo_weight: Polynomial::new(vec![0.0, -2.0, -2.0]),
+            combo_weight: Polynomial::new(vec![0.0, -20.0, -2.0]),
+            damage_weight: Polynomial::new(vec![0.0, -200.0, -2.0])
         }
     }
 }
@@ -605,6 +607,7 @@ impl Weights {
 
             b2b_weight: Self::mutate_polynomial(&self.b2b_weight),
             combo_weight: Self::mutate_polynomial(&self.combo_weight),
+            damage_weight: Self::mutate_polynomial(&self.damage_weight)
         }
     }
 
@@ -634,11 +637,11 @@ pub fn bot_play() {
 
     while !bot.game.game_over {
         // clears the console
-        print!("{}[2J", 27 as char);
+        // print!("{}[2J", 27 as char);
 
         bot.make_move();
         println!("{}", bot.game);
-        println!("height: {}", bot.game.board.max_filled_height());
+        // println!("height: {}", bot.game.board.max_filled_height());
 
         thread::sleep(time::Duration::from_millis(500));
     }
@@ -881,6 +884,7 @@ mod move_gen_tests {
 
             b2b_weight: Polynomial::new(vec![0.0, -1.0, -5.0]),
             combo_weight: Polynomial::new(vec![0.0, -2.0, -2.0]),
+            damage_weight: Polynomial::new(vec![0.0, -20.0, 0.0])
         }
     }
 

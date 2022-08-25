@@ -280,9 +280,9 @@ impl Game {
 
         let t_spin_type = self.board.get_t_spin_type(self.active_piece);
         let attack_type = attack_type(t_spin_type, lines_cleared);
+        let before_sent = self.game_data.lines_sent;
         self.game_data
             .update(lines_cleared, attack_type, self.board.all_clear());
-
         Ok(())
     }
 
@@ -507,9 +507,9 @@ impl GameData {
 
         // update lines sent before adding b2b/combo
         let lines_sent = calc_damage(self, attack, lines_cleared);
-        self.lines_sent += 1;
+        self.lines_sent += lines_sent as u16;
 
-        let b2b = BACK_TO_BACK_TYPES.iter().any(|x| x == &attack);
+        let b2b = BACK_TO_BACK_TYPES.contains(&attack);
         if b2b {
             self.b2b += 1;
         } else {
