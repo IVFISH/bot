@@ -640,7 +640,7 @@ pub fn bot_play() {
         println!("{}", bot.game);
         println!("height: {}", bot.game.board.max_filled_height());
 
-        thread::sleep(time::Duration::from_millis(0));
+        thread::sleep(time::Duration::from_millis(500));
     }
 }
 

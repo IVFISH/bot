@@ -273,9 +273,6 @@ impl Board {
     }
 
     pub fn clear_lines(&mut self, update_heights: bool) -> usize {
-        // println!("aa");
-        // println!("{}", self);
-        // println!("{:?}", self.heights_for_each_column);
 
         let full_rows = self.all_full_rows();
         let num_full_rows = self.all_full_rows().len();
@@ -469,11 +466,24 @@ impl Display for Board {
     }
 }
 
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum AttackType {
+    None,
+    S,
+    D,
+    T,
+    Q,
+    TSM,
+    TDM,
+    TS,
+    TD,
+    TT,
+}
 #[derive(Debug, PartialEq)]
 pub enum TSpinType {
     None,
-    Mini,
     Full,
+    Mini
 }
 
 const RELATIVE_CORNERS: [([MoveVector; 2], [MoveVector; 2]); 4] = [
@@ -573,10 +583,10 @@ mod board_tests {
             last_kick: 0,
         };
 
-        assert_eq!(board.get_t_spin_type(piece), TSpinType::Full);
+        assert_eq!(board.get_t_spin_type(piece), AttackType::Full);
 
         piece.piece_type = 1;
-        assert_eq!(board.get_t_spin_type(piece), TSpinType::None);
+        assert_eq!(board.get_t_spin_type(piece), AttackType::None);
     }
 
     #[test]
@@ -591,10 +601,10 @@ mod board_tests {
         };
 
         // println!("{}", board.to_string(&piece));
-        assert_eq!(board.get_t_spin_type(piece), TSpinType::Mini);
+        assert_eq!(board.get_t_spin_type(piece), AttackType::Mini);
 
         piece.piece_type = 1;
-        assert_eq!(board.get_t_spin_type(piece), TSpinType::None);
+        assert_eq!(board.get_t_spin_type(piece), AttackType::None);
     }
 
     #[test]

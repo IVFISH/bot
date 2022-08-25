@@ -6,6 +6,7 @@ use std::str::FromStr;
 
 use crate::board::*;
 use crate::errors::GameError;
+use crate::game::damage_calculations::*;
 use crate::placement::*;
 use crate::queue::*;
 
@@ -278,8 +279,9 @@ impl Game {
         let lines_cleared = self.board.clear_lines(update_heights);
 
         let t_spin_type = self.board.get_t_spin_type(self.active_piece);
+        let attack_type = attack_type(t_spin_type, lines_cleared);
         self.game_data
-            .update(lines_cleared, t_spin_type, self.board.all_clear());
+            .update(lines_cleared, attack_type, self.board.all_clear());
 
         Ok(())
     }
@@ -492,7 +494,7 @@ impl GameData {
         }
     }
 
-    fn update(&mut self, lines_cleared: usize, t_spin_type: TSpinType, all_clear: bool) {
+    fn update(&mut self, lines_cleared: usize, attack: AttackType, all_clear: bool) {
         self.pieces_placed += 1;
 
         if lines_cleared == 0 {
@@ -504,9 +506,10 @@ impl GameData {
         self.lines_cleared += lines_cleared;
 
         // update lines sent before adding b2b/combo
+        let lines_sent = calc_damage(self, attack, lines_cleared);
         self.lines_sent += 1;
 
-        let b2b = (t_spin_type != TSpinType::None) || (lines_cleared == 4);
+        let b2b = BACK_TO_BACK_TYPES.iter().any(|x| x == &attack);
         if b2b {
             self.b2b += 1;
         } else {
@@ -519,74 +522,90 @@ impl GameData {
 }
 
 mod damage_calculations {
-    use crate::board::TSpinType;
+    use crate::board::{AttackType, TSpinType};
+    use crate::game::GameData;
+    use super::Game;
 
-    const D_T_Q_MULTIPLIER: [f32; 3] = [0.25, 0.5, 1.0];
+    // d, t, q, ts, td, tt
+    const ATTACK_TYPE_CONVERSION: [usize; 7] = [1, 2, 4, 2, 4, 6, 0];
 
-    const S_ATTACKS: [u8; 20] = [0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3];
-    const TM_ATTACKS: [[u8; 2]; 20] = [
-        [0, 1],
-        [0, 1],
-        [1, 1],
-        [1, 1],
-        [1, 2],
-        [1, 2],
-        [2, 2],
-        [2, 2],
-        [2, 3],
-        [2, 3],
-        [2, 3],
-        [2, 3],
-        [2, 4],
-        [2, 4],
-        [2, 4],
-        [2, 4],
-        [3, 5],
-        [3, 5],
-        [3, 5],
-        [3, 5],
-    ];
-
-    pub fn calculate_damage(
-        lines_cleared: usize,
-        t_spin: TSpinType,
-        b2b: u8,
-        combo: u8,
-        all_clear: bool,
-    ) -> u8 {
-        let multiplier = 1.0;
-        let all_clear_damage = all_clear as u8 * 10;
-
-        ((combo as f32 + 4.0) * b2b as f32 * multiplier) as u8 + all_clear_damage
+    fn attack_type_to_index(attack: AttackType) -> usize {
+        match attack {
+            AttackType::D => 0,
+            AttackType::T => 1,
+            AttackType::Q => 2,
+            AttackType::TS => 3,
+            AttackType::TD => 4,
+            AttackType::TT => 5,
+            _ => 6,
+        }
     }
 
-    fn single(combo: u8) -> u8 {
-        S_ATTACKS[combo as usize]
+    const BACK_TO_BACK_CONVERSION: [f32; 5] = [1.0, 1.25, 1.5, 1.75, 2.0];
+    const WEIRD_DAMAGE_TABLE: [[usize; 20]; 3] =
+        [
+            [0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3],
+            [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5],
+            [0; 20]
+        ];
+
+    fn attack_type_to_index_special(attack: AttackType) -> usize {
+        match attack {
+            AttackType::S => 0,
+            AttackType::TSM => 0,
+            AttackType::TDM => 1,
+            _ => 2
+        }
     }
 
-    fn mini(combo: u8, lines_cleared: usize) -> u8 {
-        TM_ATTACKS[combo as usize][lines_cleared - 2]
+    pub const BACK_TO_BACK_TYPES: [AttackType; 6] = [AttackType::TS, AttackType::TD, AttackType::TT, AttackType::TSM, AttackType::TDM, AttackType::Q];
+
+    fn b2b_to_level(chain_length: i8) -> usize {
+        match chain_length {
+            0 => 0,
+            1..=2 => 1,
+            3..=7 => 2,
+            8..=23 => 3,
+            24..=66 => 4,
+            67..=100 => 5,
+            _ => 6,
+        }
     }
 
-    fn double_triple(combo: u8, lines_cleared: usize) -> u8 {
-        (D_T_Q_MULTIPLIER[lines_cleared - 2] * (combo as f32 + 4.0)) as u8
-    }
-
-    fn other(combo: u8, lines_cleared: usize, t_spin_full: bool, b2b: usize) {
-        let mut b2b_multiplier = 1.0;
-        match b2b {
-            0 => b2b_multiplier = 1.0,
-            1..=3 => b2b_multiplier = 1.25,
-            4..=8 => b2b_multiplier = 1.5,
-            9..=24 => b2b_multiplier = 1.75,
-            25..=67 => b2b_multiplier = 2.0,
-            68..=185 => b2b_multiplier = 2.25,
-            186..=504 => b2b_multiplier = 2.5,
-            505..=1370 => b2b_multiplier = 2.75,
-            _ => b2b_multiplier = 3.0,
+    pub fn calc_damage(game: &mut GameData, attack_type: AttackType, num_cleared: usize) -> usize {
+        if num_cleared == 0 {
+            return 0;
         }
 
-        (D_T_Q_MULTIPLIER[lines_cleared - 2] * b2b_multiplier) as u8 * (combo + 4);
+        let combo = game.combo as usize;
+        let b2b = game.b2b;
+        let all_clear_damage = 10 * game.all_clear as usize;
+
+        let without_b2b = (combo + 4) * ATTACK_TYPE_CONVERSION[attack_type_to_index(attack_type)] / 4
+            + WEIRD_DAMAGE_TABLE[attack_type_to_index_special(attack_type)][combo];
+
+        (without_b2b as f32 * BACK_TO_BACK_CONVERSION[b2b_to_level(b2b)]) as usize + all_clear_damage
+    }
+
+    pub fn attack_type(t_spin: TSpinType, lines_cleared: usize) -> AttackType {
+        match lines_cleared {
+            0 => AttackType::None,
+            4 => AttackType::Q,
+            3 => match t_spin {
+                TSpinType::None => AttackType::T,
+                _ => AttackType::TT,
+            },
+            2 => match t_spin {
+                TSpinType::None => AttackType::D,
+                TSpinType::Mini => AttackType::TDM,
+                T_ => AttackType::TD
+            }
+            _ => match t_spin {
+                TSpinType::None => AttackType::S,
+                TSpinType::Mini => AttackType::TSM,
+                _ => AttackType::TS
+            }
+        }
     }
 }
 
