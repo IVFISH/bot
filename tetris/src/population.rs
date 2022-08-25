@@ -1,5 +1,5 @@
-use crate::players::*;
 use crate::bot::*;
+use crate::players::*;
 use std::cmp;
 
 pub struct Population {
@@ -9,9 +9,7 @@ pub struct Population {
 
 impl Population {
     fn reset_population(&self) -> Self {
-        let scores: Vec<f32> = self.bots.iter().map(
-            |player| Self::cost(player)
-        ).collect();
+        let scores: Vec<f32> = self.bots.iter().map(|player| Self::cost(player)).collect();
 
         let min_score = scores.iter().fold(f32::INFINITY, |a, &b| a.min(b));
         let num = scores.iter().position(|x| x == &min_score).unwrap();
@@ -23,9 +21,7 @@ impl Population {
             bots.push(best.give_birth());
         }
 
-        Self {
-            bots
-        }
+        Self { bots }
     }
 
     fn run_all(&mut self) {
@@ -36,5 +32,4 @@ impl Population {
         // some measure of board state and versus stats
         todo!()
     }
-
 }

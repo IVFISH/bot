@@ -6,8 +6,8 @@ mod game;
 mod human;
 mod placement;
 mod players;
-mod queue;
 mod population;
+mod queue;
 
 use crate::bot::*;
 use crate::game::Game;

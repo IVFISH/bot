@@ -71,7 +71,7 @@ impl Bot {
     pub fn give_birth(&self) -> Self {
         Self {
             game: Game::new(None),
-            weight: self.weight.mutate()
+            weight: self.weight.mutate(),
         }
     }
 
@@ -135,7 +135,11 @@ impl Bot {
             .board
             .get_adjacent_height_differences()
             .iter()
-            .map(|x| self.weight.adjacent_height_differences_weight.eval(*x as f32))
+            .map(|x| {
+                self.weight
+                    .adjacent_height_differences_weight
+                    .eval(*x as f32)
+            })
             .sum();
 
         out += self
@@ -465,9 +469,8 @@ impl Bot {
         mut moove: MoveList,
         move_list: &mut Vec<MoveList>,
         placement_list: &mut Vec<Placement>,
-        mut placement: Placement) {
-
-
+        mut placement: Placement,
+    ) {
         // TODO: move these somewhere
         let commands = [
             Command::RotateCW,
@@ -484,17 +487,22 @@ impl Bot {
             Game::piece_rotate_180,
         ];
 
-        for (command, action) in zip(commands, actions)  {
+        for (command, action) in zip(commands, actions) {
             action(&mut self.game);
             Game::piece_soft_drop(&mut self.game); // TODO: use check_grounded instead of SDing every time
-            if Bot::new_placement(&self.game.active_piece, placement_list){
+            if Bot::new_placement(&self.game.active_piece, placement_list) {
                 moove.push(command);
                 moove.push(SoftDrop);
 
                 move_list.push(moove.clone());
                 placement_list.push(self.game.active_piece); // NEED TO CLONE?
 
-                self.find_non_trivial(moove.clone(), move_list, placement_list, self.game.active_piece); // NEED TO CLONE ACTIVE PIECE?
+                self.find_non_trivial(
+                    moove.clone(),
+                    move_list,
+                    placement_list,
+                    self.game.active_piece,
+                ); // NEED TO CLONE ACTIVE PIECE?
             }
             self.game.active_piece = placement;
         }
@@ -505,7 +513,6 @@ impl Bot {
         mut move_list: Vec<MoveList>,
         mut placement_list: Vec<Placement>,
     ) -> (Vec<MoveList>, Vec<Placement>) {
-
         // OLD IMPLEMENTATION
         // while !unchecked_moves.is_empty() {
         //     let current_move = unchecked_moves.pop_front().unwrap();
@@ -555,7 +562,7 @@ pub struct Weights {
     pub adjacent_height_differences_weight: Polynomial<f32>,
     pub total_height_difference_weight: Polynomial<f32>,
     pub num_hole_total_weight: Polynomial<f32>,
-     pub num_hole_weighted_weight: Polynomial<f32>,
+    pub num_hole_weighted_weight: Polynomial<f32>,
     pub cell_covered_weight: Polynomial<f32>,
 
     pub b2b_weight: Polynomial<f32>,
@@ -586,8 +593,12 @@ impl Weights {
         Self {
             height_weight: Self::mutate_polynomial(&self.height_weight),
 
-            adjacent_height_differences_weight: Self::mutate_polynomial(&self.adjacent_height_differences_weight),
-            total_height_difference_weight: Self::mutate_polynomial(&self.total_height_difference_weight),
+            adjacent_height_differences_weight: Self::mutate_polynomial(
+                &self.adjacent_height_differences_weight,
+            ),
+            total_height_difference_weight: Self::mutate_polynomial(
+                &self.total_height_difference_weight,
+            ),
             num_hole_total_weight: Self::mutate_polynomial(&self.num_hole_total_weight),
             num_hole_weighted_weight: Self::mutate_polynomial(&self.num_hole_weighted_weight),
             cell_covered_weight: Self::mutate_polynomial(&self.cell_covered_weight),
@@ -598,7 +609,12 @@ impl Weights {
     }
 
     fn mutate_polynomial(poly: &Polynomial<f32>) -> Polynomial<f32> {
-        Polynomial::new(poly.data().iter().map(|x| Weights::mutate_numb(*x)).collect())
+        Polynomial::new(
+            poly.data()
+                .iter()
+                .map(|x| Weights::mutate_numb(*x))
+                .collect(),
+        )
     }
 
     fn mutate_numb(x: f32) -> f32 {
@@ -609,10 +625,9 @@ impl Weights {
     }
 }
 
-
+use crate::Command::SoftDrop;
 use itertools::min;
 use std::{thread, time};
-use crate::Command::SoftDrop;
 
 pub fn bot_play() {
     let mut bot = Bot::default();
@@ -865,7 +880,7 @@ mod move_gen_tests {
             cell_covered_weight: Polynomial::new(vec![0.0, 5.0, 1.0]),
 
             b2b_weight: Polynomial::new(vec![0.0, -1.0, -5.0]),
-            combo_weight: Polynomial::new(vec![0.0, -2.0, -2.0])
+            combo_weight: Polynomial::new(vec![0.0, -2.0, -2.0]),
         }
     }
 

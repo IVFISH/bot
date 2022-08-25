@@ -6,7 +6,7 @@ pub enum GameError {
     NotInBounds,
     Collision,
     TopOut,
-    UnknownBag
+    UnknownBag,
 }
 
 impl Display for GameError {
@@ -15,7 +15,7 @@ impl Display for GameError {
             GameError::NotInBounds => write!(f, "Not In Bounds")?,
             GameError::Collision => write!(f, "Collision")?,
             GameError::UnknownBag => write!(f, "Unknown Bag")?,
-            GameError::TopOut => write!(f, "Thank you for playing.")?
+            GameError::TopOut => write!(f, "Thank you for playing.")?,
         }
         Ok(())
     }

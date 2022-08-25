@@ -1,5 +1,5 @@
-use std::fmt::{Display, Formatter};
 use std::collections::VecDeque;
+use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 
 use rand::Rng;
