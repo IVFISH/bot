@@ -874,7 +874,7 @@ mod move_gen_tests {
 
     fn test_weights() -> Weights {
         Weights {
-            height_weight: Polynomial::new(vec![0.0, 5.0, 1.0]),
+            height_weight: Polynomial::new(vec![0.0, -20.0, -1.0]),
 
             adjacent_height_differences_weight: Polynomial::new(vec![0.0, 2.0, 1.0]),
             total_height_difference_weight: Polynomial::new(vec![0.0, 2.0, 1.0]),
@@ -884,7 +884,7 @@ mod move_gen_tests {
 
             b2b_weight: Polynomial::new(vec![0.0, -1.0, -5.0]),
             combo_weight: Polynomial::new(vec![0.0, -2.0, -2.0]),
-            damage_weight: Polynomial::new(vec![0.0, -20.0, 0.0])
+            damage_weight: Polynomial::new(vec![0.0, 20.0, -20.0])
         }
     }
 
