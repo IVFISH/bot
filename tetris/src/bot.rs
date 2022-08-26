@@ -580,7 +580,8 @@ impl SerializableWeights {
         let weights = vec![
             weight.height_weight.data().try_into().unwrap(), weight.adjacent_height_differences_weight.data().try_into().unwrap(), weight.total_height_difference_weight.data().try_into().unwrap(),
             weight.num_hole_weighted_weight.data().try_into().unwrap(), weight.num_hole_total_weight.data().try_into().unwrap(), weight.cell_covered_weight.data().try_into().unwrap(),
-            weight.b2b_weight.data().try_into().unwrap(), weight.combo_weight.data().try_into().unwrap()
+            weight.b2b_weight.data().try_into().unwrap(), weight.combo_weight.data().try_into().unwrap(), weight.clear_weight.data().try_into().unwrap(),
+            weight.damage_weight.data().try_into().unwrap()
         ];
         Self {
             weights
@@ -599,6 +600,8 @@ impl SerializableWeights {
 
             b2b_weight: Polynomial::new(Vec::from(self.weights[6].clone())),
             combo_weight: Polynomial::new(Vec::from(self.weights[7].clone())),
+            clear_weight: Polynomial::new(Vec::from(self.weights[8].clone())),
+            damage_weight: Polynomial::new(Vec::from(self.weights[9].clone())),
         }
     }
 }
@@ -623,16 +626,16 @@ impl Default for Weights {
         Self {
             height_weight: Polynomial::new(vec![0.0, 10.0, 0.0]),
 
-            adjacent_height_differences_weight: Polynomial::new(vec![0.0, 2.0, 1.0]),
-            total_height_difference_weight: Polynomial::new(vec![0.0, 0.0, 0.001]),
-            num_hole_total_weight: Polynomial::new(vec![0.0, 12.0, 0.0]),
-            num_hole_weighted_weight: Polynomial::new(vec![0.0, 0.0, 0.001]),
-            cell_covered_weight: Polynomial::new(vec![0.0, 10.0, 1.0]),
+            adjacent_height_differences_weight: Polynomial::new(vec![0.0, 4.0, 1.0]),
+            total_height_difference_weight: Polynomial::new(vec![0.0, 0.0, 0.0]),
+            num_hole_total_weight: Polynomial::new(vec![0.0, 6.0, 0.0]),
+            num_hole_weighted_weight: Polynomial::new(vec![0.0, 4.0, 0.0]),
+            cell_covered_weight: Polynomial::new(vec![0.0, 5.0, 1.0]),
 
             b2b_weight: Polynomial::new(vec![0.0]),
             combo_weight: Polynomial::new(vec![0.0]),
-            damage_weight: Polynomial::new(vec![0.0]),
-            clear_weight: Polynomial::new(vec![0.0])
+            damage_weight: Polynomial::new(vec![0.0, -20.0]),
+            clear_weight: Polynomial::new(vec![0.0, 20.0, -3.0])
         }
     }
 }
