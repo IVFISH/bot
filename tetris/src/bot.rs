@@ -39,13 +39,13 @@ impl Player for Bot {
     }
 
     fn get_next_move(&mut self) -> MoveList {
-        use std::time::Instant;
-        let now = Instant::now();
+        // use std::time::Instant;
+        // let now = Instant::now();
 
         let (mut moves, placements) = self.all_moves_and_placements();
 
-        let elapsed = now.elapsed();
-        println!("Elapsed: {:.2?}", elapsed);
+        // let elapsed = now.elapsed();
+        // println!("Elapsed: {:.2?}", elapsed);
         let mut scores = vec![];
 
         let piece = self.game.active_piece.clone();
@@ -483,7 +483,7 @@ impl Bot {
             Command::Rotate180,
         ];
 
-        /// "SHADOW" IMPLEMENTATION
+        // "SHADOW" IMPLEMENTATION
         let actions = [
             Game::return_piece_right,
             Game::return_piece_left,
@@ -514,7 +514,7 @@ impl Bot {
             self.find_non_trivial(moove.clone(), move_list, placement_list, copy);
         }
 
-        /// MUTATING IMPLEMENTATION
+        // MUTATING IMPLEMENTATION
         // let actions = [
         //     Game::active_piece_rotate_cw,
         //     Game::active_piece_right,
@@ -669,7 +669,13 @@ pub fn bot_play() {
         // clears the console
         print!("{}[2J", 27 as char);
 
+        use std::time::Instant;
+        let now = Instant::now();
+
         bot.make_move();
+
+        let elapsed = now.elapsed();
+        println!("Elapsed: {:.2?}", elapsed);
         println!("{}", bot.game);
         println!("height: {}", bot.game.board.max_filled_height());
 
