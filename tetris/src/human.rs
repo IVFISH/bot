@@ -27,9 +27,10 @@ impl Default for Human {
 }
 
 impl Player for Human {
-    fn get_game(&mut self) -> &mut Game {
+    fn get_game_mut(&mut self) -> &mut Game {
         &mut self.game
     }
+    fn get_game(&self) -> &Game { &self.game}
 
     fn get_next_move(&mut self) -> MoveList {
         if let Some(eshan) = &self.next_move {
@@ -79,8 +80,8 @@ struct Information {
 pub fn human_play() {
     let mut human = Human::default();
 
-    let empty_board = serde_json::to_string(&human.get_game().get_board_json());
-    let new_queue = serde_json::to_string(&human.get_game().get_piece_queue_json());
+    let empty_board = serde_json::to_string(&human.get_game_mut().get_board_json());
+    let new_queue = serde_json::to_string(&human.get_game_mut().get_piece_queue_json());
 
     // Connect to the WS server locally
     let (mut socket, _response) =
@@ -110,12 +111,12 @@ pub fn human_play() {
         human.make_move();
 
         // send board
-        let board_state = serde_json::to_string(&human.get_game().get_board_json());
-        let queue = serde_json::to_string(&human.get_game().get_piece_queue_json());
+        let board_state = serde_json::to_string(&human.get_game_mut().get_board_json());
+        let queue = serde_json::to_string(&human.get_game_mut().get_piece_queue_json());
 
         socket.write_message(Message::Text(queue.unwrap())).unwrap();
 
-        if let Some(hold) = human.get_game().hold_piece {
+        if let Some(hold) = human.get_game_mut().hold_piece {
             let hold = serde_json::to_string(&json!({
                         "hold": PieceQueue::int_to_piece(hold),
                         "kind": String::from("hold")}));

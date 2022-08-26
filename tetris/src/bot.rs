@@ -1,6 +1,9 @@
 use std::collections::VecDeque;
 use std::fmt::{Display, Formatter};
 use std::iter::zip;
+use serde_json::{json, to_writer};
+use serde::{Deserialize, Serialize, Serializer};
+use std::io::Write;
 
 use polynomial::Polynomial;
 
@@ -14,7 +17,7 @@ use rand::Rng;
 
 pub struct Bot {
     game: Game,
-    weight: Weights,
+    pub weight: Weights,
 }
 
 impl Display for Bot {
@@ -34,8 +37,12 @@ impl Default for Bot {
 }
 
 impl Player for Bot {
-    fn get_game(&mut self) -> &mut Game {
+    fn get_game_mut(&mut self) -> &mut Game {
         &mut self.game
+    }
+
+    fn get_game(&self) -> &Game {
+        &self.game
     }
 
     fn get_next_move(&mut self) -> MoveList {
@@ -94,8 +101,8 @@ impl Bot {
             info: "".to_string(),
         };
         self.make_move();
-        println!("{}", self);
-        thread::sleep(time::Duration::from_millis(250));
+        // println!("{}", self);
+        // thread::sleep(time::Duration::from_millis(250));
         out
     }
 
@@ -563,6 +570,39 @@ impl Bot {
     }
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct SerializableWeights {
+    pub weights: Vec<Vec<f32>>
+}
+
+impl SerializableWeights {
+    pub fn from_weight(weight: &Weights) -> Self {
+        let weights = vec![
+            weight.height_weight.data().try_into().unwrap(), weight.adjacent_height_differences_weight.data().try_into().unwrap(), weight.total_height_difference_weight.data().try_into().unwrap(),
+            weight.num_hole_weighted_weight.data().try_into().unwrap(), weight.num_hole_total_weight.data().try_into().unwrap(), weight.cell_covered_weight.data().try_into().unwrap(),
+            weight.b2b_weight.data().try_into().unwrap(), weight.combo_weight.data().try_into().unwrap()
+        ];
+        Self {
+            weights
+        }
+    }
+
+    pub fn to_weight(&self) -> Weights {
+        Weights {
+            height_weight: Polynomial::new(self.weights[0].clone()),
+
+            adjacent_height_differences_weight: Polynomial::new(Vec::from(self.weights[1].clone())),
+            total_height_difference_weight: Polynomial::new(Vec::from(self.weights[2].clone())),
+            num_hole_total_weight: Polynomial::new(Vec::from(self.weights[3].clone())),
+            num_hole_weighted_weight: Polynomial::new(Vec::from(self.weights[4].clone())),
+            cell_covered_weight: Polynomial::new(Vec::from(self.weights[5].clone())),
+
+            b2b_weight: Polynomial::new(Vec::from(self.weights[6].clone())),
+            combo_weight: Polynomial::new(Vec::from(self.weights[7].clone())),
+        }
+    }
+}
+
 pub struct Weights {
     pub height_weight: Polynomial<f32>,
 
@@ -584,9 +624,9 @@ impl Default for Weights {
             height_weight: Polynomial::new(vec![0.0, 10.0, 0.0]),
 
             adjacent_height_differences_weight: Polynomial::new(vec![0.0, 2.0, 1.0]),
-            total_height_difference_weight: Polynomial::new(vec![0.0, 0.0, 0.0]),
-            num_hole_total_weight: Polynomial::new(vec![0.0, 15.0, 0.0]),
-            num_hole_weighted_weight: Polynomial::new(vec![0.0, 0.0, 1.0]),
+            total_height_difference_weight: Polynomial::new(vec![0.0, 0.0, 0.001]),
+            num_hole_total_weight: Polynomial::new(vec![0.0, 12.0, 0.0]),
+            num_hole_weighted_weight: Polynomial::new(vec![0.0, 0.0, 0.001]),
             cell_covered_weight: Polynomial::new(vec![0.0, 10.0, 1.0]),
 
             b2b_weight: Polynomial::new(vec![0.0]),
@@ -599,6 +639,16 @@ impl Default for Weights {
 
 impl Weights {
     pub const MAX_MUTATION: f32 = 0.1;
+
+    pub fn to_json(&self, filename: String) {
+        let weight = SerializableWeights::from_weight(self);
+        let mut buffer = File::create(filename).unwrap();
+        to_writer(buffer, &weight).unwrap();
+    }
+
+    pub fn from_json(filename: &str) -> Self {
+        todo!()
+    }
 
     pub fn mutate(&self) -> Self {
         Self {
@@ -641,6 +691,8 @@ impl Weights {
 use crate::Command::SoftDrop;
 use itertools::min;
 use std::{thread, time};
+use std::fs::File;
+use serde::ser::SerializeSeq;
 
 pub fn bot_play() {
     let mut bot = Bot::default();
@@ -843,11 +895,11 @@ mod move_gen_tests {
 
         assert!(placements.iter().any(|x| x.abs_locations().unwrap()
             == [
-                Point { row: 0, col: 5 },
-                Point { row: 0, col: 4 },
-                Point { row: 1, col: 4 },
-                Point { row: 1, col: 3 }
-            ]));
+            Point { row: 0, col: 5 },
+            Point { row: 0, col: 4 },
+            Point { row: 1, col: 4 },
+            Point { row: 1, col: 3 }
+        ]));
     }
 
     #[test]
@@ -859,11 +911,11 @@ mod move_gen_tests {
 
         assert!(placements.iter().any(|x| x.abs_locations().unwrap()
             == [
-                Point { row: 1, col: 2 },
-                Point { row: 0, col: 3 },
-                Point { row: 1, col: 3 },
-                Point { row: 2, col: 3 }
-            ]));
+            Point { row: 1, col: 2 },
+            Point { row: 0, col: 3 },
+            Point { row: 1, col: 3 },
+            Point { row: 2, col: 3 }
+        ]));
     }
 
     #[test]
@@ -875,11 +927,11 @@ mod move_gen_tests {
 
         assert!(placements.iter().any(|x| x.abs_locations().unwrap()
             == [
-                Point { row: 0, col: 2 },
-                Point { row: 2, col: 1 },
-                Point { row: 1, col: 1 },
-                Point { row: 0, col: 1 }
-            ]));
+            Point { row: 0, col: 2 },
+            Point { row: 2, col: 1 },
+            Point { row: 1, col: 1 },
+            Point { row: 0, col: 1 }
+        ]));
     }
 
     fn test_weights() -> Weights {
