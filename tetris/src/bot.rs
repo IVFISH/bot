@@ -1,6 +1,9 @@
 use std::collections::VecDeque;
 use std::fmt::{Display, Formatter};
 use std::iter::zip;
+use serde_json::{json, to_writer};
+use serde::{Deserialize, Serialize, Serializer};
+use std::io::Write;
 
 use polynomial::Polynomial;
 
@@ -14,7 +17,7 @@ use rand::Rng;
 
 pub struct Bot {
     game: Game,
-    weight: Weights,
+    pub weight: Weights,
 }
 
 impl Display for Bot {
@@ -34,8 +37,12 @@ impl Default for Bot {
 }
 
 impl Player for Bot {
-    fn get_game(&mut self) -> &mut Game {
+    fn get_game_mut(&mut self) -> &mut Game {
         &mut self.game
+    }
+
+    fn get_game(&self) -> &Game {
+        &self.game
     }
 
     fn get_next_move(&mut self) -> MoveList {
@@ -53,7 +60,7 @@ impl Player for Bot {
         for placement in placements {
             self.game.active_piece = placement;
             self.game.active_piece_soft_drop();
-            scores.push(self.score_board(true));
+            scores.push(self.score(true));
         }
 
         self.game.active_piece = piece;
@@ -77,7 +84,7 @@ impl Bot {
     pub fn give_birth(&self) -> Self {
         Self {
             game: Game::new(None),
-            weight: self.weight.mutate()
+            weight: self.weight.mutate(),
         }
     }
 
@@ -100,6 +107,8 @@ impl Bot {
             info: "".to_string(),
         };
         self.make_move();
+        // println!("{}", self);
+        // thread::sleep(time::Duration::from_millis(250));
         out
     }
 
@@ -110,7 +119,7 @@ impl Bot {
     pub fn score(&mut self, set_piece: bool) -> Score {
         // todo: add versus weights, such as combo/b2b/attack
 
-        self.score_board(set_piece)
+        self.score_board(set_piece) + self.score_versus()
         // below is code from master (old code)
         // self.score_board(set_piece) + self.score_game()
     }
@@ -131,8 +140,13 @@ impl Bot {
         out
     }
 
-    fn score_game(&mut self) -> Score {
-        0.0
+    fn score_versus(&mut self) -> Score {
+        let combo_score = self.weight.combo_weight.eval(self.game.game_data.combo as f32);
+        let b2b = self.weight.b2b_weight.eval(self.game.game_data.b2b as f32);
+        let attack = self.weight.damage_weight.eval(self.game.game_data.last_sent as f32);
+        let clear = self.weight.clear_weight.eval(self.game.game_data.last_cleared as f32);
+
+        return combo_score + b2b + attack + clear;
     }
 
     fn get_height_differences_score(&self) -> f32 {
@@ -141,7 +155,11 @@ impl Bot {
             .board
             .get_adjacent_height_differences()
             .iter()
-            .map(|x| self.weight.adjacent_height_differences_weight.eval(*x as f32))
+            .map(|x| {
+                self.weight
+                    .adjacent_height_differences_weight
+                    .eval(*x as f32)
+            })
             .sum();
 
         out += self
@@ -549,7 +567,6 @@ impl Bot {
         mut move_list: Vec<MoveList>,
         mut placement_list: Vec<Placement>,
     ) -> (Vec<MoveList>, Vec<Placement>) {
-
         // OLD IMPLEMENTATION
         // while !unchecked_moves.is_empty() {
         //     let current_move = unchecked_moves.pop_front().unwrap();
@@ -597,32 +614,72 @@ impl Bot {
     }
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct SerializableWeights {
+    pub weights: Vec<Vec<f32>>
+}
+
+impl SerializableWeights {
+    pub fn from_weight(weight: &Weights) -> Self {
+        let weights = vec![
+            weight.height_weight.data().try_into().unwrap(), weight.adjacent_height_differences_weight.data().try_into().unwrap(), weight.total_height_difference_weight.data().try_into().unwrap(),
+            weight.num_hole_weighted_weight.data().try_into().unwrap(), weight.num_hole_total_weight.data().try_into().unwrap(), weight.cell_covered_weight.data().try_into().unwrap(),
+            weight.b2b_weight.data().try_into().unwrap(), weight.combo_weight.data().try_into().unwrap(), weight.clear_weight.data().try_into().unwrap(),
+            weight.damage_weight.data().try_into().unwrap()
+        ];
+        Self {
+            weights
+        }
+    }
+
+    pub fn to_weight(&self) -> Weights {
+        Weights {
+            height_weight: Polynomial::new(self.weights[0].clone()),
+
+            adjacent_height_differences_weight: Polynomial::new(Vec::from(self.weights[1].clone())),
+            total_height_difference_weight: Polynomial::new(Vec::from(self.weights[2].clone())),
+            num_hole_total_weight: Polynomial::new(Vec::from(self.weights[3].clone())),
+            num_hole_weighted_weight: Polynomial::new(Vec::from(self.weights[4].clone())),
+            cell_covered_weight: Polynomial::new(Vec::from(self.weights[5].clone())),
+
+            b2b_weight: Polynomial::new(Vec::from(self.weights[6].clone())),
+            combo_weight: Polynomial::new(Vec::from(self.weights[7].clone())),
+            clear_weight: Polynomial::new(Vec::from(self.weights[8].clone())),
+            damage_weight: Polynomial::new(Vec::from(self.weights[9].clone())),
+        }
+    }
+}
+
 pub struct Weights {
     pub height_weight: Polynomial<f32>,
 
     pub adjacent_height_differences_weight: Polynomial<f32>,
     pub total_height_difference_weight: Polynomial<f32>,
     pub num_hole_total_weight: Polynomial<f32>,
-     pub num_hole_weighted_weight: Polynomial<f32>,
+    pub num_hole_weighted_weight: Polynomial<f32>,
     pub cell_covered_weight: Polynomial<f32>,
 
     pub b2b_weight: Polynomial<f32>,
     pub combo_weight: Polynomial<f32>,
+    pub damage_weight: Polynomial<f32>,
+    pub clear_weight: Polynomial<f32>,
 }
 
 impl Default for Weights {
     fn default() -> Self {
         Self {
-            height_weight: Polynomial::new(vec![0.0, 2.0, 0.0]),
+            height_weight: Polynomial::new(vec![0.0, 10.0, 0.0]),
 
-            adjacent_height_differences_weight: Polynomial::new(vec![0.0, 2.0, 1.0]),
+            adjacent_height_differences_weight: Polynomial::new(vec![0.0, 4.0, 1.0]),
             total_height_difference_weight: Polynomial::new(vec![0.0, 0.0, 0.0]),
-            num_hole_total_weight: Polynomial::new(vec![0.0, 12.0, 0.0]),
-            num_hole_weighted_weight: Polynomial::new(vec![0.0, 0.0, 0.0]),
-            cell_covered_weight: Polynomial::new(vec![0.0, 10.0, 1.0]),
+            num_hole_total_weight: Polynomial::new(vec![0.0, 6.0, 0.0]),
+            num_hole_weighted_weight: Polynomial::new(vec![0.0, 4.0, 0.0]),
+            cell_covered_weight: Polynomial::new(vec![0.0, 5.0, 1.0]),
 
-            b2b_weight: Polynomial::new(vec![0.0, -1.0, -5.0]),
-            combo_weight: Polynomial::new(vec![0.0, -2.0, -2.0]),
+            b2b_weight: Polynomial::new(vec![0.0]),
+            combo_weight: Polynomial::new(vec![0.0]),
+            damage_weight: Polynomial::new(vec![0.0, -20.0]),
+            clear_weight: Polynomial::new(vec![0.0, 20.0, -3.0])
         }
     }
 }
@@ -630,23 +687,44 @@ impl Default for Weights {
 impl Weights {
     pub const MAX_MUTATION: f32 = 0.1;
 
+    pub fn to_json(&self, filename: String) {
+        let weight = SerializableWeights::from_weight(self);
+        let mut buffer = File::create(filename).unwrap();
+        to_writer(buffer, &weight).unwrap();
+    }
+
+    pub fn from_json(filename: &str) -> Self {
+        todo!()
+    }
+
     pub fn mutate(&self) -> Self {
         Self {
             height_weight: Self::mutate_polynomial(&self.height_weight),
 
-            adjacent_height_differences_weight: Self::mutate_polynomial(&self.adjacent_height_differences_weight),
-            total_height_difference_weight: Self::mutate_polynomial(&self.total_height_difference_weight),
+            adjacent_height_differences_weight: Self::mutate_polynomial(
+                &self.adjacent_height_differences_weight,
+            ),
+            total_height_difference_weight: Self::mutate_polynomial(
+                &self.total_height_difference_weight,
+            ),
             num_hole_total_weight: Self::mutate_polynomial(&self.num_hole_total_weight),
             num_hole_weighted_weight: Self::mutate_polynomial(&self.num_hole_weighted_weight),
             cell_covered_weight: Self::mutate_polynomial(&self.cell_covered_weight),
 
             b2b_weight: Self::mutate_polynomial(&self.b2b_weight),
             combo_weight: Self::mutate_polynomial(&self.combo_weight),
+            damage_weight: Self::mutate_polynomial(&self.damage_weight),
+            clear_weight: Self::mutate_polynomial(&self.clear_weight)
         }
     }
 
     fn mutate_polynomial(poly: &Polynomial<f32>) -> Polynomial<f32> {
-        Polynomial::new(poly.data().iter().map(|x| Weights::mutate_numb(*x)).collect())
+        Polynomial::new(
+            poly.data()
+                .iter()
+                .map(|x| Weights::mutate_numb(*x))
+                .collect(),
+        )
     }
 
     fn mutate_numb(x: f32) -> f32 {
@@ -657,17 +735,18 @@ impl Weights {
     }
 }
 
-
+use crate::Command::SoftDrop;
 use itertools::min;
 use std::{thread, time};
-use crate::Command::SoftDrop;
+use std::fs::File;
+use serde::ser::SerializeSeq;
 
 pub fn bot_play() {
     let mut bot = Bot::default();
 
     while !bot.game.game_over {
         // clears the console
-        print!("{}[2J", 27 as char);
+        // print!("{}[2J", 27 as char);
 
         use std::time::Instant;
         let now = Instant::now();
@@ -677,9 +756,9 @@ pub fn bot_play() {
         let elapsed = now.elapsed();
         println!("Elapsed: {:.2?}", elapsed);
         println!("{}", bot.game);
-        println!("height: {}", bot.game.board.max_filled_height());
+        // println!("height: {}", bot.game.board.max_filled_height());
 
-        thread::sleep(time::Duration::from_millis(0));
+        thread::sleep(time::Duration::from_millis(100));
     }
 }
 
@@ -869,11 +948,11 @@ mod move_gen_tests {
 
         assert!(placements.iter().any(|x| x.abs_locations().unwrap()
             == [
-                Point { row: 0, col: 5 },
-                Point { row: 0, col: 4 },
-                Point { row: 1, col: 4 },
-                Point { row: 1, col: 3 }
-            ]));
+            Point { row: 0, col: 5 },
+            Point { row: 0, col: 4 },
+            Point { row: 1, col: 4 },
+            Point { row: 1, col: 3 }
+        ]));
     }
 
     #[test]
@@ -885,11 +964,11 @@ mod move_gen_tests {
 
         assert!(placements.iter().any(|x| x.abs_locations().unwrap()
             == [
-                Point { row: 1, col: 2 },
-                Point { row: 0, col: 3 },
-                Point { row: 1, col: 3 },
-                Point { row: 2, col: 3 }
-            ]));
+            Point { row: 1, col: 2 },
+            Point { row: 0, col: 3 },
+            Point { row: 1, col: 3 },
+            Point { row: 2, col: 3 }
+        ]));
     }
 
     #[test]
@@ -901,16 +980,16 @@ mod move_gen_tests {
 
         assert!(placements.iter().any(|x| x.abs_locations().unwrap()
             == [
-                Point { row: 0, col: 2 },
-                Point { row: 2, col: 1 },
-                Point { row: 1, col: 1 },
-                Point { row: 0, col: 1 }
-            ]));
+            Point { row: 0, col: 2 },
+            Point { row: 2, col: 1 },
+            Point { row: 1, col: 1 },
+            Point { row: 0, col: 1 }
+        ]));
     }
 
     fn test_weights() -> Weights {
         Weights {
-            height_weight: Polynomial::new(vec![0.0, 5.0, 1.0]),
+            height_weight: Polynomial::new(vec![0.0, -20.0, -1.0]),
 
             adjacent_height_differences_weight: Polynomial::new(vec![0.0, 2.0, 1.0]),
             total_height_difference_weight: Polynomial::new(vec![0.0, 2.0, 1.0]),
@@ -919,7 +998,8 @@ mod move_gen_tests {
             cell_covered_weight: Polynomial::new(vec![0.0, 5.0, 1.0]),
 
             b2b_weight: Polynomial::new(vec![0.0, -1.0, -5.0]),
-            combo_weight: Polynomial::new(vec![0.0, -2.0, -2.0])
+            combo_weight: Polynomial::new(vec![0.0, -2.0, -2.0]),
+            damage_weight: Polynomial::new(vec![0.0, 20.0, -20.0])
         }
     }
 

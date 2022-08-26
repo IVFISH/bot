@@ -3,18 +3,28 @@ use crate::game::*;
 use std::fmt::{Display, Formatter};
 
 pub trait Player {
-    fn make_move(&mut self) {
-        if self.get_game().game_over {
-            return;
+    fn make_move(&mut self) -> bool {
+        if self.get_game_mut().game_over {
+            return false;
         }
 
         let action = self.get_next_move();
-        println!("{:?}", action);
-        do_move_list(&mut self.get_game(), action);
+        // println!("{:?}", action);
+        do_move_list(&mut self.get_game_mut(), action);
+        true
     }
 
-    fn get_game(&mut self) -> &mut Game;
+    fn get_game_mut(&mut self) -> &mut Game;
+    fn get_game(&self) -> &Game;
     fn get_next_move(&mut self) -> MoveList;
+
+    fn make_n_moves(&mut self, n: usize) {
+        for _ in 0..n {
+            if !self.make_move() {
+                break;
+            }
+        }
+    }
 }
 
 pub type MoveList = Vec<Command>;
