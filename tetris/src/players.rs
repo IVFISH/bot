@@ -71,14 +71,14 @@ pub fn do_move_list(game: &mut Game, commands: MoveList) {
 fn do_command(game: &mut Game, command: Command) {
     match command {
         Command::None => true,
-        Command::MoveLeft => game.piece_left(),
-        Command::MoveRight => game.piece_right(),
-        Command::SoftDrop => game.piece_soft_drop(),
-        Command::RotateCW => game.piece_rotate_cw(),
-        Command::RotateCCW => game.piece_rotate_ccw(),
-        Command::Rotate180 => game.piece_rotate_180(),
-        Command::DasLeft => game.piece_das_left(),
-        Command::DasRight => game.piece_das_right(),
+        Command::MoveLeft => game.active_piece_left(),
+        Command::MoveRight => game.active_piece_right(),
+        Command::SoftDrop => game.active_piece_soft_drop(),
+        Command::RotateCW => game.active_piece_rotate_cw(),
+        Command::RotateCCW => game.active_piece_rotate_ccw(),
+        Command::Rotate180 => game.active_piece_rotate_180(),
+        Command::DasLeft => game.active_piece_das_left(),
+        Command::DasRight => game.active_piece_das_right(),
         Command::Hold => game.hold(),
         Command::HardDrop => {
             game.game_over = game.piece_hard_drop(true).is_err();

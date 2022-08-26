@@ -39,14 +39,20 @@ impl Player for Bot {
     }
 
     fn get_next_move(&mut self) -> MoveList {
+        use std::time::Instant;
+        let now = Instant::now();
+
         let (mut moves, placements) = self.all_moves_and_placements();
+
+        let elapsed = now.elapsed();
+        println!("Elapsed: {:.2?}", elapsed);
         let mut scores = vec![];
 
         let piece = self.game.active_piece.clone();
 
         for placement in placements {
             self.game.active_piece = placement;
-            self.game.piece_soft_drop();
+            self.game.active_piece_soft_drop();
             scores.push(self.score_board(true));
         }
 
@@ -345,7 +351,7 @@ impl Bot {
         while action(&mut self.game) {
             add_list.push(command);
 
-            self.game.piece_soft_drop();
+            self.game.active_piece_soft_drop();
 
             if Bot::new_placement(&self.game.active_piece, &used_placements)
                 && Bot::new_placement(&self.game.active_piece, &added_used)
@@ -399,7 +405,7 @@ impl Bot {
             // TODO: PROBABLY SIMPLIFY
             self.game.reset_active_piece();
 
-            if !self.game.piece_rotate_direction(direction) {
+            if !self.game.active_piece_rotate_direction(direction) {
                 continue;
             }
 
@@ -410,7 +416,7 @@ impl Bot {
                 base_move = vec![rotations[direction]];
             }
 
-            self.game.piece_soft_drop();
+            self.game.active_piece_soft_drop();
             trivial_placements =
                 Bot::add_to_placements(trivial_placements, &self.game.active_piece);
             trivial_moves =
@@ -419,13 +425,13 @@ impl Bot {
 
             let mut add_moves = vec![];
             let mut counter = 0;
-            while self.game.piece_left() {
+            while self.game.active_piece_left() {
                 counter += 1;
                 for _ in 0..counter {
                     add_moves.push(Command::MoveLeft);
                 }
 
-                self.game.piece_soft_drop();
+                self.game.active_piece_soft_drop();
                 trivial_placements =
                     Bot::add_to_placements(trivial_placements, &self.game.active_piece);
                 self.game.active_piece.center.row = row;
@@ -436,17 +442,17 @@ impl Bot {
             }
 
             self.game.reset_active_piece();
-            self.game.piece_rotate_direction(direction);
+            self.game.active_piece_rotate_direction(direction);
 
             let mut add_moves = vec![];
             let mut counter = 0;
-            while self.game.piece_right() {
+            while self.game.active_piece_right() {
                 counter += 1;
                 for _ in 0..counter {
                     add_moves.push(Command::MoveRight);
                 }
 
-                self.game.piece_soft_drop();
+                self.game.active_piece_soft_drop();
                 trivial_placements =
                     Bot::add_to_placements(trivial_placements, &self.game.active_piece);
                 self.game.active_piece.center.row = row;
@@ -465,39 +471,77 @@ impl Bot {
         mut moove: MoveList,
         move_list: &mut Vec<MoveList>,
         placement_list: &mut Vec<Placement>,
-        mut placement: Placement) {
+        placement: Placement) {
 
 
         // TODO: move these somewhere
         let commands = [
-            Command::RotateCW,
             Command::MoveRight,
             Command::MoveLeft,
+            Command::RotateCW,
             Command::RotateCCW,
             Command::Rotate180,
         ];
+
+        /// "SHADOW" IMPLEMENTATION
         let actions = [
-            Game::piece_rotate_cw,
-            Game::piece_right,
-            Game::piece_left,
-            Game::piece_rotate_ccw,
-            Game::piece_rotate_180,
+            Game::return_piece_right,
+            Game::return_piece_left,
+            Game::ret_piece_rotate_cw,
+            Game::ret_piece_rotate_ccw,
+            Game::ret_piece_rotate_180,
         ];
 
         for (command, action) in zip(commands, actions)  {
-            action(&mut self.game);
-            Game::piece_soft_drop(&mut self.game); // TODO: use check_grounded instead of SDing every time
-            if Bot::new_placement(&self.game.active_piece, placement_list){
-                moove.push(command);
-                moove.push(SoftDrop);
+            let mut copy = action(&self.game, &placement);
+            self.game.piece_soft_drop(&mut copy);
 
-                move_list.push(moove.clone());
-                placement_list.push(self.game.active_piece); // NEED TO CLONE?
-
-                self.find_non_trivial(moove.clone(), move_list, placement_list, self.game.active_piece); // NEED TO CLONE ACTIVE PIECE?
+            // base case
+            if !Bot::new_placement(&copy, placement_list){
+                continue
             }
-            self.game.active_piece = placement;
+            // this is a new placement
+
+            // finish movelist, add SD
+            moove.push(command);
+            moove.push(SoftDrop);
+
+            // added to list of moves and placements
+            move_list.push(moove.clone());
+            placement_list.push(copy);
+
+            // recurse
+            self.find_non_trivial(moove.clone(), move_list, placement_list, copy);
         }
+
+        /// MUTATING IMPLEMENTATION
+        // let actions = [
+        //     Game::active_piece_rotate_cw,
+        //     Game::active_piece_right,
+        //     Game::active_piece_left,
+        //     Game::active_piece_rotate_ccw,
+        //     Game::active_piece_rotate_180,
+        // ];
+        //
+        // for (command, action) in zip(commands, actions) {
+        //     action(&mut self.game);
+        //     Game::active_piece_soft_drop(&mut self.game); // TODO: use check_grounded instead of SDing every time
+        //     if Bot::new_placement(&self.game.active_piece, placement_list) {
+        //         moove.push(command);
+        //         moove.push(SoftDrop);
+        //
+        //         move_list.push(moove.clone());
+        //         placement_list.push(self.game.active_piece); // NEED TO CLONE?
+        //
+        //         self.find_non_trivial(
+        //             moove.clone(),
+        //             move_list,
+        //             placement_list,
+        //             self.game.active_piece,
+        //         ); // NEED TO CLONE ACTIVE PIECE?
+        //     }
+        //     self.game.active_piece = placement;
+        // }
     }
 
     fn add_non_trivial(
@@ -524,12 +568,16 @@ impl Bot {
         //
         // self.game.reset_active_piece();
 
+        // println!("moves: {:?} \n len moves: {} \n placements: {:?} \n len placements: {}", move_list, move_list.len(), placement_list, placement_list.len());
+
         let trivialmoves = move_list.clone();
         let trivialplaces = placement_list.clone();
 
         for (amove, aplace) in zip(trivialmoves, trivialplaces) {
             self.find_non_trivial(amove, &mut move_list, &mut placement_list, aplace);
         }
+
+        // println!("moves: {:?} \n len moves: {} \n placements: {:?} \n len placements: {}", move_list, move_list.len(), placement_list, placement_list.len());
 
         (move_list, placement_list)
     }
@@ -700,7 +748,7 @@ mod move_gen_tests {
         bot.game.add(1, 1, false);
         bot.game.add(1, 2, false);
 
-        bot.game.piece_das_right();
+        bot.game.active_piece_das_right();
         bot.game.piece_hard_drop(true).expect("die");
 
         let (trivial, used) = bot.find_trivial(false);

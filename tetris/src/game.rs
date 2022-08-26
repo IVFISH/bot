@@ -167,47 +167,119 @@ impl Game {
         safe
     }
 
-    pub fn piece_left(&mut self) -> bool {
+    fn safe_move_piece_by_vector(&self, p: &mut Placement, v: MoveVector) -> bool {
+        //  checks if center is invalid
+        if !p.move_by_vector(v) {
+            return false;
+        }
+
+        // checks if rest of piece is invalid
+        let safe = self.board.check_valid_location(p).is_ok();
+
+        if !safe {
+            p.move_by_vector(v.negative());
+        }
+
+        safe
+    }
+
+    fn return_safe_move_piece_by_vector(&self, p: &Placement, v: MoveVector) -> Placement {
+
+        let moved = p.ret_moved_by_vec(v);
+
+        // checks if piece is invalid
+        let safe = self.board.check_valid_location(&moved).is_ok();
+
+        if !safe {
+            return *p
+        }
+
+        moved
+    }
+
+    pub fn active_piece_left(&mut self) -> bool {
         self.safe_move_active_piece_by_vector(MoveVector(0, -1))
     }
 
-    pub fn piece_right(&mut self) -> bool {
+    pub fn piece_left(&mut self, p: &mut Placement) -> bool {
+        self.safe_move_piece_by_vector(p, MoveVector(0, -1))
+    }
+
+    pub fn return_piece_left(&self, p: &Placement) -> Placement {
+        self.return_safe_move_piece_by_vector(p, MoveVector(0, -1))
+    }
+
+    pub fn active_piece_right(&mut self) -> bool {
         self.safe_move_active_piece_by_vector(MoveVector(0, 1))
     }
 
-    pub fn piece_das_left(&mut self) -> bool {
-        while self.piece_left() {
+    pub fn piece_right(&mut self, p: &mut Placement) -> bool {
+        self.safe_move_piece_by_vector(p, MoveVector(0, 1))
+    }
+
+    pub fn return_piece_right(&self, p: &Placement) -> Placement {
+        self.return_safe_move_piece_by_vector(p, MoveVector(0, 1))
+    }
+
+    pub fn active_piece_das_left(&mut self) -> bool {
+        while self.active_piece_left() {
             // this is intended wheeee
         }
         true
     }
 
-    pub fn piece_das_right(&mut self) -> bool {
-        while self.piece_right() {
+    pub fn active_piece_das_right(&mut self) -> bool {
+        while self.active_piece_right() {
             // this is intended wheeee
         }
         true
     }
 
-    pub fn piece_soft_drop(&mut self) -> bool {
-        let out = self.piece_down();
+    pub fn active_piece_soft_drop(&mut self) -> bool {
+        let out = self.active_piece_down();
 
-        while self.piece_down() {
+        while self.active_piece_down() {
             // this is intended wheee
         }
 
         out
     }
 
-    fn piece_down(&mut self) -> bool {
+    pub fn piece_soft_drop(&self, p: &mut Placement) -> bool {
+        let out = self.piece_down(p);
+
+        while self.piece_down(p) {
+            // this is intended wheee
+        }
+
+        out
+    }
+
+    pub fn return_piece_soft_drop(&self, p: &Placement) -> Placement {
+        let mut out = p.clone();
+
+        while self.piece_soft_drop(&mut out){}
+
+        return out
+    }
+
+    fn active_piece_down(&mut self) -> bool {
         self.safe_move_active_piece_by_vector(MoveVector(-1, 0))
     }
 
-    fn piece_up(&mut self) -> bool {
+    fn piece_down(&self, p: &mut Placement) -> bool {
+        self.safe_move_piece_by_vector(p, MoveVector(-1, 0))
+    }
+
+    fn active_piece_up(&mut self) -> bool {
         self.safe_move_active_piece_by_vector(MoveVector(1, 0))
     }
 
-    fn rotate_with_kick(&mut self, dir: RotationDirection, kicks: Vec<MoveVector>) -> bool {
+    fn piece_up(&mut self, p: &mut Placement) -> bool {
+        self.safe_move_piece_by_vector(p, MoveVector(1, 0))
+    }
+
+    fn rotate_active_with_kick(&mut self, dir: RotationDirection, kicks: Vec<MoveVector>) -> bool {
         self.active_piece.rotate(dir);
 
         for index in 0..kicks.len() {
@@ -226,7 +298,21 @@ impl Game {
         false
     }
 
-    fn get_kicks(&self, dir: RotationDirection) -> Vec<MoveVector> {
+    fn ret_rotated_with_kick(&self, p: &Placement, dir: RotationDirection, kicks: Vec<MoveVector>) -> Placement {
+        let mut out = p.ret_rotated(dir);
+
+        for index in 0..kicks.len() {
+            if out.move_by_vector(kicks[index]) {
+                if self.board.check_valid_location(&out).is_ok() {
+                    out.last_kick = index;
+                    return out
+                }
+            }
+        }
+        *p
+    }
+
+    fn get_active_kicks(&self, dir: RotationDirection) -> Vec<MoveVector> {
         let before = self.active_piece.rotation_state;
 
         let kicks;
@@ -250,29 +336,66 @@ impl Game {
         kicks
     }
 
-    pub fn piece_rotate_direction(&mut self, direction: RotationDirection) -> bool {
+    fn get_piece_kicks(&self, p: &Placement, dir: RotationDirection) -> Vec<MoveVector> {
+        let before = p.rotation_state;
+
+        let kicks;
+        if p.piece_type == 4 {
+            // I piece is the special child
+            if dir == 2 {
+                kicks = FIVE_180_OFFSETS[before].to_vec()
+            } else {
+                kicks = FIVE_OFFSETS[before][dir / 2].to_vec();
+            }
+        } else if p.piece_type == 2 {
+            // O piece is the other special child
+            kicks = vec![O_OFFSETS[before][dir - 1]];
+        } else {
+            if dir == 2 {
+                kicks = THREE_180_OFFSETS[before].to_vec()
+            } else {
+                kicks = THREE_OFFSETS[before][dir / 2].to_vec();
+            }
+        }
+        kicks
+    }
+
+    pub fn active_piece_rotate_direction(&mut self, direction: RotationDirection) -> bool {
         match direction {
             0 => true,
-            1 => self.piece_rotate_cw(),
-            2 => self.piece_rotate_180(),
-            3 => self.piece_rotate_ccw(),
+            1 => self.active_piece_rotate_cw(),
+            2 => self.active_piece_rotate_180(),
+            3 => self.active_piece_rotate_ccw(),
             _ => false,
         }
     }
-    pub fn piece_rotate_cw(&mut self) -> bool {
-        self.rotate_with_kick(1, self.get_kicks(1))
+
+    pub fn active_piece_rotate_cw(&mut self) -> bool {
+        self.rotate_active_with_kick(1, self.get_active_kicks(1))
     }
 
-    pub fn piece_rotate_180(&mut self) -> bool {
-        self.rotate_with_kick(2, self.get_kicks(2))
+    pub fn ret_piece_rotate_cw(&self, p: &Placement) -> Placement {
+        self.ret_rotated_with_kick(p, 1, self.get_piece_kicks(p, 1))
     }
 
-    pub fn piece_rotate_ccw(&mut self) -> bool {
-        self.rotate_with_kick(3, self.get_kicks(3))
+    pub fn active_piece_rotate_180(&mut self) -> bool {
+        self.rotate_active_with_kick(2, self.get_active_kicks(2))
+    }
+
+    pub fn ret_piece_rotate_180(&self, p: &Placement) -> Placement {
+        self.ret_rotated_with_kick(p, 2, self.get_piece_kicks(p, 2))
+    }
+
+    pub fn active_piece_rotate_ccw(&mut self) -> bool {
+        self.rotate_active_with_kick(3, self.get_active_kicks(3))
+    }
+
+    pub fn ret_piece_rotate_ccw(&self, p: &Placement) -> Placement {
+        self.ret_rotated_with_kick(p, 3, self.get_piece_kicks(p, 3))
     }
 
     pub fn piece_hard_drop(&mut self, update_heights: bool) -> Result<(), GameError> {
-        self.piece_soft_drop();
+        self.active_piece_soft_drop();
         self.set_piece(update_heights)?;
 
         let lines_cleared = self.board.clear_lines(update_heights);
@@ -625,7 +748,7 @@ mod game_tests {
         assert!(game.set_piece(true).is_err());
 
         let mut game = Game::new(None);
-        game.piece_soft_drop();
+        game.active_piece_soft_drop();
 
         assert!(game.set_piece(true).is_ok());
     }
@@ -635,8 +758,8 @@ mod game_tests {
         let mut game = Game::new(Some(1337));
         // OISTLJZ
 
-        game.piece_das_right();
-        game.piece_down();
+        game.active_piece_das_right();
+        game.active_piece_down();
 
         assert_eq!(
             game.active_piece.abs_locations().unwrap(),
@@ -648,9 +771,9 @@ mod game_tests {
             ]
         );
 
-        game.piece_down();
+        game.active_piece_down();
         game.set_piece(false).expect("crash and burn");
-        game.piece_soft_drop();
+        game.active_piece_soft_drop();
 
         assert_eq!(
             game.active_piece.abs_locations().unwrap(),
@@ -668,7 +791,7 @@ mod game_tests {
         let mut game = Game::new(Some(1336));
         // TLJSO
 
-        game.piece_rotate_cw();
+        game.active_piece_rotate_cw();
 
         assert_eq!(
             game.active_piece.abs_locations().unwrap(),
@@ -680,7 +803,7 @@ mod game_tests {
             ]
         );
 
-        game.piece_rotate_cw();
+        game.active_piece_rotate_cw();
 
         assert_eq!(
             game.active_piece.abs_locations().unwrap(),
@@ -692,7 +815,7 @@ mod game_tests {
             ]
         );
 
-        game.piece_rotate_ccw();
+        game.active_piece_rotate_ccw();
 
         assert_eq!(
             game.active_piece.abs_locations().unwrap(),
@@ -704,10 +827,10 @@ mod game_tests {
             ]
         );
 
-        game.piece_soft_drop();
+        game.active_piece_soft_drop();
         game.set_piece(false).expect("crash and burn 2");
 
-        game.piece_rotate_180();
+        game.active_piece_rotate_180();
 
         assert_eq!(
             game.active_piece.abs_locations().unwrap(),
@@ -733,7 +856,7 @@ mod game_tests {
         assert_eq!(game.active_piece.piece_type, 4);
         assert_eq!(game.hold_piece.unwrap(), 2);
 
-        game.piece_soft_drop();
+        game.active_piece_soft_drop();
         game.set_piece(false).expect("crash and burn");
 
         println!("{}", game);
@@ -748,10 +871,10 @@ mod game_tests {
         let mut game = Game::new(Some(1336));
         // TLJSO
 
-        game.piece_rotate_cw();
-        game.piece_das_left();
+        game.active_piece_rotate_cw();
+        game.active_piece_das_left();
 
-        assert!(game.piece_rotate_ccw());
+        assert!(game.active_piece_rotate_ccw());
 
         assert_eq!(
             game.active_piece.abs_locations().unwrap(),
@@ -764,14 +887,14 @@ mod game_tests {
         );
 
         let mut game = Game::new(Some(1337));
-        game.piece_soft_drop();
+        game.active_piece_soft_drop();
         game.set_piece(false).expect("die");
 
         // I piece
-        game.piece_rotate_ccw();
-        game.piece_das_right();
+        game.active_piece_rotate_ccw();
+        game.active_piece_das_right();
 
-        assert!(game.piece_rotate_ccw());
+        assert!(game.active_piece_rotate_ccw());
         assert_eq!(
             game.active_piece.abs_locations().unwrap(),
             [
@@ -787,9 +910,9 @@ mod game_tests {
     fn test_floor_kick() {
         let mut game = Game::new(Some(1336));
 
-        game.piece_soft_drop();
+        game.active_piece_soft_drop();
 
-        assert!(game.piece_rotate_cw());
+        assert!(game.active_piece_rotate_cw());
 
         println!("{} {:?}", game, game.active_piece.abs_locations());
 
@@ -812,7 +935,7 @@ mod game_tests {
         game.piece_hard_drop(true).expect("die");
 
         assert_eq!(game.active_piece.piece_type, 3);
-        game.piece_soft_drop();
+        game.active_piece_soft_drop();
 
         assert_eq!(
             game.active_piece.abs_locations().unwrap(),
@@ -849,10 +972,10 @@ mod game_tests {
         game.board.add(1, 9, false);
 
         println!("{}", game);
-        game.piece_rotate_ccw();
-        game.piece_right();
-        game.piece_soft_drop();
-        game.piece_rotate_ccw();
+        game.active_piece_rotate_ccw();
+        game.active_piece_right();
+        game.active_piece_soft_drop();
+        game.active_piece_rotate_ccw();
         println!("{}", game);
 
         assert_eq!(
@@ -902,9 +1025,9 @@ mod game_tests {
         game.board.add(2, 9, false);
 
         println!("{}", game);
-        game.piece_soft_drop();
-        game.piece_rotate_cw();
-        game.piece_rotate_cw();
+        game.active_piece_soft_drop();
+        game.active_piece_rotate_cw();
+        game.active_piece_rotate_cw();
         println!("{}", game);
 
         assert_eq!(
@@ -939,9 +1062,9 @@ mod game_tests {
         game.board.add(1, 9, false);
 
         println!("{}", game);
-        game.piece_rotate_cw();
-        game.piece_soft_drop();
-        game.piece_rotate_cw();
+        game.active_piece_rotate_cw();
+        game.active_piece_soft_drop();
+        game.active_piece_rotate_cw();
         println!("{}", game);
 
         assert_eq!(
@@ -984,10 +1107,10 @@ mod game_tests {
         game.board.add(2, 9, false);
 
         println!("{}", game);
-        game.piece_rotate_ccw();
-        game.piece_right();
-        game.piece_soft_drop();
-        game.piece_rotate_ccw();
+        game.active_piece_rotate_ccw();
+        game.active_piece_right();
+        game.active_piece_soft_drop();
+        game.active_piece_rotate_ccw();
         println!("{}", game);
 
         assert_eq!(
@@ -1030,10 +1153,10 @@ mod game_tests {
         game.board.add(2, 9, false);
 
         println!("{}", game);
-        game.piece_rotate_ccw();
-        game.piece_right();
-        game.piece_soft_drop();
-        game.piece_rotate_ccw();
+        game.active_piece_rotate_ccw();
+        game.active_piece_right();
+        game.active_piece_soft_drop();
+        game.active_piece_rotate_ccw();
         println!("{}", game);
 
         assert_eq!(
@@ -1069,11 +1192,11 @@ mod game_tests {
         game.board.add(2, 9, false);
 
         println!("{}", game);
-        game.piece_rotate_cw();
-        game.piece_left();
-        game.piece_soft_drop();
-        game.piece_right();
-        game.piece_rotate_cw();
+        game.active_piece_rotate_cw();
+        game.active_piece_left();
+        game.active_piece_soft_drop();
+        game.active_piece_right();
+        game.active_piece_rotate_cw();
         println!("{}", game);
 
         assert_eq!(
@@ -1113,9 +1236,9 @@ mod game_tests {
         println!("{}", game);
 
         println!("{}", game);
-        game.piece_rotate_cw();
-        game.piece_soft_drop();
-        game.piece_rotate_ccw();
+        game.active_piece_rotate_cw();
+        game.active_piece_soft_drop();
+        game.active_piece_rotate_ccw();
         println!("{}", game);
 
         assert_eq!(
@@ -1150,9 +1273,9 @@ mod game_tests {
         game.board.add(1, 9, false);
 
         println!("{}", game);
-        game.piece_rotate_cw();
-        game.piece_soft_drop();
-        game.piece_rotate_ccw();
+        game.active_piece_rotate_cw();
+        game.active_piece_soft_drop();
+        game.active_piece_rotate_ccw();
         println!("{}", game);
 
         assert_eq!(
@@ -1195,9 +1318,9 @@ mod game_tests {
         game.board.add(1, 9, false);
 
         println!("{}", game);
-        game.piece_rotate_cw();
-        game.piece_soft_drop();
-        game.piece_rotate_cw();
+        game.active_piece_rotate_cw();
+        game.active_piece_soft_drop();
+        game.active_piece_rotate_cw();
         println!("{}", game);
 
         assert_eq!(
@@ -1240,10 +1363,10 @@ mod game_tests {
         game.board.add(2, 9, false);
 
         println!("{}", game);
-        game.piece_rotate_ccw();
-        game.piece_right();
-        game.piece_soft_drop();
-        game.piece_rotate_ccw();
+        game.active_piece_rotate_ccw();
+        game.active_piece_right();
+        game.active_piece_soft_drop();
+        game.active_piece_rotate_ccw();
         println!("{}", game);
 
         assert_eq!(
@@ -1293,8 +1416,8 @@ mod game_tests {
         game.board.add(3, 9, false);
 
         println!("{}", game);
-        game.piece_soft_drop();
-        game.piece_rotate_ccw();
+        game.active_piece_soft_drop();
+        game.active_piece_rotate_ccw();
         println!("{}", game);
 
         assert_eq!(
@@ -1344,10 +1467,10 @@ mod game_tests {
         game.board.add(2, 9, false);
 
         println!("{}", game);
-        game.piece_right();
-        game.piece_soft_drop();
-        game.piece_left();
-        game.piece_rotate_cw();
+        game.active_piece_right();
+        game.active_piece_soft_drop();
+        game.active_piece_left();
+        game.active_piece_rotate_cw();
         println!("{}", game);
 
         assert_eq!(
@@ -1411,11 +1534,11 @@ mod game_tests {
         game.board.add(5, 9, false);
 
         println!("{}", game);
-        game.piece_right();
-        game.piece_rotate_ccw();
-        game.piece_soft_drop();
-        game.piece_rotate_cw();
-        game.piece_rotate_cw();
+        game.active_piece_right();
+        game.active_piece_rotate_ccw();
+        game.active_piece_soft_drop();
+        game.active_piece_rotate_cw();
+        game.active_piece_rotate_cw();
         println!("{}", game);
 
         assert_eq!(
@@ -1469,10 +1592,10 @@ mod game_tests {
         game.board.add(4, 9, false);
 
         println!("{}", game);
-        game.piece_left();
-        game.piece_soft_drop();
-        game.piece_right();
-        game.piece_rotate_ccw();
+        game.active_piece_left();
+        game.active_piece_soft_drop();
+        game.active_piece_right();
+        game.active_piece_rotate_ccw();
         println!("{}", game);
 
         assert_eq!(
@@ -1503,12 +1626,12 @@ mod game_tests {
         game.board.add(2, 4, false);
 
         println!("{}", game);
-        game.piece_right();
-        game.piece_right();
-        game.piece_rotate_ccw();
-        game.piece_soft_drop();
-        game.piece_left();
-        game.piece_rotate_cw();
+        game.active_piece_right();
+        game.active_piece_right();
+        game.active_piece_rotate_ccw();
+        game.active_piece_soft_drop();
+        game.active_piece_left();
+        game.active_piece_rotate_cw();
         println!("{}", game);
 
         assert_eq!(
@@ -1571,11 +1694,11 @@ mod game_tests {
         game.board.add(4, 9, false);
 
         println!("{}", game);
-        game.piece_left();
-        game.piece_rotate_cw();
-        game.piece_soft_drop();
-        game.piece_rotate_ccw();
-        game.piece_rotate_ccw();
+        game.active_piece_left();
+        game.active_piece_rotate_cw();
+        game.active_piece_soft_drop();
+        game.active_piece_rotate_ccw();
+        game.active_piece_rotate_ccw();
         println!("{}", game);
 
         assert_eq!(
@@ -1644,15 +1767,15 @@ mod game_tests {
         game.board.add(5, 9, false);
 
         println!("{}", game);
-        game.piece_rotate_ccw();
-        game.piece_right();
-        game.piece_right();
-        game.piece_right();
-        game.piece_soft_drop();
-        game.piece_rotate_cw();
-        game.piece_rotate_180();
-        game.piece_left();
-        game.piece_rotate_ccw();
+        game.active_piece_rotate_ccw();
+        game.active_piece_right();
+        game.active_piece_right();
+        game.active_piece_right();
+        game.active_piece_soft_drop();
+        game.active_piece_rotate_cw();
+        game.active_piece_rotate_180();
+        game.active_piece_left();
+        game.active_piece_rotate_ccw();
         println!("{}", game);
 
         assert_eq!(
@@ -1775,23 +1898,23 @@ mod game_tests {
         game.board.add(12, 9, false);
 
         println!("{}", game);
-        game.piece_soft_drop();
-        game.piece_left();
-        game.piece_left();
-        game.piece_rotate_cw();
-        game.piece_rotate_ccw();
-        game.piece_right();
-        game.piece_rotate_ccw();
-        game.piece_soft_drop();
-        game.piece_rotate_180();
-        game.piece_rotate_cw();
-        game.piece_left();
-        game.piece_rotate_cw();
-        game.piece_rotate_cw();
-        game.piece_rotate_cw();
-        game.piece_rotate_180();
-        game.piece_rotate_ccw();
-        game.piece_rotate_ccw();
+        game.active_piece_soft_drop();
+        game.active_piece_left();
+        game.active_piece_left();
+        game.active_piece_rotate_cw();
+        game.active_piece_rotate_ccw();
+        game.active_piece_right();
+        game.active_piece_rotate_ccw();
+        game.active_piece_soft_drop();
+        game.active_piece_rotate_180();
+        game.active_piece_rotate_cw();
+        game.active_piece_left();
+        game.active_piece_rotate_cw();
+        game.active_piece_rotate_cw();
+        game.active_piece_rotate_cw();
+        game.active_piece_rotate_180();
+        game.active_piece_rotate_ccw();
+        game.active_piece_rotate_ccw();
         println!("{}", game);
 
         assert_eq!(
@@ -1809,7 +1932,7 @@ mod game_tests {
     fn test_add_garbage() {
         let mut game = Game::new(Some(1337));
 
-        game.piece_soft_drop();
+        game.active_piece_soft_drop();
         game.set_piece(true).expect("die");
 
         game.add_garbage_to_board(3, false);

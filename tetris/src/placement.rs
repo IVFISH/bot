@@ -97,12 +97,25 @@ impl Placement {
         return false;
     }
 
+    pub fn ret_moved_by_vec(&self, v: MoveVector) -> Placement {
+        if let Ok(p) = v.add_to_point(&self.center) {
+            return Placement{piece_type: self.piece_type, rotation_state: self.rotation_state, center: p, last_kick: 0};
+        }
+        return self.clone();
+    }
+
     pub fn move_center_to_column(&mut self, col: usize) {
         self.center.col = col;
     }
 
     pub fn rotate(&mut self, direction: RotationDirection) {
         self.rotation_state = (self.rotation_state + direction) % NUM_ROTATE_STATES;
+    }
+
+    pub fn ret_rotated(&self, direction: RotationDirection) -> Placement{
+        let mut out = self.clone();
+        out.rotate(direction);
+        out
     }
 
     #[allow(unused)]
