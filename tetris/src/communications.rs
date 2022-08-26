@@ -60,7 +60,7 @@ async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
                     "rules" => bot = create_bot_from_parsed(&parsed),
                     "play" => {
                         let converted: Vec<Vec<bool>> = parsed["board"].as_array().unwrap().iter().map(|wrappedvec: &serde_json::Value| {wrappedvec.as_array().unwrap().iter().map(|wrappedbool: &serde_json::Value| {wrappedbool.as_bool().unwrap()}).collect()}).collect();
-                        bot.get_game().board.set_board(converted);
+                        bot.get_game_mut().board.set_board(converted);
                         // println!("{}", bot);
                         ws_sender.send(Message::Text(serde_json::to_string(&json!(bot.suggest_and_move())).unwrap())).await?;
                     },

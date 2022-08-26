@@ -34,8 +34,12 @@ impl Default for Bot {
 }
 
 impl Player for Bot {
-    fn get_game(&mut self) -> &mut Game {
+    fn get_game_mut(&mut self) -> &mut Game {
         &mut self.game
+    }
+
+    fn get_game(&self) -> &Game {
+        &self.game
     }
 
     fn get_next_move(&mut self) -> MoveList {
@@ -588,6 +592,10 @@ impl Default for Weights {
 
 impl Weights {
     pub const MAX_MUTATION: f32 = 0.1;
+
+    pub fn to_json(&self) {
+
+    }
 
     pub fn mutate(&self) -> Self {
         Self {

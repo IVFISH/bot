@@ -24,12 +24,16 @@ impl Population {
         Self { bots }
     }
 
-    fn run_all(&mut self) {
-        todo!()
+    fn run_all(&mut self, num_pieces: usize)
+    {
+        /// This runs all the bots in the population for a specified number of pieces
+        for mut bot in &mut self.bots {
+            bot.make_n_moves(num_pieces);
+        }
     }
 
-    fn cost(player: &Bot) -> f32 {
+    fn cost(player: & Bot) -> f32 {
         // some measure of board state and versus stats
-        todo!()
+        player.get_game().game_data.app()
     }
 }

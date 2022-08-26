@@ -485,6 +485,10 @@ impl GameData {
         unimplemented!()
     }
 
+    pub fn app(&self) -> f32 {
+        self.lines_sent as f32 / self.pieces_placed as f32
+    }
+
     fn new(init_time: f32) -> Self {
         Self {
             init_time,
