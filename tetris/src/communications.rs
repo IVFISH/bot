@@ -69,7 +69,7 @@ async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
                     other => eprintln!("unexpected packet of type {}", other),
                 }
 
-                eprintln!("packet of type {} was recieved!", parsed["type"]);
+                // eprintln!("packet of type {} was recieved!", parsed["type"]);
 
                 // ws_sender.send(msg).await?; Echo response back to client
             }

@@ -16,8 +16,8 @@ use crate::placement::piece_data::*;
 use crate::players::*;
 
 fn main() {
-    // communications::init();
-    bot_play();
+    communications::init();
+    // bot_play();
     // bot_debug();
     println!("process has ended.");
 }

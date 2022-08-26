@@ -47,7 +47,7 @@ impl Player for Bot {
         for placement in placements {
             self.game.active_piece = placement;
             self.game.piece_soft_drop();
-            scores.push(self.score_board(true));
+            scores.push(self.score(true));
         }
 
         self.game.active_piece = piece;
@@ -94,6 +94,8 @@ impl Bot {
             info: "".to_string(),
         };
         self.make_move();
+        println!("{}", self);
+        thread::sleep(time::Duration::from_millis(250));
         out
     }
 
@@ -104,7 +106,7 @@ impl Bot {
     pub fn score(&mut self, set_piece: bool) -> Score {
         // todo: add versus weights, such as combo/b2b/attack
 
-        self.score_board(set_piece)
+        self.score_board(set_piece) + self.score_versus()
         // below is code from master (old code)
         // self.score_board(set_piece) + self.score_game()
     }
@@ -125,8 +127,13 @@ impl Bot {
         out
     }
 
-    fn score_game(&mut self) -> Score {
-        0.0
+    fn score_versus(&mut self) -> Score {
+        let combo_score = self.weight.combo_weight.eval(self.game.game_data.combo as f32);
+        let b2b = self.weight.b2b_weight.eval(self.game.game_data.b2b as f32);
+        let attack = self.weight.damage_weight.eval(self.game.game_data.last_sent as f32);
+        let clear = self.weight.clear_weight.eval(self.game.game_data.last_cleared as f32);
+
+        return combo_score + b2b + attack + clear;
     }
 
     fn get_height_differences_score(&self) -> f32 {
@@ -567,23 +574,25 @@ pub struct Weights {
 
     pub b2b_weight: Polynomial<f32>,
     pub combo_weight: Polynomial<f32>,
-    pub damage_weight: Polynomial<f32>
+    pub damage_weight: Polynomial<f32>,
+    pub clear_weight: Polynomial<f32>,
 }
 
 impl Default for Weights {
     fn default() -> Self {
         Self {
-            height_weight: Polynomial::new(vec![0.0, 2.0, 0.0]),
+            height_weight: Polynomial::new(vec![0.0, 10.0, 0.0]),
 
             adjacent_height_differences_weight: Polynomial::new(vec![0.0, 2.0, 1.0]),
             total_height_difference_weight: Polynomial::new(vec![0.0, 0.0, 0.0]),
-            num_hole_total_weight: Polynomial::new(vec![0.0, 12.0, 0.0]),
-            num_hole_weighted_weight: Polynomial::new(vec![0.0, 0.0, 0.0]),
+            num_hole_total_weight: Polynomial::new(vec![0.0, 15.0, 0.0]),
+            num_hole_weighted_weight: Polynomial::new(vec![0.0, 0.0, 1.0]),
             cell_covered_weight: Polynomial::new(vec![0.0, 10.0, 1.0]),
 
-            b2b_weight: Polynomial::new(vec![0.0, -1.0, -5.0]),
-            combo_weight: Polynomial::new(vec![0.0, -20.0, -2.0]),
-            damage_weight: Polynomial::new(vec![0.0, -200.0, -2.0])
+            b2b_weight: Polynomial::new(vec![0.0]),
+            combo_weight: Polynomial::new(vec![0.0]),
+            damage_weight: Polynomial::new(vec![0.0]),
+            clear_weight: Polynomial::new(vec![0.0])
         }
     }
 }
@@ -607,7 +616,8 @@ impl Weights {
 
             b2b_weight: Self::mutate_polynomial(&self.b2b_weight),
             combo_weight: Self::mutate_polynomial(&self.combo_weight),
-            damage_weight: Self::mutate_polynomial(&self.damage_weight)
+            damage_weight: Self::mutate_polynomial(&self.damage_weight),
+            clear_weight: Self::mutate_polynomial(&self.clear_weight)
         }
     }
 
@@ -643,7 +653,7 @@ pub fn bot_play() {
         println!("{}", bot.game);
         // println!("height: {}", bot.game.board.max_filled_height());
 
-        thread::sleep(time::Duration::from_millis(500));
+        thread::sleep(time::Duration::from_millis(100));
     }
 }
 

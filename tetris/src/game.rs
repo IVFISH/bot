@@ -280,7 +280,6 @@ impl Game {
 
         let t_spin_type = self.board.get_t_spin_type(self.active_piece);
         let attack_type = attack_type(t_spin_type, lines_cleared);
-        let before_sent = self.game_data.lines_sent;
         self.game_data
             .update(lines_cleared, attack_type, self.board.all_clear());
         Ok(())
@@ -462,6 +461,8 @@ pub struct GameData {
     pub pieces_placed: u16,
     pub lines_cleared: usize,
     pub lines_sent: u16,
+    pub last_sent: u8,
+    pub last_cleared: usize,
 
     pub game_over: bool,
     init_time: f32,
@@ -500,14 +501,17 @@ impl GameData {
         if lines_cleared == 0 {
             self.combo = 0;
             self.all_clear = false;
+            self.last_cleared = 0;
             return;
         }
 
         self.lines_cleared += lines_cleared;
+        self.last_cleared = lines_cleared;
 
         // update lines sent before adding b2b/combo
         let lines_sent = calc_damage(self, attack, lines_cleared);
         self.lines_sent += lines_sent as u16;
+        self.last_sent = lines_sent as u8;
 
         let b2b = BACK_TO_BACK_TYPES.contains(&attack);
         if b2b {
@@ -598,7 +602,7 @@ mod damage_calculations {
             2 => match t_spin {
                 TSpinType::None => AttackType::D,
                 TSpinType::Mini => AttackType::TDM,
-                T_ => AttackType::TD
+                _ => AttackType::TD
             }
             _ => match t_spin {
                 TSpinType::None => AttackType::S,
