@@ -615,9 +615,9 @@ impl Default for Weights {
             height_weight: Polynomial::new(vec![0.0, 2.0, 0.0]),
 
             adjacent_height_differences_weight: Polynomial::new(vec![0.0, 2.0, 1.0]),
-            total_height_difference_weight: Polynomial::new(vec![0.0, 0.0, 0.0]),
+            total_height_difference_weight: Polynomial::new(vec![0.0, 0.0, 0.001]),
             num_hole_total_weight: Polynomial::new(vec![0.0, 12.0, 0.0]),
-            num_hole_weighted_weight: Polynomial::new(vec![0.0, 0.0, 0.0]),
+            num_hole_weighted_weight: Polynomial::new(vec![0.0, 0.0, 0.001]),
             cell_covered_weight: Polynomial::new(vec![0.0, 10.0, 1.0]),
 
             b2b_weight: Polynomial::new(vec![0.0, -1.0, -5.0]),

@@ -58,11 +58,14 @@ impl Population {
         best.weight.to_json(format!("./weights/{}.json", generation));
     }
 
-    pub fn train(&mut self, num_generations: usize, num_pieces: usize) {
+    pub fn train(&mut self, num_generations: usize, num_pieces: usize, save_interval: usize) {
         for generation in 1..=num_generations {
             self.run_all(num_pieces);
-            self.save_best_to_json(generation);
+            if generation % save_interval == 0 {
+                self.save_best_to_json(generation);
+            }
             self.reset_population();
+            println!("Finished generation {}.", generation);
         }
     }
 }
