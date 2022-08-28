@@ -300,8 +300,7 @@ impl Game {
     }
 
     fn ret_rotated_with_kick(&self, p: &Placement, dir: RotationDirection, kicks: Vec<MoveVector>) -> Placement {
-        let mut out = p.clone();
-        out.rotate(dir);
+        let mut out = p.ret_rotated(dir);
 
         for index in 0..kicks.len() {
             if out.move_by_vector(kicks[index]) {

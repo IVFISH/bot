@@ -9,7 +9,7 @@ pub trait Player {
         }
 
         let action = self.get_next_move();
-        println!("{:?}", action);
+        // println!("{:?}", action);
         self.get_game_mut().reset_active_piece();
         do_move_list(&mut self.get_game_mut(), action);
         true

@@ -65,11 +65,10 @@ impl Player for Bot {
         }
 
         self.game.active_piece = piece;
-        self.game.reset_active_piece();
+        // self.game.reset_active_piece();
 
         let min_score = scores.iter().fold(f32::INFINITY, |a, &b| a.min(b));
         let num = scores.iter().position(|x| x == &min_score).unwrap();
-        let best_place = placements.get(num);
         //println!("best placement: {:?} \n score: {}", best_place, min_score);
         // println!("BEST: {} INDEX {}", min_score, num);
 
@@ -693,10 +692,10 @@ impl Default for Weights {
         Self {
             height_weight: Polynomial::new(vec![0.0, 2.0, 0.0]),
             adjacent_height_differences_weight: Polynomial::new(vec![0.0, 2.0, 1.0]),
-            total_height_difference_weight: Polynomial::new(vec![0.0, 1.0, 0.0]),
+            total_height_difference_weight: Polynomial::new(vec![0.0, 0.0, 1.0]),
             num_hole_total_weight: Polynomial::new(vec![0.0, 10.0, 1.0]),
             num_hole_weighted_weight: Polynomial::new(vec![0.0, 0.0, 0.0]),
-            cell_covered_weight: Polynomial::new(vec![0.0, 10.0, 0.0]),
+            cell_covered_weight: Polynomial::new(vec![0.0, 5.0, 0.0]),
 
             // VERSES CALCULATION IS CURRENTLY DISABLED DUE TO IT NOT WORKING
             b2b_weight: Polynomial::new(vec![0.0, -1.0, -5.0]),
