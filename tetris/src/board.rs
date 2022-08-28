@@ -470,8 +470,8 @@ impl Display for Board {
 impl Clone for Board {
     fn clone(&self) -> Self {
         let mut out = Board::new();
-        out.width = self.width.clone();
-        out.height = self.height.clone();
+        out.width = self.width;
+        out.height = self.height;
         out.arr = self.arr.clone();
         out.heights_for_each_column = self.heights_for_each_column.clone();
 

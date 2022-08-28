@@ -655,7 +655,7 @@ impl GameData {
     }
 }
 
-mod damage_calculations {
+pub mod damage_calculations {
     use crate::board::{AttackType, TSpinType};
     use crate::game::GameData;
     use super::Game;

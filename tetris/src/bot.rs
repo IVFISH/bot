@@ -127,13 +127,28 @@ impl Bot {
 
     fn score_board(&mut self, set_piece: bool) -> Score {
 
+        /*TODO make the score function like
+            fn score(ajdhs) {
+                let mut dummy...
+                let dmg...
+                dummy.set_piece...
+                let cleared = dummy.clear_lines...
+                let dmg = damage_calculations...
+                return (score_board(dummy) + dmg)
+            }*/
+
         let mut dummy = self.game.board.clone();
+        let dmg = 0;
 
         // println!("DUMMY!: \n{}", dummy);
 
         if set_piece {
-            self.game.board.set_piece(&self.game.active_piece, true);
-            self.game.board.clear_lines(true);
+            self.game.board.set_piece(&self.game.active_piece, false);
+            let cleared = self.game.board.clear_lines(true);
+            let dmg = damage_calculations::calc_damage(
+                &mut self.game.game_data,
+                attack_type(self.game.board.get_t_spin_type(self.game.active_piece), cleared),
+                cleared);
         }
 
         let out = self.get_holes_and_cell_covered_score()
@@ -141,11 +156,10 @@ impl Bot {
             + self.get_height_differences_score();
 
         if set_piece {
+            self.game.board = dummy;
             // println!("{:?}", self.game.board.heights_for_each_column);
             // println!("{} SCORE = {}", self.game, out);
-            self.game.board.remove_piece(&self.game.active_piece, true);
             // println!("DUMMY 2!: \n{}", dummy);
-            self.game.board = dummy.clone();
             // println!("DA BOARD: \n{}", self.game.board);
         }
         out
@@ -349,6 +363,13 @@ impl Bot {
                 self.do_moves(muvs);
                 println!("{}", self.game);
                 break;
+            } else if input == String::from("eval"){
+                println!("height: {}, \
+                          holes 1: {}, holes 2 {}: cells covered: {}\n\
+                          adjacent height differences: {:?}, total height difference: {}, ",
+                         self.game.board.max_filled_height(),
+                         self.game.board.holes_and_cell_covered().0, self.game.board.holes_and_cell_covered().1, self.game.board.holes_and_cell_covered().2,
+                         self.game.board.get_adjacent_height_differences(), self.game.board.get_total_height_differences());
             }
         }
     }
@@ -762,6 +783,7 @@ use itertools::min;
 use std::{thread, time};
 use std::fs::File;
 use serde::ser::SerializeSeq;
+use crate::game::damage_calculations::attack_type;
 
 pub fn bot_play() {
     let mut bot = Bot::default();
