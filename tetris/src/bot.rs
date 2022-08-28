@@ -57,9 +57,10 @@ impl Player for Bot {
 
         let piece = self.game.active_piece.clone();
 
-        for placement in placements {
-            self.game.active_piece = placement;
+        for placement in &placements {
+            self.game.active_piece = *placement;
             self.game.active_piece_soft_drop();
+            //println!("placement: {:?} \n scores: {}, {}", placement, self.score_board(true), self.score_versus());
             scores.push(self.score(true));
         }
 
@@ -68,6 +69,8 @@ impl Player for Bot {
 
         let min_score = scores.iter().fold(f32::INFINITY, |a, &b| a.min(b));
         let num = scores.iter().position(|x| x == &min_score).unwrap();
+        let best_place = placements.get(num);
+        //println!("best placement: {:?} \n score: {}", best_place, min_score);
         // println!("BEST: {} INDEX {}", min_score, num);
 
         let mut action = moves.remove(num);
@@ -76,6 +79,7 @@ impl Player for Bot {
 
         action
     }
+
 }
 
 pub type Score = f32;
@@ -119,15 +123,20 @@ impl Bot {
     pub fn score(&mut self, set_piece: bool) -> Score {
         // todo: add versus weights, such as combo/b2b/attack
 
-        self.score_board(set_piece) + self.score_versus()
-        // below is code from master (old code)
-        // self.score_board(set_piece) + self.score_game()
+        self.score_board(set_piece) //+ self.score_versus()
     }
 
     fn score_board(&mut self, set_piece: bool) -> Score {
+
+        let mut dummy = self.game.board.clone();
+
+        // println!("DUMMY!: \n{}", dummy);
+
         if set_piece {
             self.game.board.set_piece(&self.game.active_piece, true);
+            self.game.board.clear_lines(true);
         }
+
         let out = self.get_holes_and_cell_covered_score()
             + self.get_height_score()
             + self.get_height_differences_score();
@@ -136,6 +145,9 @@ impl Bot {
             // println!("{:?}", self.game.board.heights_for_each_column);
             // println!("{} SCORE = {}", self.game, out);
             self.game.board.remove_piece(&self.game.active_piece, true);
+            // println!("DUMMY 2!: \n{}", dummy);
+            self.game.board = dummy.clone();
+            // println!("DA BOARD: \n{}", self.game.board);
         }
         out
     }
@@ -329,6 +341,15 @@ impl Bot {
                 self.make_move();
                 println!("{}", self.game);
                 break;
+            } else if input == String::from("do current move"){
+                println!("{:?}", &all_moves[index]);
+                println!("{:?}", all_placements.get(index));
+                self.game.reset_active_piece();
+                let mut muvs = &mut all_moves[index].clone();
+                muvs.push(Command::HardDrop);
+                self.do_moves(muvs);
+                println!("{}", self.game);
+                break;
             }
         }
     }
@@ -480,6 +501,8 @@ impl Bot {
                 add_moves.pop();
             }
         }
+
+        self.game.reset_active_piece();
 
         (trivial_moves, trivial_placements)
     }
@@ -670,15 +693,16 @@ impl Default for Weights {
         Self {
             height_weight: Polynomial::new(vec![0.0, 2.0, 0.0]),
             adjacent_height_differences_weight: Polynomial::new(vec![0.0, 2.0, 1.0]),
-            total_height_difference_weight: Polynomial::new(vec![0.0, 0.0, 0.0]),
-            num_hole_total_weight: Polynomial::new(vec![0.0, 12.0, 0.0]),
+            total_height_difference_weight: Polynomial::new(vec![0.0, 1.0, 0.0]),
+            num_hole_total_weight: Polynomial::new(vec![0.0, 10.0, 1.0]),
             num_hole_weighted_weight: Polynomial::new(vec![0.0, 0.0, 0.0]),
-            cell_covered_weight: Polynomial::new(vec![0.0, 10.0, 1.0]),
+            cell_covered_weight: Polynomial::new(vec![0.0, 10.0, 0.0]),
 
+            // VERSES CALCULATION IS CURRENTLY DISABLED DUE TO IT NOT WORKING
             b2b_weight: Polynomial::new(vec![0.0, -1.0, -5.0]),
             combo_weight: Polynomial::new(vec![0.0, -2.0, -2.0]),
-            damage_weight: Polynomial::new(vec![0.0, 0.0]),
-            clear_weight: Polynomial::new(vec![0.0, -5.0, -1.0])
+            damage_weight: Polynomial::new(vec![0.0, 0.0, -5.0]),
+            clear_weight: Polynomial::new(vec![0.0, -5.0, 0.0])
         }
     }
 }
@@ -734,7 +758,7 @@ impl Weights {
     }
 }
 
-use crate::Command::SoftDrop;
+use crate::Command::{HardDrop, SoftDrop};
 use itertools::min;
 use std::{thread, time};
 use std::fs::File;
@@ -763,8 +787,8 @@ pub fn bot_play() {
 
 pub fn bot_debug() {
     let mut bot = bot_debug_board();
-    bot.game.active_piece = Placement::new(4);
-    bot.game.active_piece.piece_type = 4;
+    bot.game.active_piece = Placement::new(0);
+    bot.game.active_piece.piece_type = 0;
     // bot.game.add_garbage_to_board(8, true);
 
     // bot.show_all_placements_on_timer(true);
@@ -774,6 +798,8 @@ pub fn bot_debug() {
     // println!("{}", bot.game);
     // println!("{}", bot.score_board(false));
 
+    println!("{}", bot.game);
+
     loop {
         bot.show_all_placements_on_input(true);
     }
@@ -781,9 +807,9 @@ pub fn bot_debug() {
 
 fn bot_debug_board() -> Bot {
     let mut bot = Bot::default();
-    bot.game.board.add(1, 0, true);
-    bot.game.board.add(1, 1, true);
+    bot.game.board.add(0, 0, true);
     bot.game.board.add(1, 2, true);
+    // bot.game.board.add(1, 2, true);
 
     bot
 }
@@ -988,17 +1014,17 @@ mod move_gen_tests {
 
     fn test_weights() -> Weights {
         Weights {
-            height_weight: Polynomial::new(vec![0.0, -20.0, -1.0]),
-
+            height_weight: Polynomial::new(vec![0.0, 2.0, 0.0]),
             adjacent_height_differences_weight: Polynomial::new(vec![0.0, 2.0, 1.0]),
-            total_height_difference_weight: Polynomial::new(vec![0.0, 2.0, 1.0]),
-            num_hole_total_weight: Polynomial::new(vec![0.0, 5.0, 0.0]),
-            num_hole_weighted_weight: Polynomial::new(vec![0.0, 6.0, 0.0]),
-            cell_covered_weight: Polynomial::new(vec![0.0, 5.0, 1.0]),
+            total_height_difference_weight: Polynomial::new(vec![0.0, 0.0, 0.0]),
+            num_hole_total_weight: Polynomial::new(vec![0.0, 12.0, 0.0]),
+            num_hole_weighted_weight: Polynomial::new(vec![0.0, 0.0, 0.0]),
+            cell_covered_weight: Polynomial::new(vec![0.0, 10.0, 1.0]),
 
             b2b_weight: Polynomial::new(vec![0.0, -1.0, -5.0]),
             combo_weight: Polynomial::new(vec![0.0, -2.0, -2.0]),
-            damage_weight: Polynomial::new(vec![0.0, 20.0, -20.0])
+            damage_weight: Polynomial::new(vec![0.0, 0.0]),
+            clear_weight: Polynomial::new(vec![0.0, -5.0, -1.0])
         }
     }
 

@@ -9,9 +9,14 @@ pub trait Player {
         }
 
         let action = self.get_next_move();
-        // println!("{:?}", action);
+        println!("{:?}", action);
+        self.get_game_mut().reset_active_piece();
         do_move_list(&mut self.get_game_mut(), action);
         true
+    }
+
+    fn do_moves(&mut self, moves: &MoveList) {
+        do_move_list(&mut self.get_game_mut(), moves.clone());
     }
 
     fn get_game_mut(&mut self) -> &mut Game;

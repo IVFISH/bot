@@ -300,13 +300,17 @@ impl Game {
     }
 
     fn ret_rotated_with_kick(&self, p: &Placement, dir: RotationDirection, kicks: Vec<MoveVector>) -> Placement {
-        let mut out = p.ret_rotated(dir);
+        let mut out = p.clone();
+        out.rotate(dir);
 
         for index in 0..kicks.len() {
             if out.move_by_vector(kicks[index]) {
                 if self.board.check_valid_location(&out).is_ok() {
                     out.last_kick = index;
                     return out
+                }
+                else{
+                    out.move_by_vector(kicks[index].negative());
                 }
             }
         }
@@ -581,7 +585,7 @@ pub struct GameData {
     pub combo: i8,
     pub b2b: i8,
 
-    pub pieces_placed: u16,
+    pub pieces_placed: usize,
     pub lines_cleared: usize,
     pub lines_sent: u16,
     pub last_sent: u8,

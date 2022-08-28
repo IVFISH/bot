@@ -3,6 +3,7 @@ use std::fmt::{Display, Formatter};
 use itertools::Itertools;
 
 use std::cmp::max;
+use serde_json::to_vec;
 
 use crate::errors::GameError;
 use crate::placement::piece_data::NUM_ROTATE_STATES;
@@ -463,6 +464,18 @@ impl Display for Board {
         }
 
         Ok(())
+    }
+}
+
+impl Clone for Board {
+    fn clone(&self) -> Self {
+        let mut out = Board::new();
+        out.width = self.width.clone();
+        out.height = self.height.clone();
+        out.arr = self.arr.clone();
+        out.heights_for_each_column = self.heights_for_each_column.clone();
+
+        out
     }
 }
 
