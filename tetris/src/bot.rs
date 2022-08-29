@@ -49,7 +49,6 @@ impl Player for Bot {
         // let now = Instant::now();
 
         let (mut deep_moves, deep_placements) = self.all_moves_and_placements(3);
-
         // let elapsed = now.elapsed();
         // println!("Elapsed: {:.2?}", elapsed);
         let mut min_score = f32::INFINITY;
@@ -57,7 +56,8 @@ impl Player for Bot {
         let mut best_place=vec![];
 
         for (moves, placement) in zip(deep_moves, deep_placements) {
-            let score = self.score(placement.clone());
+            let mut score = self.score(placement.clone());
+            // score += (damage * 10) as f32;
             // println!("{}", score);
             if score < min_score {
                 best_place = placement;
@@ -73,7 +73,7 @@ impl Player for Bot {
         }
         println!("LKAJSDLJd \n{}", best_board);
         println!("BEST MOVE: {:?}", action);
-        println!("BEST PLACEMENT SEQ: \n{} \n{}", best_place[0], best_place[1]);
+        println!("BEST PLACEMENT SEQ: \n{} \n{} \n{}", best_place[0], best_place[1], best_place[2]);
 
         self.game.reset_active_piece();
         action.push(HardDrop);
@@ -214,17 +214,32 @@ impl Bot {
         if num_moves <= 1 {
             return (moves, placements)
         }
+
         let mut outmoves = vec![];
         let mut outplace = vec![];
 
         let mut index = 0;
         while placements[index].len() < num_moves {
             let game_save = dummy.clone();
+            // println!("here");
             for p in placements[index].clone() {
-                dummy.active_piece = p.clone();
+                let mut damage = 0;
+                // println!("{:?}", m);
+                if dummy.hold_piece.is_none() && dummy.piece_queue.peek() == p.piece_type{
+                    // println!("first hold: {}", dummy.piece_queue.peek());
+                    dummy.hold();
+                    // println!("now has: {}", dummy.piece_queue.peek())
+                }
+                else if dummy.hold_piece == Some(p.piece_type) {
+                    dummy.hold();
+                }
+                else if dummy.active_piece.piece_type != p.piece_type{
+                    println!("NOO");
+                }
+                dummy.active_piece = p;
                 dummy.piece_hard_drop(true);
                 // dummy.board.clear_lines(true);
-            };
+            }
 
             // dummy.active_piece.piece_type = dummy.piece_queue.peek();
 
@@ -281,7 +296,7 @@ impl Bot {
     pub fn show_all_placements_on_input(&mut self, clear: bool) {
         use std::io;
 
-        let (mut all_moves, mut all_placements) = self.all_moves_and_placements(100);
+        let (mut all_moves, mut all_placements) = self.all_moves_and_placements(3);
         println!("{}", all_placements.len());
         let all_placements = all_placements;
 
@@ -676,7 +691,7 @@ pub struct Weights {
 impl Default for Weights {
     fn default() -> Self {
         Self {
-            height_weight: Polynomial::new(vec![0.0, -20.0, 1.0]),
+            height_weight: Polynomial::new(vec![0.0, 10.0, 1.0]),
             adjacent_height_differences_weight: Polynomial::new(vec![0.0, 2.0, 1.0]),
             total_height_difference_weight: Polynomial::new(vec![0.0, 1.0, 0.0]),
             num_hole_total_weight: Polynomial::new(vec![0.0, 10.0, 1.0]),
@@ -745,9 +760,9 @@ impl Weights {
 use crate::bot::Command::{HardDrop, SoftDrop};
 use std::{thread, time};
 use std::fs::File;
-use itertools::Itertools;
+use itertools::{Itertools, izip};
 use crate::board::Board;
-use crate::game::damage_calculations::attack_type;
+use crate::game::damage_calculations::{attack_type, calc_damage};
 
 pub fn bot_play() {
     let mut bot = Bot::default();
