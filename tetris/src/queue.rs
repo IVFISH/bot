@@ -11,7 +11,7 @@ use crate::placement::piece_data::Piece;
 pub struct PieceQueue {
     min_queue_length: usize,
 
-    queue: VecDeque<Piece>,
+    pub queue: VecDeque<Piece>,
     randomizer: BagType,
 
     // starts with seed

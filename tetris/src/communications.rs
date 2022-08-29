@@ -59,12 +59,58 @@ async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
                     "play" => {
                         let converted: Vec<Vec<bool>> = parsed["board"].as_array().unwrap().iter().map(|wrappedvec: &serde_json::Value| {wrappedvec.as_array().unwrap().iter().map(|wrappedbool: &serde_json::Value| {wrappedbool.as_bool().unwrap()}).collect()}).collect();
                         bot.get_game_mut().board.set_board(converted);
+                        // println!("local: {}, client: {}", bot.get_game().game_data.pieces_placed, parsed["placed"]);
+                        if (bot.get_game().game_data.pieces_placed != parsed["placed"]) {
+                            println!("DESYNCED!!! Bot is has placed {} pieces, but client has placed {} pieces!",
+                            bot.get_game().game_data.pieces_placed, parsed["placed"]);
+                        }
+                        for i in 0..6 {
+                            if (pieceref_to_string(bot.get_game().piece_queue.queue.get(i)) != parsed["queue"].as_array().unwrap()[i].as_str().unwrap()){
+                                println!("Mismatched Queue: expected {}, but received {} instead", bot.get_game().piece_queue, parsed["queue"]);
+                                break;
+                            }
+                            // if (parsed["queue"].as_array().unwrap()[i].as_str().unwrap())
+                        }
+                        let current_hold = piece_to_string(bot.get_game().hold_piece);
+                        if (current_hold != parsed["hold"].as_str().unwrap_or_else(|| "*")) {
+                             println!("Mismatched Hold: expected {} as hold, received {} instead", current_hold
+                            , parsed["hold"].as_str().unwrap_or_else(|| "*"));
+                        }
+
                         // println!("{}", bot);
                         ws_sender.send(Message::Text(serde_json::to_string(&json!(bot.suggest_and_move())).unwrap())).await?;
                     },
                     "stop" => println!("stop game"),
                     "start" => ws_sender.send(Message::Text(serde_json::to_string(&json!(bot.suggest_and_move())).unwrap())).await?,
                     other => eprintln!("unexpected packet of type {}", other),
+                }
+
+                fn piece_to_string(piece: Option<usize>) -> &'static str {
+                    match piece {
+                                Some(0) => "z",
+                                Some(1) => "l",
+                                Some(2) => "o",
+                                Some(3) => "s",
+                                Some(4) => "i",
+                                Some(5) => "j",
+                                Some(6) => "t",
+                                None => "*",
+                                Some(_) => "?"
+                            }
+                }
+
+                fn pieceref_to_string(piece: Option<&usize>) -> &'static str {
+                    match piece {
+                                Some(0) => "z",
+                                Some(1) => "l",
+                                Some(2) => "o",
+                                Some(3) => "s",
+                                Some(4) => "i",
+                                Some(5) => "j",
+                                Some(6) => "t",
+                                None => "*",
+                                Some(_) => "?"
+                            }
                 }
 
                 // eprintln!("packet of type {} was recieved!", parsed["type"]);
