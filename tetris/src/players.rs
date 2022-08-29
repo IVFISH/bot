@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter};
 
 pub trait Player {
     fn make_move(&mut self) -> bool {
-        if self.get_game_mut().game_over {
+        if self.get_game().game_over {
             return false;
         }
 

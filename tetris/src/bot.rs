@@ -48,33 +48,27 @@ impl Player for Bot {
         // use std::time::Instant;
         // let now = Instant::now();
 
-        let (mut moves, placements) = self.all_moves_and_placements();
+        let (mut deep_moves, deep_placements) = self.all_moves_and_placements(1600);
 
         // let elapsed = now.elapsed();
         // println!("Elapsed: {:.2?}", elapsed);
-        let mut scores = vec![];
+        let mut min_score = f32::INFINITY;
+        let mut action = vec![];
 
-        let piece = self.game.active_piece.clone();
-
-        for placement in &placements {
-            scores.push(self.score(vec![*placement]));
+        for (moves, placement) in zip(deep_moves, deep_placements) {
+            let score = self.score(placement);
+            // println!("{}", score);
+            if score < min_score {
+                min_score = score;
+                action = moves;
+            }
         }
-
-        self.game.active_piece = piece;
-        // self.game.reset_active_piece();
-
-        let min_score = scores.iter().fold(f32::INFINITY, |a, &b| a.min(b));
-        let num = scores.iter().position(|x| x == &min_score).unwrap();
-        //println!("best placement: {:?} \n score: {}", best_place, min_score);
-        // println!("BEST: {} INDEX {}", min_score, num);
-
-        let mut action = moves.remove(num);
         // println!("{:?}", action);
-        action.push(Command::HardDrop);
 
+        self.game.reset_active_piece();
+        action.push(HardDrop);
         action
     }
-
 }
 
 pub type Score = f32;
@@ -122,7 +116,7 @@ impl Bot {
         let mut versus_score: f32 = 0.0;
 
         for placement in placements {
-            clone.set_piece(&placement, true);
+            clone.set_piece(&placement, false);
             let cleared = clone.clear_lines(true);
             // versus_score += damage_calculations::calc_damage(
             //     &mut clone.game_data,
@@ -133,7 +127,6 @@ impl Bot {
     }
 
     fn score_board(&self, board: &Board) -> Score {
-
         let out = self.get_holes_and_cell_covered_score(board)
             + self.get_height_score(board)
             + self.get_height_differences_score(board);
@@ -199,98 +192,70 @@ impl Bot {
         }
     }
 
-    pub fn all_moves_and_placements(&mut self) -> (Vec<MoveList>, Vec<Placement>) {
-        let start_piece = self.game.get_active_piece_type();
-        let hold_piece;
+    pub fn all_moves_and_placements(&mut self, num_moves: usize) -> (Vec<MoveList>, Vec<Vec<Placement>>) {
+        let mut dummy = self.game.clone();
+        let (mut moves, mut placements) = Bot::move_placement_1d(&mut dummy);
+        let mut placements: Vec<Vec<Placement>> = placements.iter().map(
+            |x| vec![*x])
+            .collect();
 
-        if let Some(piece) = self.game.hold_piece {
-            hold_piece = piece
-        } else {
-            hold_piece = self.game.piece_queue_peek();
+        let mut index = 0;
+        while placements.len() < num_moves {
+            let board_save = dummy.board.clone();
+            for p in placements[index].clone() {
+                dummy.board.set_piece(&p, false);
+                dummy.board.clear_lines(true);
+            };
+
+            let (_, mut add_placements) = Bot::move_placement_1d(&mut dummy);
+
+            for i in 0..add_placements.len() {
+                moves.push(moves[index].clone());
+                let mut place = placements[index].clone();
+                place.push(add_placements[i]);
+                placements.push(place);
+            }
+
+            index += 1;
+            dummy.board = board_save;
         }
 
-        let (mut moves, mut used) = self.find_trivial(false);
-        let (mut moves, mut used) = self.add_non_trivial(moves, used);
+        (moves, placements)
+    }
 
-        self.game.active_piece = Placement::new(hold_piece);
+    pub fn move_placement_1d(game: &mut Game) -> (Vec<MoveList>, Vec<Placement>) {
+        let start_piece = game.get_active_piece_type();
+        let hold_piece;
 
-        let (hold_moves, hold_used) = self.find_trivial(true);
-        let (hold_moves, hold_used) = self.add_non_trivial(hold_moves, hold_used);
+        if let Some(piece) = game.hold_piece {
+            hold_piece = piece
+        } else {
+            hold_piece = game.piece_queue_peek();
+        }
+
+        let (mut moves, mut used) = Bot::find_trivial(game, false);
+        let (mut moves, mut used) = Bot::add_non_trivial(game, moves, used);
+
+        game.active_piece = Placement::new(hold_piece);
+
+        let (hold_moves, hold_used) = Bot::find_trivial(game,true);
+        let (hold_moves, hold_used) = Bot::add_non_trivial(game, hold_moves, hold_used);
 
         moves.extend(hold_moves);
         used.extend(hold_used);
 
-        self.game.active_piece = Placement::new(start_piece);
+        game.active_piece = Placement::new(start_piece);
 
         (moves, used)
-    }
-
-    pub fn all_moves(&mut self) -> Vec<MoveList> {
-        let start_piece = self.game.get_active_piece_type();
-        let hold_piece;
-
-        if let Some(piece) = self.game.hold_piece {
-            hold_piece = piece
-        } else {
-            hold_piece = self.game.piece_queue_peek();
-        }
-
-        let (moves, used) = self.find_trivial(false);
-        let (mut moves, _) = self.add_non_trivial(moves, used);
-
-        self.game.active_piece = Placement::new(hold_piece);
-
-        let (hold_moves, used) = self.find_trivial(true);
-        let (hold_moves, _) = self.add_non_trivial(hold_moves, used);
-
-        moves.extend(hold_moves);
-
-        self.game.active_piece = Placement::new(start_piece);
-
-        moves
-    }
-
-    fn all_placements(&mut self) -> Vec<Placement> {
-        // only used for debugging purposes
-
-        let start_piece = self.game.get_active_piece_type();
-        let hold_piece;
-
-        if let Some(piece) = self.game.hold_piece {
-            hold_piece = piece
-        } else {
-            hold_piece = self.game.piece_queue_peek();
-        }
-
-        let (moves, used) = self.find_trivial(false);
-        let (_, mut placements) = self.add_non_trivial(moves, used);
-
-        self.game.active_piece = Placement::new(hold_piece);
-
-        let (hold_moves, used) = self.find_trivial(true);
-        let (_, hold_placements) = self.add_non_trivial(hold_moves, used);
-
-        placements.extend(hold_placements);
-
-        self.game.active_piece = Placement::new(start_piece);
-
-        placements
-    }
-
-    pub fn show_all_placements_on_timer(&mut self, clear: bool) {
-        let all_placements = self.all_placements();
-        let start = self.game.active_piece.clone();
-
-        for placement in all_placements {
-            self.show_placement(&placement, clear, &start);
-            thread::sleep(time::Duration::from_millis(100));
-        }
     }
 
     pub fn show_all_placements_on_input(&mut self, clear: bool) {
         use std::io;
 
-        let (all_moves, all_placements) = self.all_moves_and_placements();
+        let (mut all_moves, mut all_placements) = self.all_moves_and_placements(100);
+        println!("{}", all_placements.len());
+        let all_placements = all_placements;
+
         let start = self.game.active_piece.clone();
         let num_moves = all_placements.len();
         let mut index = num_moves - 1;
@@ -311,16 +276,14 @@ impl Bot {
                 index -= 1;
                 index %= num_moves;
 
-                let placement = &all_placements.get(index).unwrap().clone();
-                self.show_placement(placement, clear, &start);
-                println!("{:?}", all_moves.get(index));
+                let placement = &all_placements.get(index).unwrap().clone().pop().unwrap();
+                self.show_placement(&placement, clear, &start);
             } else if input == String::from(".") {
                 index += 1;
                 index %= num_moves;
-
-                let placement = &all_placements.get(index).unwrap().clone();
-                self.show_placement(placement, clear, &start);
-                println!("{:?}", all_moves.get(index));
+                println!("DEPTH IS: {}", all_placements.get(index).unwrap().len());
+                let placement = &all_placements.get(index).unwrap().clone().pop().unwrap();
+                self.show_placement(&placement, clear, &start);
             } else if input == String::from("exit") {
                 break;
             } else if input == String::from("make move") {
@@ -328,7 +291,7 @@ impl Bot {
                 self.make_move();
                 println!("{}", self.game);
                 break;
-            } else if input == String::from("do current move"){
+            } else if input == String::from("do current move") {
                 println!("{:?}", &all_moves[index]);
                 println!("{:?}", all_placements.get(index));
                 self.game.reset_active_piece();
@@ -337,7 +300,7 @@ impl Bot {
                 self.do_moves(muvs);
                 println!("{}", self.game);
                 break;
-            } else if input == String::from("eval"){
+            } else if input == String::from("eval") {
                 println!("height: {}, \
                           holes 1: {}, holes 2 {}: cells covered: {}\n\
                           adjacent height differences: {:?}, total height difference: {}, ",
@@ -421,7 +384,7 @@ impl Bot {
         return placements;
     }
 
-    fn find_trivial(&mut self, hold: bool) -> (Vec<MoveList>, Vec<Placement>) {
+    fn find_trivial(game: &mut Game, hold: bool) -> (Vec<MoveList>, Vec<Placement>) {
         let mut trivial_moves = Vec::new();
         let mut trivial_placements = Vec::new();
 
@@ -432,13 +395,13 @@ impl Bot {
             Command::RotateCCW,
         ];
 
-        let row = self.game.active_piece.center.row;
+        let row = game.active_piece.center.row;
 
         for direction in 0..NUM_ROTATE_STATES {
             // TODO: PROBABLY SIMPLIFY
-            self.game.reset_active_piece();
+            game.reset_active_piece();
 
-            if !self.game.active_piece_rotate_direction(direction) {
+            if !game.active_piece_rotate_direction(direction) {
                 continue;
             }
 
@@ -449,46 +412,46 @@ impl Bot {
                 base_move = vec![rotations[direction]];
             }
 
-            self.game.active_piece_soft_drop();
+            game.active_piece_soft_drop();
             trivial_placements =
-                Bot::add_to_placements(trivial_placements, &self.game.active_piece);
+                Bot::add_to_placements(trivial_placements, &game.active_piece);
             trivial_moves =
                 Bot::add_to_moves(trivial_moves, &base_move, &mut vec![Command::SoftDrop]);
-            self.game.active_piece.center.row = row;
+            game.active_piece.center.row = row;
 
             let mut add_moves = vec![];
             let mut counter = 0;
-            while self.game.active_piece_left() {
+            while game.active_piece_left() {
                 counter += 1;
                 for _ in 0..counter {
                     add_moves.push(Command::MoveLeft);
                 }
 
-                self.game.active_piece_soft_drop();
+                game.active_piece_soft_drop();
                 trivial_placements =
-                    Bot::add_to_placements(trivial_placements, &self.game.active_piece);
-                self.game.active_piece.center.row = row;
+                    Bot::add_to_placements(trivial_placements, &game.active_piece);
+                game.active_piece.center.row = row;
 
                 add_moves.push(Command::SoftDrop);
                 trivial_moves = Bot::add_to_moves(trivial_moves, &base_move, &mut add_moves);
                 // add_moves.pop();
             }
 
-            self.game.reset_active_piece();
-            self.game.active_piece_rotate_direction(direction);
+            game.reset_active_piece();
+            game.active_piece_rotate_direction(direction);
 
             let mut add_moves = vec![];
             let mut counter = 0;
-            while self.game.active_piece_right() {
+            while game.active_piece_right() {
                 counter += 1;
                 for _ in 0..counter {
                     add_moves.push(Command::MoveRight);
                 }
 
-                self.game.active_piece_soft_drop();
+                game.active_piece_soft_drop();
                 trivial_placements =
-                    Bot::add_to_placements(trivial_placements, &self.game.active_piece);
-                self.game.active_piece.center.row = row;
+                    Bot::add_to_placements(trivial_placements, &game.active_piece);
+                game.active_piece.center.row = row;
 
                 add_moves.push(Command::SoftDrop);
                 trivial_moves = Bot::add_to_moves(trivial_moves, &base_move, &mut add_moves);
@@ -496,13 +459,12 @@ impl Bot {
             }
         }
 
-        self.game.reset_active_piece();
-
+        game.reset_active_piece();
         (trivial_moves, trivial_placements)
     }
 
     fn find_non_trivial(
-        &mut self,
+        game: &mut Game,
         mut moove: MoveList,
         move_list: &mut Vec<MoveList>,
         placement_list: &mut Vec<Placement>,
@@ -527,13 +489,13 @@ impl Bot {
             Game::ret_piece_rotate_180,
         ];
 
-        for (command, action) in zip(commands, actions)  {
-            let mut copy = action(&self.game, &placement);
-            self.game.piece_soft_drop(&mut copy);
+        for (command, action) in zip(commands, actions) {
+            let mut copy = action(&game, &placement);
+            game.piece_soft_drop(&mut copy);
 
             // base case
-            if !Bot::new_placement(&copy, placement_list){
-                continue
+            if !Bot::new_placement(&copy, placement_list) {
+                continue;
             }
             // this is a new placement
 
@@ -546,7 +508,7 @@ impl Bot {
             placement_list.push(copy);
 
             // recurse
-            self.find_non_trivial(moove.clone(), move_list, placement_list, copy);
+            Bot::find_non_trivial(game, moove.clone(), move_list, placement_list, copy);
         }
 
         // MUTATING IMPLEMENTATION
@@ -580,7 +542,7 @@ impl Bot {
     }
 
     fn add_non_trivial(
-        &mut self,
+        game: &mut Game,
         mut move_list: Vec<MoveList>,
         mut placement_list: Vec<Placement>,
     ) -> (Vec<MoveList>, Vec<Placement>) {
@@ -608,7 +570,7 @@ impl Bot {
         let trivialplaces = placement_list.clone();
 
         for (amove, aplace) in zip(trivialmoves, trivialplaces) {
-            self.find_non_trivial(amove, &mut move_list, &mut placement_list, aplace);
+            Bot::find_non_trivial(game, amove, &mut move_list, &mut placement_list, aplace);
         }
 
         // println!("moves: {:?} \n len moves: {} \n placements: {:?} \n len placements: {}", move_list, move_list.len(), placement_list, placement_list.len());
@@ -633,7 +595,7 @@ impl Bot {
 
 #[derive(Serialize, Deserialize)]
 pub struct SerializableWeights {
-    pub weights: Vec<Vec<f32>>
+    pub weights: Vec<Vec<f32>>,
 }
 
 impl SerializableWeights {
@@ -642,7 +604,7 @@ impl SerializableWeights {
             weight.height_weight.data().try_into().unwrap(), weight.adjacent_height_differences_weight.data().try_into().unwrap(), weight.total_height_difference_weight.data().try_into().unwrap(),
             weight.num_hole_weighted_weight.data().try_into().unwrap(), weight.num_hole_total_weight.data().try_into().unwrap(), weight.cell_covered_weight.data().try_into().unwrap(),
             weight.b2b_weight.data().try_into().unwrap(), weight.combo_weight.data().try_into().unwrap(), weight.clear_weight.data().try_into().unwrap(),
-            weight.damage_weight.data().try_into().unwrap()
+            weight.damage_weight.data().try_into().unwrap(),
         ];
         Self {
             weights
@@ -696,7 +658,7 @@ impl Default for Weights {
             b2b_weight: Polynomial::new(vec![0.0, -1.0, -5.0]),
             combo_weight: Polynomial::new(vec![0.0, -2.0, -2.0]),
             damage_weight: Polynomial::new(vec![0.0, 0.0, -5.0]),
-            clear_weight: Polynomial::new(vec![0.0, -5.0, 0.0])
+            clear_weight: Polynomial::new(vec![0.0, -5.0, 0.0]),
         }
     }
 }
@@ -731,7 +693,7 @@ impl Weights {
             b2b_weight: Self::mutate_polynomial(&self.b2b_weight),
             combo_weight: Self::mutate_polynomial(&self.combo_weight),
             damage_weight: Self::mutate_polynomial(&self.damage_weight),
-            clear_weight: Self::mutate_polynomial(&self.clear_weight)
+            clear_weight: Self::mutate_polynomial(&self.clear_weight),
         }
     }
 
@@ -762,7 +724,7 @@ pub fn bot_play() {
     let mut bot = Bot::default();
 
     let now = time::Instant::now();
-    while !bot.game.game_over && bot.game.game_data.pieces_placed < 100000 {
+    while !bot.game.game_over && bot.game.game_data.pieces_placed < 100 {
         // clears the console
         // print!("{}[2J", 27 as char);
 
@@ -773,14 +735,13 @@ pub fn bot_play() {
 
         // let elapsed = now.elapsed();
         // println!("Elapsed: {:.2?}", elapsed);
-        // println!("{}", bot.game);
+        println!("{}", bot.game);
         // println!("height: {}", bot.game.board.max_filled_height());
 
         // thread::sleep(time::Duration::from_millis(0));
     }
     let elapsed = now.elapsed();
     println!("{:?}", elapsed);
-
     println!("{}", bot.game);
 }
 
@@ -1023,7 +984,7 @@ mod move_gen_tests {
             b2b_weight: Polynomial::new(vec![0.0, -1.0, -5.0]),
             combo_weight: Polynomial::new(vec![0.0, -2.0, -2.0]),
             damage_weight: Polynomial::new(vec![0.0, 0.0]),
-            clear_weight: Polynomial::new(vec![0.0, -5.0, -1.0])
+            clear_weight: Polynomial::new(vec![0.0, -5.0, -1.0]),
         }
     }
 
