@@ -26,7 +26,7 @@ struct JsonPieceQueue {
     kind: String,
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Game {
     pub board: Board,
 
@@ -453,6 +453,7 @@ impl Game {
     }
 }
 
+#[derive(Clone)]
 pub enum KickSet {
     None,
     SRSPlus,
@@ -491,6 +492,7 @@ impl Default for KickSet {
     }
 }
 
+#[derive(Clone)]
 pub enum SpinBonus {
     TSpin,
     All,
@@ -521,6 +523,7 @@ impl Default for SpinBonus {
     }
 }
 
+#[derive(Clone)]
 pub struct GameRules {
     pub seed: usize,
     bag_type: BagType,
@@ -578,7 +581,7 @@ impl GameRules {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct GameData {
     pub all_clear: bool,
     pub combo: i8,
@@ -658,7 +661,6 @@ impl GameData {
 pub mod damage_calculations {
     use crate::board::{AttackType, TSpinType};
     use crate::game::GameData;
-    use super::Game;
 
     // d, t, q, ts, td, tt
     const ATTACK_TYPE_CONVERSION: [usize; 7] = [1, 2, 4, 2, 4, 6, 0];

@@ -1,4 +1,3 @@
-use crate::errors::GameError;
 use crate::game::*;
 use std::fmt::{Display, Formatter};
 

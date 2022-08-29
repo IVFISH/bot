@@ -1,7 +1,5 @@
 use crate::bot::*;
 use crate::game::Game;
-use crate::human::*;
-use crate::placement::piece_data::*;
 use crate::players::*;
 
 use futures_util::{SinkExt, StreamExt};

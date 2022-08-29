@@ -10,10 +10,6 @@ mod population;
 mod queue;
 
 use crate::bot::*;
-use crate::game::Game;
-use crate::human::*;
-use crate::placement::piece_data::*;
-use crate::players::*;
 use crate::population::Population;
 
 

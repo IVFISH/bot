@@ -7,6 +7,7 @@ use rand::Rng;
 use crate::errors::GameError;
 use crate::placement::piece_data::Piece;
 
+#[derive(Clone)]
 pub struct PieceQueue {
     min_queue_length: usize,
 
@@ -140,7 +141,7 @@ impl PieceQueue {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub struct GarbageItem {
     pub amt: usize,
     pub col: usize,
@@ -157,6 +158,7 @@ impl GarbageItem {
     }
 }
 
+#[derive(Clone)]
 pub struct GarbageQueue {}
 
 impl Default for GarbageQueue {
@@ -165,6 +167,7 @@ impl Default for GarbageQueue {
     }
 }
 
+#[derive(Clone)]
 pub enum BagType {
     SevenBag,
     FourteenBag,

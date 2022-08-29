@@ -1,8 +1,7 @@
-use std::collections::VecDeque;
 use std::fmt::{Display, Formatter};
 use std::iter::zip;
-use serde_json::{json, to_writer};
-use serde::{Deserialize, Serialize, Serializer};
+use serde_json::to_writer;
+use serde::{Deserialize, Serialize};
 use std::io::Write;
 
 use polynomial::Polynomial;
@@ -58,10 +57,7 @@ impl Player for Bot {
         let piece = self.game.active_piece.clone();
 
         for placement in &placements {
-            self.game.active_piece = *placement;
-            self.game.active_piece_soft_drop();
-            //println!("placement: {:?} \n scores: {}, {}", placement, self.score_board(true), self.score_versus());
-            scores.push(self.score(true));
+            scores.push(self.score(vec![*placement]));
         }
 
         self.game.active_piece = piece;
@@ -119,49 +115,29 @@ impl Bot {
         self.game.game_data.game_over = true;
     }
 
-    pub fn score(&mut self, set_piece: bool) -> Score {
-        // todo: add versus weights, such as combo/b2b/attack
+    pub fn score(&mut self, placements: Vec<Placement>) -> Score {
 
-        self.score_board(set_piece) //+ self.score_versus()
+        // TODO: only clone board
+        let mut clone = self.game.board.clone();
+        let mut versus_score: f32 = 0.0;
+
+        for placement in placements {
+            clone.set_piece(&placement, true);
+            let cleared = clone.clear_lines(true);
+            // versus_score += damage_calculations::calc_damage(
+            //     &mut clone.game_data,
+            //     attack_type(clone.board.get_t_spin_type(placement), cleared),
+            //     cleared) as f32;
+        }
+        self.score_board(&clone) //+ self.score_versus()
     }
 
-    fn score_board(&mut self, set_piece: bool) -> Score {
+    fn score_board(&self, board: &Board) -> Score {
 
-        /*TODO make the score function like
-            fn score(ajdhs) {
-                let mut dummy...
-                let dmg...
-                dummy.set_piece...
-                let cleared = dummy.clear_lines...
-                let dmg = damage_calculations...
-                return (score_board(dummy) + dmg)
-            }*/
+        let out = self.get_holes_and_cell_covered_score(board)
+            + self.get_height_score(board)
+            + self.get_height_differences_score(board);
 
-        let mut dummy = self.game.board.clone();
-        let dmg = 0;
-
-        // println!("DUMMY!: \n{}", dummy);
-
-        if set_piece {
-            self.game.board.set_piece(&self.game.active_piece, false);
-            let cleared = self.game.board.clear_lines(true);
-            let dmg = damage_calculations::calc_damage(
-                &mut self.game.game_data,
-                attack_type(self.game.board.get_t_spin_type(self.game.active_piece), cleared),
-                cleared);
-        }
-
-        let out = self.get_holes_and_cell_covered_score()
-            + self.get_height_score()
-            + self.get_height_differences_score();
-
-        if set_piece {
-            self.game.board = dummy;
-            // println!("{:?}", self.game.board.heights_for_each_column);
-            // println!("{} SCORE = {}", self.game, out);
-            // println!("DUMMY 2!: \n{}", dummy);
-            // println!("DA BOARD: \n{}", self.game.board);
-        }
         out
     }
 
@@ -174,10 +150,8 @@ impl Bot {
         return combo_score + b2b + attack + clear;
     }
 
-    fn get_height_differences_score(&self) -> f32 {
-        let mut out = self
-            .game
-            .board
+    fn get_height_differences_score(&self, board: &Board) -> f32 {
+        let mut out = board
             .get_adjacent_height_differences()
             .iter()
             .map(|x| {
@@ -190,19 +164,19 @@ impl Bot {
         out += self
             .weight
             .total_height_difference_weight
-            .eval(self.game.board.get_total_height_differences() as f32);
+            .eval(board.get_total_height_differences() as f32);
         out
     }
 
-    pub fn get_height_score(&self) -> f32 {
-        let total_height = self.game.board.max_filled_height();
+    pub fn get_height_score(&self, board: &Board) -> f32 {
+        let total_height = board.max_filled_height();
         self.weight.height_weight.eval(total_height as f32)
     }
 
-    pub fn get_holes_and_cell_covered_score(&self) -> f32 {
+    pub fn get_holes_and_cell_covered_score(&self, board: &Board) -> f32 {
         let mut out = 0.0;
 
-        let (holes_t, holes_w, covered) = self.game.board.holes_and_cell_covered();
+        let (holes_t, holes_w, covered) = board.holes_and_cell_covered();
 
         out += self.weight.num_hole_total_weight.eval(holes_t as f32);
         out += self.weight.num_hole_weighted_weight.eval(holes_w as f32);
@@ -380,7 +354,7 @@ impl Bot {
         }
 
         self.game.active_piece = target_placement.clone();
-        println!("SCORE IS: {}", self.score_board(true));
+        println!("SCORE IS: {}", self.score_board(&self.game.board));
         println!("{}", self);
         self.game.active_piece = start.clone();
     }
@@ -778,32 +752,36 @@ impl Weights {
     }
 }
 
-use crate::Command::{HardDrop, SoftDrop};
-use itertools::min;
+use crate::bot::Command::{HardDrop, SoftDrop};
 use std::{thread, time};
 use std::fs::File;
-use serde::ser::SerializeSeq;
+use crate::board::Board;
 use crate::game::damage_calculations::attack_type;
 
 pub fn bot_play() {
     let mut bot = Bot::default();
 
-    while !bot.game.game_over {
+    let now = time::Instant::now();
+    while !bot.game.game_over && bot.game.game_data.pieces_placed < 100000 {
         // clears the console
         // print!("{}[2J", 27 as char);
 
-        use std::time::Instant;
-        let now = Instant::now();
+        // use std::time::Instant;
+        // let now = Instant::now();
 
         bot.make_move();
 
-        let elapsed = now.elapsed();
-        println!("Elapsed: {:.2?}", elapsed);
-        println!("{}", bot.game);
+        // let elapsed = now.elapsed();
+        // println!("Elapsed: {:.2?}", elapsed);
+        // println!("{}", bot.game);
         // println!("height: {}", bot.game.board.max_filled_height());
 
-        thread::sleep(time::Duration::from_millis(0));
+        // thread::sleep(time::Duration::from_millis(0));
     }
+    let elapsed = now.elapsed();
+    println!("{:?}", elapsed);
+
+    println!("{}", bot.game);
 }
 
 pub fn bot_debug() {

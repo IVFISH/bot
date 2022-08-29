@@ -3,10 +3,8 @@ use std::fmt::{Display, Formatter};
 use itertools::Itertools;
 
 use std::cmp::max;
-use serde_json::to_vec;
 
 use crate::errors::GameError;
-use crate::placement::piece_data::NUM_ROTATE_STATES;
 use crate::placement::{MoveVector, Placement, Point};
 use crate::queue::GarbageItem;
 

@@ -1,6 +1,5 @@
 use crate::bot::*;
 use crate::players::*;
-use std::cmp;
 
 pub struct Population {
     // this can just be an array
@@ -42,7 +41,7 @@ impl Population {
 
     fn run_all(&mut self, num_pieces: usize)
     {
-        /// This runs all the bots in the population for a specified number of pieces
+        // This runs all the bots in the population for a specified number of pieces
         for mut bot in &mut self.bots {
             bot.make_n_moves(num_pieces);
         }
