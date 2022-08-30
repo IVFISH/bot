@@ -48,12 +48,16 @@ impl Player for Bot {
         // use std::time::Instant;
         // let now = Instant::now();
 
-        let (mut deep_moves, deep_placements, deep_scores) = self.moves_placements_score(3, &self.weight.clone());
+        let (mut deep_moves, deep_placements, deep_scores) = self.moves_placements_score(2, &self.weight.clone());
         // let elapsed = now.elapsed();
         // println!("Elapsed: {:.2?}", elapsed);
         let mut min_score = f32::INFINITY;
         let mut action = vec![];
         let mut best_place=vec![];
+
+        // println!("LENGTH OF SCORES {}", deep_scores.len());
+
+        // println!("{:?}", zip(&deep_placements, &deep_scores));
 
         for ((moves, placement), score) in zip(zip(deep_moves, deep_placements), deep_scores) {
             // score += (damage * 10) as f32;
@@ -65,14 +69,19 @@ impl Player for Bot {
             }
         }
 
+        // println!("{}", min_score);
+        // println!("0 {}", self.game.board.get_t_spin_type(best_place[0]) == TSpinType::Full);
+        // println!("1 {}", self.game.board.get_t_spin_type(best_place[1]) == TSpinType::Full);
+        // println!("2 {}", self.game.board.get_t_spin_type(best_place[2]) == TSpinType::Full);
+
         let mut best_board = self.game.board.clone();
         for placement in &best_place {
             best_board.set_piece(&placement, false);
             best_board.clear_lines(true);
         }
-        println!("LKAJSDLJd \n{}", best_board);
-        println!("BEST MOVE: {:?}", action);
-        println!("BEST PLACEMENT SEQ: \n{} \n{} \n{}", best_place[0], best_place[1], best_place[2]);
+        // println!("LKAJSDLJd \n{}", best_board);
+        // println!("BEST MOVE: {:?}", action);
+        // println!("BEST PLACEMENT SEQ: {:?}", best_place);
 
         self.game.reset_active_piece();
         action.push(HardDrop);
@@ -127,19 +136,54 @@ impl Bot {
     }
 
     fn score_game(game: Game, weights: &Weights, placements: Vec<Placement>) -> Score {
-        let mut clone = game.board;
+        let mut gameclone = game.clone();
         let mut versus_score: f32 = 0.0;
         let mut cleared:usize = 0;
 
-        for placement in placements {
-            clone.set_piece(&placement, false);
-            cleared = clone.clear_lines(true);
-            // versus_score -= damage_calculations::calc_damage(
-            //     &mut gameclone.game_data,
-            //     attack_type(clone.get_t_spin_type(placement), cleared),
-            //     cleared) as f32;
+        let tstype = gameclone.board.get_t_spin_type(placements[0]);
+        if tstype == TSpinType::Full {
+            versus_score += -50 as f32;
         }
-        Bot::score_board(&clone, weights)// + versus_score*10.0 + (cleared*6) as f32//+ self.score_versus()
+
+        // println!("{:?}", attack_type(gameclone.board.get_t_spin_type(placements[0]), cleared));
+
+        for placement in placements {
+            gameclone.active_piece = placement;
+            gameclone.set_piece(false);
+
+            cleared += gameclone.board.clear_lines(true);
+
+            // versus_score -= calc_damage(
+            //     &mut gameclone.game_data,
+            //     attack_type(gameclone.board.get_t_spin_type(placement), cleared),
+            //     cleared) as f32;
+
+            // if versus
+            // _score != 0 as f32 {
+            //     println!("{}", versus_score);
+            // }
+        }
+
+        // match attack_type(tstype, cleared) {
+        //     AttackType::TT => versus_score += -10000 as f32,
+        //     AttackType::TD => versus_score += -1000 as f32,
+        //     AttackType::TS => versus_score += -50 as f32,
+        //     AttackType::TSM => versus_score += -50 as f32,
+        //     _ => ()
+        //
+        // }
+        gameclone.game_data.update(cleared, attack_type(tstype, cleared), gameclone.board.all_clear());
+        if gameclone.board.all_clear(){
+            println!("ALL CLEAR");
+            versus_score += -10000 as f32;
+        }
+        versus_score += Bot::score_versus(&gameclone.game_data, weights);
+
+        // if attack_type(tstype, cleared) == AttackType::TD{
+        //     versus_score += -1000 as f32;
+        // }
+
+        Bot::score_board(&gameclone.board, weights) + versus_score//+ self.score_versus()
     }
 
     fn score_board(board: &Board, weights: &Weights) -> Score {
@@ -207,23 +251,23 @@ impl Bot {
         }
     }
 
-    pub fn moves_placements_score(&mut self, num_moves: usize, weights: &Weights) -> (Vec<MoveList>, Vec<Vec<Placement>>, Vec<f32>) {
+    pub fn moves_placements_score(&mut self, depth: usize, weights: &Weights) -> (Vec<MoveList>, Vec<Vec<Placement>>, Vec<f32>) {
         let mut dummy = self.game.clone();
         let (mut moves, mut placements, mut scores) = Bot::move_placement_score_1d(&mut dummy, weights);
         let mut placements: Vec<Vec<Placement>> = placements.iter().map(
             |x| vec![*x])
             .collect();
 
-        if num_moves <= 1 {
+        if depth <= 1 {
             return (moves, placements, scores)
         }
 
-        let mut outmoves = vec![];
-        let mut outplace = vec![];
-        let mut outscores = vec![];
+        // let mut outmoves = vec![];
+        // let mut outplace = vec![];
+        // let mut outscores = vec![];
 
         let mut index = 0;
-        while placements[index].len() < num_moves {
+        while placements[index].len() < depth {
             let game_save = dummy.clone();
             // println!("here");
             for p in placements[index].clone() {
@@ -241,7 +285,9 @@ impl Bot {
                     println!("NOO");
                 }
                 dummy.active_piece = p;
-                dummy.piece_hard_drop(true).expect("Crashing and burning");
+                if dummy.piece_hard_drop(true).is_err(){
+                    continue
+                }
                 // dummy.board.clear_lines(true);
             }
 
@@ -257,22 +303,23 @@ impl Bot {
                 place.push(add_placements[i]);
 
                 placements.push(place.clone());
-                if placements[index].len() >= num_moves - 1 {
-
-                    outmoves.push(moves[index].clone());
-                    outplace.push(place.clone());
-
-                }
+                // if placements[index].len() >= num_moves - 1 {
+                //
+                //     outmoves.push(moves[index].clone());
+                //     outplace.push(place.clone());
+                //
+                // }
             }
 
-            if placements[index].len() >= num_moves - 1 {
-                outscores.extend(add_scores);
-            }
+            // if placements[index].len() >= num_moves - 1 {
+            //     outscores.extend(add_scores);
+            // }
+            scores.extend(add_scores);
 
             index += 1;
             dummy = game_save;
         }
-        (outmoves, outplace, outscores)
+        (moves, placements, scores)
     }
 
     pub fn move_placement_score_1d(game: &mut Game, weight: &Weights) -> (Vec<MoveList>, Vec<Placement>, Vec<f32>) {
@@ -618,17 +665,17 @@ pub struct Weights {
 impl Default for Weights {
     fn default() -> Self {
         Self {
-            height_weight: Polynomial::new(vec![0.0, 10.0, 1.0]),
+            height_weight: Polynomial::new(vec![0.0, 10.0, 0.0]),
             adjacent_height_differences_weight: Polynomial::new(vec![0.0, 2.0, 1.0]),
-            total_height_difference_weight: Polynomial::new(vec![0.0, 1.0, 0.0]),
+            total_height_difference_weight: Polynomial::new(vec![0.0, 3.0, 0.0]),
             num_hole_total_weight: Polynomial::new(vec![0.0, 10.0, 1.0]),
             num_hole_weighted_weight: Polynomial::new(vec![0.0, 0.0, 0.0]),
             cell_covered_weight: Polynomial::new(vec![0.0, 10.0, 0.0]),
 
-            b2b_weight: Polynomial::new(vec![0.0, -1.0, -5.0]),
-            combo_weight: Polynomial::new(vec![0.0, -2.0, -2.0]),
-            damage_weight: Polynomial::new(vec![0.0, 0.0, -5.0]),
-            clear_weight: Polynomial::new(vec![0.0, -5.0, 0.0])
+            b2b_weight: Polynomial::new(vec![0.0, -10.0, -5.0]),
+            combo_weight: Polynomial::new(vec![0.0, 0.0, 0.0]),
+            damage_weight: Polynomial::new(vec![0.0, 10.0, -5.0]),
+            clear_weight: Polynomial::new(vec![0.0, -10000.0, -3000.0])
         }
     }
 }
@@ -688,8 +735,9 @@ use crate::bot::Command::{HardDrop, SoftDrop};
 use std::{thread, time};
 use std::fs::File;
 use itertools::{Itertools, izip};
-use crate::board::Board;
+use crate::board::{AttackType, Board, TSpinType};
 use crate::game::damage_calculations::{attack_type, calc_damage};
+use crate::game::SpinBonus::TSpin;
 
 pub fn bot_play() {
     let mut bot = Bot::default();

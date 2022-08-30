@@ -16,8 +16,8 @@ use crate::population::Population;
 fn main() {
     // let mut population = Population::new(100);
     // population.train(1000, 100, 100);
-    // communications::init();
-    bot_play();
+    communications::init();
+    // bot_play();
     // bot_debug();
     // println!("process has ended.");
 }

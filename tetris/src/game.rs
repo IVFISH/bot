@@ -628,7 +628,7 @@ impl GameData {
         }
     }
 
-    fn update(&mut self, lines_cleared: usize, attack: AttackType, all_clear: bool) {
+    pub fn update(&mut self, lines_cleared: usize, attack: AttackType, all_clear: bool) {
         self.pieces_placed += 1;
 
         if lines_cleared == 0 {

@@ -9,8 +9,10 @@ use serde_json;
 use serde_json::json;
 use std::{net::SocketAddr, time::Duration};
 use tokio::net::{TcpListener, TcpStream};
+use tokio::time::sleep;
 use tokio_tungstenite::{accept_async, tungstenite::Error};
 use tungstenite::{Message, Result};
+use std::{thread, time};
 
 #[derive(Serialize, Deserialize)]
 pub struct Suggestion {
@@ -61,23 +63,25 @@ async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
                         bot.get_game_mut().board.set_board(converted);
                         // println!("local: {}, client: {}", bot.get_game().game_data.pieces_placed, parsed["placed"]);
                         if (bot.get_game().game_data.pieces_placed != parsed["placed"]) {
-                            println!("DESYNCED!!! Bot is has placed {} pieces, but client has placed {} pieces!",
+                            eprintln!("DESYNCED!!! Bot is has placed {} pieces, but client has placed {} pieces!",
                             bot.get_game().game_data.pieces_placed, parsed["placed"]);
                         }
                         for i in 0..6 {
                             if (pieceref_to_string(bot.get_game().piece_queue.queue.get(i)) != parsed["queue"].as_array().unwrap()[i].as_str().unwrap()){
-                                println!("Mismatched Queue: expected {}, but received {} instead", bot.get_game().piece_queue, parsed["queue"]);
+                                eprintln!("Mismatched Queue: expected {}, but received {} instead", bot.get_game().piece_queue, parsed["queue"]);
                                 break;
                             }
                             // if (parsed["queue"].as_array().unwrap()[i].as_str().unwrap())
                         }
                         let current_hold = piece_to_string(bot.get_game().hold_piece);
                         if (current_hold != parsed["hold"].as_str().unwrap_or_else(|| "*")) {
-                             println!("Mismatched Hold: expected {} as hold, received {} instead", current_hold
+                             eprintln!("Mismatched Hold: expected {} as hold, received {} instead", current_hold
                             , parsed["hold"].as_str().unwrap_or_else(|| "*"));
                         }
 
                         // println!("{}", bot);
+
+                        thread::sleep(time::Duration::from_millis(75));
                         ws_sender.send(Message::Text(serde_json::to_string(&json!(bot.suggest_and_move())).unwrap())).await?;
                     },
                     "stop" => println!("stop game"),
