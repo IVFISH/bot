@@ -45,43 +45,18 @@ impl Player for Bot {
     }
 
     fn get_next_move(&mut self) -> MoveList {
-        // use std::time::Instant;
-        // let now = Instant::now();
-
-        let (mut deep_moves, deep_placements, deep_scores) = self.moves_placements_score(2, &self.weight.clone());
-        // let elapsed = now.elapsed();
-        // println!("Elapsed: {:.2?}", elapsed);
+        let (mut deep_moves, _, deep_scores) = self.moves_placements_score(3, &self.weight.clone());
         let mut min_score = f32::INFINITY;
         let mut action = vec![];
-        let mut best_place=vec![];
 
-        // println!("LENGTH OF SCORES {}", deep_scores.len());
+        let deep_scores: Vec<f32> = deep_scores.iter().map(|(board, versus)| board+versus).collect();
 
-        // println!("{:?}", zip(&deep_placements, &deep_scores));
-
-        for ((moves, placement), score) in zip(zip(deep_moves, deep_placements), deep_scores) {
-            // score += (damage * 10) as f32;
-            // println!("{}", score);
+        for (moves, score) in zip(deep_moves, deep_scores) {
             if score < min_score {
-                best_place = placement;
                 min_score = score;
                 action = moves;
             }
         }
-
-        // println!("{}", min_score);
-        // println!("0 {}", self.game.board.get_t_spin_type(best_place[0]) == TSpinType::Full);
-        // println!("1 {}", self.game.board.get_t_spin_type(best_place[1]) == TSpinType::Full);
-        // println!("2 {}", self.game.board.get_t_spin_type(best_place[2]) == TSpinType::Full);
-
-        let mut best_board = self.game.board.clone();
-        for placement in &best_place {
-            best_board.set_piece(&placement, false);
-            best_board.clear_lines(true);
-        }
-        // println!("LKAJSDLJd \n{}", best_board);
-        // println!("BEST MOVE: {:?}", action);
-        // println!("BEST PLACEMENT SEQ: {:?}", best_place);
 
         self.game.reset_active_piece();
         action.push(HardDrop);
@@ -127,63 +102,42 @@ impl Bot {
         self.game.game_data.game_over = true;
     }
 
-    pub fn score(&mut self, placements: Vec<Placement>) -> Score {
+    // pub fn score(&mut self, placements: Vec<Placement>) -> Score {
+    //
+    //     // TODO: only clone board
+    //     let mut gameclone = self.game.clone();
+    //     Bot::score_game(gameclone, &self.weight, placement)
+    //
+    // }
 
-        // TODO: only clone board
-        let mut gameclone = self.game.clone();
-        Bot::score_game(gameclone, &self.weight, placements)
-
-    }
-
-    fn score_game(game: Game, weights: &Weights, placements: Vec<Placement>) -> Score {
+    fn score_game(game: Game, weights: &Weights, placement: Placement) -> (Score, Score) {
         let mut gameclone = game.clone();
+        gameclone.game_data.last_sent = 0;
+
         let mut versus_score: f32 = 0.0;
         let mut cleared:usize = 0;
 
-        let tstype = gameclone.board.get_t_spin_type(placements[0]);
-        if tstype == TSpinType::Full {
+        let tstype = gameclone.board.get_t_spin_type(placement);
+
+        if tstype == TSpinType::Full{
             versus_score += -50 as f32;
         }
 
         // println!("{:?}", attack_type(gameclone.board.get_t_spin_type(placements[0]), cleared));
 
-        for placement in placements {
-            gameclone.active_piece = placement;
-            gameclone.set_piece(false);
+        gameclone.active_piece = placement;
+        gameclone.set_piece(true);
+        cleared += gameclone.board.clear_lines(true);
 
-            cleared += gameclone.board.clear_lines(true);
-
-            // versus_score -= calc_damage(
-            //     &mut gameclone.game_data,
-            //     attack_type(gameclone.board.get_t_spin_type(placement), cleared),
-            //     cleared) as f32;
-
-            // if versus
-            // _score != 0 as f32 {
-            //     println!("{}", versus_score);
-            // }
-        }
-
-        // match attack_type(tstype, cleared) {
-        //     AttackType::TT => versus_score += -10000 as f32,
-        //     AttackType::TD => versus_score += -1000 as f32,
-        //     AttackType::TS => versus_score += -50 as f32,
-        //     AttackType::TSM => versus_score += -50 as f32,
-        //     _ => ()
-        //
-        // }
         gameclone.game_data.update(cleared, attack_type(tstype, cleared), gameclone.board.all_clear());
+
         if gameclone.board.all_clear(){
-            println!("ALL CLEAR");
             versus_score += -10000 as f32;
         }
-        versus_score += Bot::score_versus(&gameclone.game_data, weights);
 
-        // if attack_type(tstype, cleared) == AttackType::TD{
-        //     versus_score += -1000 as f32;
-        // }
+        versus_score += Bot::score_versus(&gameclone.game_data.clone(), weights);
 
-        Bot::score_board(&gameclone.board, weights) + versus_score//+ self.score_versus()
+        (Bot::score_board(&gameclone.board.clone(), weights), versus_score)
     }
 
     fn score_board(board: &Board, weights: &Weights) -> Score {
@@ -199,6 +153,8 @@ impl Bot {
         let b2b = weight.b2b_weight.eval(game_data.b2b as f32);
         let attack = weight.damage_weight.eval(game_data.last_sent as f32);
         let clear = weight.clear_weight.eval(game_data.last_cleared as f32);
+
+        // println!("{}, {}, {}, {}", combo_score, b2b, attack, clear);
 
         return combo_score + b2b + attack + clear;
     }
@@ -251,7 +207,7 @@ impl Bot {
         }
     }
 
-    pub fn moves_placements_score(&mut self, depth: usize, weights: &Weights) -> (Vec<MoveList>, Vec<Vec<Placement>>, Vec<f32>) {
+    pub fn moves_placements_score(&mut self, depth: usize, weights: &Weights) -> (Vec<MoveList>, Vec<Vec<Placement>>, Vec<(f32, f32)>) {
         let mut dummy = self.game.clone();
         let (mut moves, mut placements, mut scores) = Bot::move_placement_score_1d(&mut dummy, weights);
         let mut placements: Vec<Vec<Placement>> = placements.iter().map(
@@ -262,21 +218,16 @@ impl Bot {
             return (moves, placements, scores)
         }
 
-        // let mut outmoves = vec![];
-        // let mut outplace = vec![];
-        // let mut outscores = vec![];
+        let mut outmoves = vec![];
+        let mut outplace = vec![];
+        let mut outscores = vec![];
 
         let mut index = 0;
         while placements[index].len() < depth {
             let game_save = dummy.clone();
-            // println!("here");
             for p in placements[index].clone() {
-                let mut damage = 0;
-                // println!("{:?}", m);
                 if dummy.hold_piece.is_none() && dummy.piece_queue.peek() == p.piece_type{
-                    // println!("first hold: {}", dummy.piece_queue.peek());
                     dummy.hold();
-                    // println!("now has: {}", dummy.piece_queue.peek())
                 }
                 else if dummy.hold_piece == Some(p.piece_type) {
                     dummy.hold();
@@ -288,41 +239,46 @@ impl Bot {
                 if dummy.piece_hard_drop(true).is_err(){
                     continue
                 }
-                // dummy.board.clear_lines(true);
             }
-
-            // dummy.active_piece.piece_type = dummy.piece_queue.peek();
 
             let (_, mut add_placements, mut add_scores) = Bot::move_placement_score_1d(&mut dummy, weights);
 
             //TODO only keep the top x add_placements (pruning)
 
             for i in 0..add_placements.len() {
-                moves.push(moves[index].clone());
-                let mut place = placements[index].clone();
-                place.push(add_placements[i]);
 
+                let mut place = placements[index].clone();
+
+                let mut versus_score = scores[index].1.clone();
+                versus_score += add_scores[i].1;
+
+                moves.push(moves[index].clone());
+
+                place.push(add_placements[i]);
                 placements.push(place.clone());
-                // if placements[index].len() >= num_moves - 1 {
-                //
-                //     outmoves.push(moves[index].clone());
-                //     outplace.push(place.clone());
-                //
-                // }
+
+                scores.push((add_scores[i].0, versus_score.clone()));
+
+                if placements[index].len() >= depth - 1 {
+                    outmoves.push(moves[index].clone());
+                    outplace.push(place.clone());
+                    outscores.push((add_scores[i].0, versus_score.clone()));
+
+                    // println!("{}", versus_score);
+                }
             }
 
             // if placements[index].len() >= num_moves - 1 {
             //     outscores.extend(add_scores);
             // }
-            scores.extend(add_scores);
 
             index += 1;
             dummy = game_save;
         }
-        (moves, placements, scores)
+        (outmoves, outplace, outscores)
     }
 
-    pub fn move_placement_score_1d(game: &mut Game, weight: &Weights) -> (Vec<MoveList>, Vec<Placement>, Vec<f32>) {
+    pub fn move_placement_score_1d(game: &mut Game, weight: &Weights) -> (Vec<MoveList>, Vec<Placement>, Vec<(f32, f32)>) {
         let start_piece = game.get_active_piece_type();
         let hold_piece;
 
@@ -450,7 +406,7 @@ impl Bot {
         scores
     }
 
-    fn find_trivial_score(game: &mut Game, hold: bool, weights: &Weights) -> (Vec<MoveList>, Vec<Placement>, Vec<f32>) {
+    fn find_trivial_score(game: &mut Game, hold: bool, weights: &Weights) -> (Vec<MoveList>, Vec<Placement>, Vec<(f32, f32)>) {
         let mut trivial_moves = Vec::new();
         let mut trivial_placements = Vec::new();
         let mut trivial_scores = Vec::new();
@@ -484,7 +440,7 @@ impl Bot {
                 Bot::add_to_placements(trivial_placements, &game.active_piece);
             trivial_moves =
                 Bot::add_to_moves(trivial_moves, &base_move, &mut vec![SoftDrop]);
-            trivial_scores.push(Bot::score_game(game.clone(), weights,vec![game.active_piece.clone()]));
+            trivial_scores.push(Bot::score_game(game.clone(), weights,game.active_piece.clone()));
 
             game.active_piece.center.row = row;
 
@@ -499,7 +455,7 @@ impl Bot {
                 game.active_piece_soft_drop();
                 trivial_placements =
                     Bot::add_to_placements(trivial_placements, &game.active_piece);
-                trivial_scores.push(Bot::score_game(game.clone(), weights,vec![game.active_piece.clone()]));
+                trivial_scores.push(Bot::score_game(game.clone(), weights,game.active_piece.clone()));
                 game.active_piece.center.row = row;
 
                 add_moves.push(SoftDrop);
@@ -522,7 +478,7 @@ impl Bot {
                 game.active_piece_soft_drop();
                 trivial_placements =
                     Bot::add_to_placements(trivial_placements, &game.active_piece);
-                trivial_scores.push(Bot::score_game(game.clone(), weights,vec![game.active_piece.clone()]));
+                trivial_scores.push(Bot::score_game(game.clone(), weights,game.active_piece.clone()));
                 game.active_piece.center.row = row;
 
                 add_moves.push(SoftDrop);
@@ -541,7 +497,7 @@ impl Bot {
         mut piece_actions: MoveList,
         piece_action_list: &mut Vec<MoveList>,
         placement_list: &mut Vec<Placement>,
-        score_list: &mut Vec<Score>,
+        score_list: &mut Vec<(Score, Score)>,
         placement: Placement) {
 
 
@@ -580,7 +536,7 @@ impl Bot {
             // added to list of moves and placements
             piece_action_list.push(piece_actions.clone());
             placement_list.push(copy);
-            score_list.push(Bot::score_game(game.clone(), weight, vec![copy.clone()]));
+            score_list.push(Bot::score_game(game.clone(), weight, copy.clone()));
 
             // recurse
             Bot::find_non_trivial(game, weight, piece_actions.clone(), piece_action_list, placement_list, score_list, copy);
@@ -592,8 +548,8 @@ impl Bot {
         weight: &Weights,
         mut move_list: Vec<MoveList>,
         mut placement_list: Vec<Placement>,
-        mut score_list: Vec<Score>
-    ) -> (Vec<MoveList>, Vec<Placement>, Vec<Score>) {
+        mut score_list: Vec<(Score, Score)>
+    ) -> (Vec<MoveList>, Vec<Placement>, Vec<(Score, Score)>) {
 
         let trivialmoves = move_list.clone();
         let trivialplaces = placement_list.clone();
@@ -665,17 +621,17 @@ pub struct Weights {
 impl Default for Weights {
     fn default() -> Self {
         Self {
-            height_weight: Polynomial::new(vec![0.0, 10.0, 0.0]),
+            height_weight: Polynomial::new(vec![0.0, 5.0, 1.0]),
             adjacent_height_differences_weight: Polynomial::new(vec![0.0, 2.0, 1.0]),
             total_height_difference_weight: Polynomial::new(vec![0.0, 3.0, 0.0]),
             num_hole_total_weight: Polynomial::new(vec![0.0, 10.0, 1.0]),
             num_hole_weighted_weight: Polynomial::new(vec![0.0, 0.0, 0.0]),
             cell_covered_weight: Polynomial::new(vec![0.0, 10.0, 0.0]),
 
-            b2b_weight: Polynomial::new(vec![0.0, -10.0, -5.0]),
-            combo_weight: Polynomial::new(vec![0.0, 0.0, 0.0]),
-            damage_weight: Polynomial::new(vec![0.0, 10.0, -5.0]),
-            clear_weight: Polynomial::new(vec![0.0, -10000.0, -3000.0])
+            b2b_weight: Polynomial::new(vec![0.0, -10.0, 0.0]),
+            combo_weight: Polynomial::new(vec![0.0, 5.0, -2.0]),
+            damage_weight: Polynomial::new(vec![0.0, 50.0, -25.0]),
+            clear_weight: Polynomial::new(vec![0.0, 50.0, -25.0])
         }
     }
 }
