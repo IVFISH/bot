@@ -1,6 +1,6 @@
 pub mod types {
-    use crate::point_vector::Point;
     use super::piece_constants::*;
+    use crate::point_vector::Point;
 
     pub type PieceType = usize;
     pub type RotationState = usize;
@@ -23,7 +23,6 @@ pub mod piece_constants {
     pub const SPAWN_COL: usize = 4;
     pub const NUM_PIECES: usize = 7;
 
-
     pub const RELATIVE_CORNERS: [([PointVector; 2], [PointVector; 2]); 4] = [
         (
             [PointVector(1, -1), PointVector(1, 1)],
@@ -45,9 +44,9 @@ pub mod piece_constants {
 }
 
 pub mod rotation {
-    use crate::point_vector::Point;
     use super::piece_constants::*;
     use super::types::*;
+    use crate::point_vector::Point;
 
     pub const PIECE_ROTATIONS: [RotationLocations; NUM_PIECES] = [
         Z_ROTATIONS,
@@ -110,8 +109,8 @@ pub mod rotation {
 }
 
 pub mod offset {
-    use crate::point_vector::PointVector;
     use super::piece_constants::*;
+    use crate::point_vector::PointVector;
 
     pub const THREE_OFFSETS: [[[PointVector; 5]; 2]; NUM_ROTATE_STATES] = [
         THREE_OFFSET_ZERO,

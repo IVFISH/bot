@@ -54,7 +54,6 @@ impl Board {
     pub fn get_col(&self, col: usize) -> [bool; BOARD_HEIGHT] {
         let mut out = [false; BOARD_HEIGHT];
 
-
         for row in 0..BOARD_HEIGHT {
             out[row] = self.get(row, col);
         }
@@ -80,9 +79,9 @@ impl Board {
     }
 
     pub fn add_list(&mut self, locations: Vec<(usize, usize)>, update_heights: bool) {
-        for (row, col) in locations{
+        for (row, col) in locations {
             self.add(row, col, update_heights)
-        };
+        }
     }
 
     pub fn remove(&mut self, row: usize, col: usize, update_heights: bool) {
@@ -93,9 +92,9 @@ impl Board {
     }
 
     pub fn remove_list(&mut self, locations: Vec<(usize, usize)>, update_heights: bool) {
-        for (row, col) in locations{
+        for (row, col) in locations {
             self.remove(row, col, update_heights)
-        };
+        }
     }
 
     pub fn set_row(&mut self, row: usize, new_row: [bool; BOARD_WIDTH], update_heights: bool) {
@@ -153,7 +152,6 @@ impl Board {
     }
 
     fn update_height_remove(&mut self, col: usize) {
-        println!("{:?}", self.get_col(col));
         if let Some(height) = self.get_col(col).iter().rposition(|&x| x) {
             self.column_heights[col] = height + 1;
             return;
@@ -161,9 +159,9 @@ impl Board {
         self.column_heights[col] = 0;
     }
 
-    fn sub_to_heights(&mut self, amt: usize) {
+    fn update_all_heights(&mut self) {
         for col in 0..BOARD_WIDTH {
-            self.column_heights[col] -= amt
+            self.update_height_remove(col);
         }
     }
 
@@ -189,27 +187,23 @@ impl Board {
     pub fn clear_lines(&mut self, update_heights: bool) -> usize {
         let full_rows = self.all_full_rows();
         let highest = self.get_max_height();
+        let num_cleared = full_rows.len();
 
         for &row in &full_rows {
             self.remove_row(row, false);
         }
 
-        // iterate top down
-        let mut index = 0;
-        for row in 0..highest {
-            if row == full_rows[index] {
-                index += 1;
+        for &row in full_rows.iter().rev() {
+            for r in row..highest {
+                self.set_row(r, self.get_row(r + 1), false);
             }
-            self.set_row(row, self.get_row(row + index), false);
         }
-
-        assert_eq!(index, full_rows.len());
 
         if update_heights {
-            self.sub_to_heights(index);
+            self.update_all_heights();
         }
 
-        index
+        num_cleared
     }
 
     fn full_row(&self, row: usize) -> bool {
@@ -272,13 +266,27 @@ mod board_tests {
         assert_eq!(board.get_heights(), [0, 0, 6, 6, 0, 0, 0, 0, 0, 0]);
         board.remove_list(vec![(5, 2), (5, 3)], true);
         assert_eq!(board.get_heights(), [0, 0, 4, 0, 0, 0, 0, 0, 0, 0]);
-
     }
 
     #[test]
     fn test_heights_2() {
-        // set row, remove row
-        // clear lines
-        // piece stuffs
+        let mut board = Board::new();
+
+        board.set_row(8, [true; BOARD_WIDTH], true);
+        board.add_list(vec![(5, 2), (3, 2), (5, 3)], true);
+        assert_eq!(board.get_heights(), [9; BOARD_WIDTH]);
+        board.remove_row(8, true);
+        assert_eq!(board.get_heights(), [0, 0, 6, 6, 0, 0, 0, 0, 0, 0]);
+
+        board.set_row(8, [true; BOARD_WIDTH], true);
+        board.add(9, 3, true);
+        board.clear_lines(true);
+        assert_eq!(board.get_heights(), [0, 0, 6, 9, 0, 0, 0, 0, 0, 0]);
+
+        board.set_row(6, [true; BOARD_WIDTH], true);
+        board.set_row(7, [true; BOARD_WIDTH], true);
+        assert_eq!(board.get_heights(), [8, 8, 8, 9, 8, 8, 8, 8, 8, 8]);
+        board.clear_lines(true);
+        assert_eq!(board.get_heights(), [0, 0, 6, 7, 0, 0, 0, 0, 0, 0]);
     }
 }

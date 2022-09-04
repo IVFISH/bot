@@ -1,4 +1,1 @@
-pub struct Piece {
-
-}
-
+pub struct Piece {}
