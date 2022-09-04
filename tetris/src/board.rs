@@ -104,10 +104,6 @@ impl Board {
             self.add(location.row, location.col, update_heights);
         }
 
-        // TODO: remove
-        if update_heights {
-            self.update_all_heights();
-        }
     }
 
     pub fn remove_piece(&mut self, piece: &Placement, update_heights: bool) {
@@ -115,10 +111,6 @@ impl Board {
             self.remove(location.row, location.col, update_heights);
         }
 
-        // TODO: remove
-        if update_heights {
-            self.update_all_heights();
-        }
     }
 
     pub fn max_filled_height(&self) -> usize {
@@ -409,7 +401,7 @@ impl Board {
         for row in (0..self.heights_for_each_column[col]).rev() {
             if self.get(row, col) {
                 self.heights_for_each_column[col] = row + 1;
-                break;
+                return;
             }
         }
 
