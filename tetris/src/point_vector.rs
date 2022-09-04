@@ -1,7 +1,29 @@
-use crate::constants::board_constants::*;
+#![allow(dead_code)]
 
-#[derive(Default, Debug, Clone)]
+use crate::constants::board_constants::*;
+use crate::constants::piece_constants::*;
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct Point(pub i8, pub i8);
+
+impl Default for Point {
+    fn default() -> Self {
+        Self(SPAWN_ROW, SPAWN_COL)
+    }
+}
+
+impl Point {
+    pub fn add(&self, other: &Self) -> Option<Point> {
+        let row = self.0 + other.0;
+        let col = self.1 + other.1;
+
+        if row >= 0 && row < BOARD_HEIGHT as i8 && col >= 0 && col < BOARD_WIDTH as i8 {
+            return Some(Point(row, col));
+        }
+
+        None
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct PointVector(pub i8, pub i8);

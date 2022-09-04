@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 pub mod types {
     use super::piece_constants::*;
     use crate::point_vector::Point;
@@ -19,8 +21,8 @@ pub mod piece_constants {
 
     pub const PIECE_SIZE: usize = 4;
     pub const NUM_ROTATE_STATES: usize = 4;
-    pub const SPAWN_ROW: usize = 21;
-    pub const SPAWN_COL: usize = 4;
+    pub const SPAWN_ROW: i8 = 21;
+    pub const SPAWN_COL: i8 = 4;
     pub const NUM_PIECES: usize = 7;
 
     pub const RELATIVE_CORNERS: [([PointVector; 2], [PointVector; 2]); 4] = [

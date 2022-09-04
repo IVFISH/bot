@@ -1,5 +1,8 @@
+#![allow(dead_code)]
+
 use crate::constants::board_constants::*;
 use crate::piece::Piece;
+use crate::point_vector::{Point, PointVector};
 use std::cmp::max;
 use std::fmt::{Display, Formatter};
 
@@ -78,9 +81,9 @@ impl Board {
         self.arr[row][col] = true;
     }
 
-    pub fn add_list(&mut self, locations: Vec<(usize, usize)>, update_heights: bool) {
-        for (row, col) in locations {
-            self.add(row, col, update_heights)
+    pub fn add_list(&mut self, locations: Vec<Point>, update_heights: bool) {
+        for Point(row, col) in locations {
+            self.add(row as usize, col as usize, update_heights)
         }
     }
 
@@ -91,9 +94,9 @@ impl Board {
         }
     }
 
-    pub fn remove_list(&mut self, locations: Vec<(usize, usize)>, update_heights: bool) {
-        for (row, col) in locations {
-            self.remove(row, col, update_heights)
+    pub fn remove_list(&mut self, locations: Vec<Point>, update_heights: bool) {
+        for Point(row, col) in locations {
+            self.remove(row as usize, col as usize, update_heights)
         }
     }
 
@@ -119,31 +122,41 @@ impl Board {
 
     // piece interactions
     pub fn set_piece(&mut self, piece: &Piece, update_heights: bool) {
-        unimplemented!()
+        if let Some(locations) = piece.abs_locations() {
+            self.add_list(locations, update_heights);
+        }
     }
 
     pub fn remove_piece(&mut self, piece: &Piece, update_heights: bool) {
-        unimplemented!()
+        if let Some(locations) = piece.abs_locations() {
+            self.remove_list(locations, update_heights);
+        }
     }
 
     pub fn piece_in_bounds(&self, piece: &Piece) -> bool {
-        unimplemented!()
+        piece.abs_locations().is_some()
     }
 
     pub fn piece_collision(&self, piece: &Piece) -> bool {
-        unimplemented!()
+        let locations = piece.abs_locations();
+        locations.is_some() && !locations.unwrap().iter().map(
+            |&Point(row, col)| self.get(row as usize, col as usize)
+        ).any(|x| x)
     }
 
     pub fn piece_grounded(&self, piece: &Piece) -> bool {
-        unimplemented!()
+        if let Some(down) = piece.ret_moved(PointVector(-1, 0)) {
+            return self.piece_collision(&down);
+        };
+        true
     }
 
     pub fn piece_valid_location(&self, piece: &Piece) -> bool {
-        unimplemented!()
+        self.piece_in_bounds(piece) && !self.piece_collision(piece)
     }
 
     pub fn piece_valid_placement(&self, piece: &Piece) -> bool {
-        unimplemented!()
+        self.piece_valid_location(piece) && self.piece_grounded(piece)
     }
 
     // update heights
@@ -262,9 +275,9 @@ mod board_tests {
 
         let mut board = Board::new();
 
-        board.add_list(vec![(5, 2), (3, 2), (5, 3)], true);
+        board.add_list(vec![Point(5, 2), Point(3, 2), Point(5, 3)], true);
         assert_eq!(board.get_heights(), [0, 0, 6, 6, 0, 0, 0, 0, 0, 0]);
-        board.remove_list(vec![(5, 2), (5, 3)], true);
+        board.remove_list(vec![Point(5, 2), Point(5, 3)], true);
         assert_eq!(board.get_heights(), [0, 0, 4, 0, 0, 0, 0, 0, 0, 0]);
     }
 
@@ -273,7 +286,7 @@ mod board_tests {
         let mut board = Board::new();
 
         board.set_row(8, [true; BOARD_WIDTH], true);
-        board.add_list(vec![(5, 2), (3, 2), (5, 3)], true);
+        board.add_list(vec![Point(5, 2), Point(3, 2), Point(5, 3)], true);
         assert_eq!(board.get_heights(), [9; BOARD_WIDTH]);
         board.remove_row(8, true);
         assert_eq!(board.get_heights(), [0, 0, 6, 6, 0, 0, 0, 0, 0, 0]);
