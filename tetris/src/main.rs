@@ -1,23 +1,16 @@
 mod board;
 mod bot;
 mod communications;
-mod errors;
 mod game;
 mod human;
-mod placement;
+mod piece;
 mod players;
 mod population;
 mod queue;
-
-use crate::bot::*;
-use crate::population::Population;
+mod constants;
+mod point_vector;
 
 
 fn main() {
-    // let mut population = Population::new(100);
-    // population.train(1000, 100, 100);
-    communications::init();
-    // bot_play();
-    // bot_debug();
-    // println!("process has ended.");
+
 }
