@@ -48,6 +48,15 @@ impl Game {
         out
     }
 
+    // game over
+    pub fn get_game_over(&self) -> bool {
+        self.game_data.game_over
+    }
+
+    pub fn set_game_over(&mut self, game_over: bool) {
+        self.game_data.game_over = game_over;
+    }
+
     // safe piece movements
     pub fn active_piece_left(&mut self) -> bool {
         Game::move_piece(&mut self.active_piece, &self.board, PointVector(0, -1))
@@ -134,6 +143,9 @@ impl Game {
     }
 
     // other
+    pub fn reset_active_piece(&mut self) {
+        self.active_piece = Piece::new(self.active_piece.get_type())
+    }
     pub fn hold(&mut self) {
         let active_type = self.active_piece.get_type();
         if let Some(hold) = self.hold_piece {

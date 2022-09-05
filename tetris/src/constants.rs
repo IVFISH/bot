@@ -2,12 +2,14 @@
 
 pub mod types {
     use super::piece_constants::*;
+    use super::bot_constants::*;
     use crate::point_vector::Point;
 
     pub type PieceType = usize;
     pub type RotationState = usize;
     pub type RotationDirection = usize;
     pub type RotationLocations = [[Point; PIECE_SIZE]; NUM_ROTATE_STATES];
+    pub type MoveList = Vec<Command>;
 }
 
 pub mod board_constants {
@@ -74,6 +76,21 @@ pub mod queue_constants {
     // lehmer RNG (MINSTD)
     pub const MULTIPLIER: usize = 16807;
     pub const MODULUS: usize = 2147483647;
+}
+
+pub mod bot_constants {
+    #[derive(Copy, Clone, Debug, PartialEq)]
+    pub enum Command {
+        None,
+        MoveLeft,
+        MoveRight,
+        SoftDrop,
+        RotateCW,
+        RotateCCW,
+        Rotate180,
+        HardDrop,
+        Hold,
+    }
 }
 
 pub mod rotation {
