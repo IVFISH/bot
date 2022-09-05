@@ -184,10 +184,25 @@ impl Game {
 
     pub fn hard_drop(&mut self) -> bool {
         self.active_piece_drop();
-        let out = self.board.set_piece(&self.active_piece, true);
+        let out = self.set_piece();
         self.update();
         out
     }
+
+    pub fn set_piece(&mut self) -> bool {
+        if self.board.top_out(
+            &self.active_piece,
+            &Piece::new(self.piece_queue.peek()),
+        ) {
+            return false;
+        }
+
+        self.board.set_piece(&self.active_piece, true);
+        self.active_piece = self.piece_queue.next();
+
+        true
+    }
+
 
     fn update(&mut self) {
         let lines_cleared = self.board.clear_lines(true);

@@ -205,6 +205,15 @@ impl Board {
     }
 
     // versus
+    pub fn top_out(&mut self, piece: &Piece, next: &Piece) -> bool {
+        self.set_piece(piece, false);
+        if self.piece_collision(next) {
+            return true;
+        }
+        self.remove_piece(piece, false);
+        !piece.abs_locations().unwrap().iter().any(|&x| x.0 < MAX_PLACE_HEIGHT as i8)
+    }
+
     pub fn all_clear(&self) -> bool {
         // note: may fail edge cases
         !self.get_row(0).contains(&true)

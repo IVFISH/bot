@@ -44,7 +44,9 @@ impl Player for Bot {
     fn get_next_move(&mut self) -> CommandList {
         let (deep_moves, _, deep_scores) = self.move_placement_score(3, &self.weight.clone());
         let deep_scores: Vec<f32> = deep_scores.iter().map(|(board, versus)| board+versus).collect();
-
+        // for (m, s) in zip(&deep_moves, &deep_scores) {
+        //     println!("{:?} {}", m, s);
+        // }
         let mut min_score = f32::INFINITY;
         let mut action = vec![];
 
@@ -81,6 +83,8 @@ impl Bot {
                 continue;
             }
 
+            let center = game.get_active_piece().get_center();
+
             let mut base_move;
             if hold {
                 base_move = vec![Command::Hold, ROTATIONS[direction]];
@@ -90,10 +94,12 @@ impl Bot {
 
             Bot::trivial_extend_direction(&mut moves, &mut placements, &mut scores,
                                           base_move.clone(), Command::MoveLeft, game, weight);
+            game.reset_active_piece();
+            game.active_piece_rotate_direction(direction);
             Bot::trivial_extend_direction(&mut moves, &mut placements, &mut scores,
                                           base_move.clone(), Command::MoveRight, game, weight);
+            game.reset_active_piece();
 
-            game.active_piece_rotate_direction((NUM_ROTATE_STATES - direction) % NUM_ROTATE_STATES);
         }
 
         (moves, placements, scores)
@@ -103,12 +109,14 @@ impl Bot {
                                 mut base_move: CommandList, command: Command,
                                 game: &mut Game, weight: &Weights) {
         while do_command(game, command) {
+            println!("{}", game);
             let piece = game.ret_active_piece_drop();
             scores.push(Bot::score_game(game.clone(), weight, &piece));
             placements.push(piece);
             base_move.push(command);
-            base_move.push(Command::SoftDrop);
-            moves.push(base_move.clone())
+            let mut add = base_move.clone();
+            add.push(Command::SoftDrop);
+            moves.push(add);
         }
     }
 
@@ -116,6 +124,8 @@ impl Bot {
     // scoring
     fn score_game(game: Game, weights: &Weights, piece: &Piece) -> (Score, Score) {
         let versus_score = 0.0;
+        let mut game = game.clone();
+        game.board.set_piece(piece, true);
         (Bot::score_board(&game.board, weights), versus_score)
     }
 

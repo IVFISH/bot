@@ -118,6 +118,9 @@ impl Piece {
     }
 
     // setters
+    pub fn set_center(&mut self, point: Point) {
+        self.center = point;
+    }
     pub fn set_row(&mut self, row: i8) {
         self.center.0 = row
     }

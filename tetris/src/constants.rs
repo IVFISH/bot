@@ -21,6 +21,7 @@ pub mod board_constants {
     pub const BOARD_WIDTH: usize = 10;
     pub const BOARD_HEIGHT: usize = 40;
     pub const VISIBLE_BOARD_HEIGHT: usize = 23;
+    pub const MAX_PLACE_HEIGHT: usize = 20;
 }
 
 pub mod piece_constants {

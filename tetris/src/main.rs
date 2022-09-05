@@ -26,7 +26,7 @@ fn bot_play() {
     while !bot.get_game().get_game_over() {
         println!("{}", bot.get_game());
         bot.make_move();
-        thread::sleep(time::Duration::from_millis(500));
+        thread::sleep(time::Duration::from_millis(100));
     }
 
     println!("{}", bot.get_game());
