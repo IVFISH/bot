@@ -6,7 +6,7 @@ use crate::point_vector::{Point, PointVector};
 use std::cmp::max;
 use std::fmt::{Display, Formatter};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Board {
     arr: [[bool; BOARD_WIDTH]; BOARD_HEIGHT],
     column_heights: [usize; BOARD_WIDTH],
@@ -37,6 +37,7 @@ impl Default for Board {
         }
     }
 }
+
 impl Board {
     pub fn new() -> Self {
         Default::default()
@@ -127,11 +128,12 @@ impl Board {
 
     // piece interactions
     pub fn set_piece(&mut self, piece: &Piece, update_heights: bool) -> bool {
+        let mut out = false;
         if let Some(locations) = piece.abs_locations() {
+            out = !self.piece_collision(piece);
             self.add_list(locations, update_heights);
-            return true;
         }
-        false
+        out
     }
 
     pub fn remove_piece(&mut self, piece: &Piece, update_heights: bool) {
@@ -146,12 +148,13 @@ impl Board {
 
     pub fn piece_collision(&self, piece: &Piece) -> bool {
         let locations = piece.abs_locations();
+
         locations.is_some()
-            && !locations
-                .unwrap()
-                .iter()
-                .map(|&Point(row, col)| self.get(row as usize, col as usize))
-                .any(|x| x)
+            && locations
+            .unwrap()
+            .iter()
+            .map(|&Point(row, col)| self.get(row as usize, col as usize))
+            .any(|x| x)
     }
 
     pub fn piece_grounded(&self, piece: &Piece) -> bool {
@@ -242,14 +245,44 @@ impl Board {
 
     // stats
     pub fn holes_cell_covered(&self) -> (usize, usize, usize) {
-        unimplemented!()
+        let mut holes_count_total = 0;
+        let mut holes_count_weighted = 0;
+        let mut cell_covered_count = 0;
+
+        for col in 0..BOARD_WIDTH {
+            // only counting when you find a filled block
+            let mut counting = true;
+            let mut covered_counter = 0;
+
+            for row in (0..self.column_heights[col]).rev() {
+                // start at top
+
+                let spot = self.get(row, col);
+                // hole
+                if !spot {
+                    cell_covered_count += covered_counter;
+
+                    holes_count_total += 1;
+
+                    if counting {
+                        holes_count_weighted += 1;
+                        counting = false;
+                    }
+                } else {
+                    covered_counter += 1;
+                    counting = true;
+                }
+            }
+        }
+
+        (holes_count_total, holes_count_weighted, cell_covered_count)
     }
 
     pub fn t_slot(&self) -> usize {
         unimplemented!()
     }
 
-    pub fn max_height_difference(&self) -> usize {
+    pub fn get_max_height_difference(&self) -> usize {
         self.get_max_height() - self.get_min_height()
     }
 

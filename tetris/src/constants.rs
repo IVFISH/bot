@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 pub mod types {
+    use crate::piece::Piece;
     use super::piece_constants::*;
     use super::bot_constants::*;
     use crate::point_vector::Point;
@@ -9,7 +10,11 @@ pub mod types {
     pub type RotationState = usize;
     pub type RotationDirection = usize;
     pub type RotationLocations = [[Point; PIECE_SIZE]; NUM_ROTATE_STATES];
-    pub type MoveList = Vec<Command>;
+    pub type CommandList = Vec<Command>;
+    pub type Score = f32;
+    pub type MoveList = Vec<CommandList>;
+    pub type ScoreList = Vec<(Score, Score)>;
+    pub type PlacementList = Vec<Piece>;
 }
 
 pub mod board_constants {
@@ -91,6 +96,21 @@ pub mod bot_constants {
         HardDrop,
         Hold,
     }
+
+    pub const ROTATIONS: [Command; 4] = [
+        Command::None,
+        Command::RotateCW,
+        Command::Rotate180,
+        Command::RotateCCW,
+    ];
+
+    pub const COMMANDS: [Command; 5] = [
+        Command::MoveRight,
+        Command::MoveLeft,
+        Command::RotateCW,
+        Command::RotateCCW,
+        Command::Rotate180,
+    ];
 }
 
 pub mod rotation {

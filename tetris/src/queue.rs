@@ -9,7 +9,7 @@ use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 use std::string::ParseError;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct PieceQueue {
     queue: VecDeque<PieceType>,
     randomizer: BagType,
@@ -119,6 +119,7 @@ impl Display for PieceQueue {
     }
 }
 
+#[derive(Clone, PartialEq)]
 pub enum BagType {
     SevenBag,
     FourteenBag,
@@ -179,7 +180,7 @@ mod piece_queue_tests {
         let osk_queue = [4, 6, 2, 3, 1, 5, 0, 3, 5, 2, 6, 0, 1, 4];
 
         for piece in osk_queue {
-            assert_eq!(queue.next(), piece);
+            assert_eq!(queue.next(), Piece::new(piece));
         }
 
         let mut queue = PieceQueue::new(Some(7000));
@@ -187,7 +188,7 @@ mod piece_queue_tests {
         let osk_queue = [6, 3, 5, 2, 1, 4, 0, 4, 6, 1, 3, 5, 0, 2];
 
         for piece in osk_queue {
-            assert_eq!(queue.next(), piece);
+            assert_eq!(queue.next(), Piece::new(piece));
         }
     }
 }

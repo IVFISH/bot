@@ -10,7 +10,7 @@ use crate::queue::{piece_type_to_string, PieceQueue};
 use crate::versus::*;
 use std::fmt::{Display, Formatter};
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Game {
     pub board: Board,
     pub piece_queue: PieceQueue,
@@ -48,6 +48,11 @@ impl Game {
         out
     }
 
+    // getters
+    pub fn get_active_piece(&self) -> &Piece {
+        &self.active_piece
+    }
+
     // game over
     pub fn get_game_over(&self) -> bool {
         self.game_data.game_over
@@ -62,8 +67,16 @@ impl Game {
         Game::move_piece(&mut self.active_piece, &self.board, PointVector(0, -1))
     }
 
+    pub fn ret_active_piece_left(&self) -> Option<Piece> {
+        Game::ret_move_piece(&self.active_piece.clone(), &self.board, PointVector(0, -1))
+    }
+
     pub fn active_piece_right(&mut self) -> bool {
         Game::move_piece(&mut self.active_piece, &self.board, PointVector(0, 1))
+    }
+
+    pub fn ret_active_piece_right(&mut self) -> Option<Piece> {
+        Game::ret_move_piece(&self.active_piece.clone(), &self.board, PointVector(0, 1))
     }
 
     fn active_piece_down(&mut self) -> bool {
@@ -73,6 +86,15 @@ impl Game {
     pub fn active_piece_drop(&mut self) -> bool {
         let out = self.active_piece_down();
         while out && self.active_piece_down() {}
+        out
+    }
+
+    pub fn ret_active_piece_drop(&mut self) -> Piece {
+        // TODO: make not mut
+        let save = self.active_piece.clone();
+        self.active_piece_drop();
+        let out = self.active_piece.clone();
+        self.active_piece = save;
         out
     }
 
@@ -95,7 +117,7 @@ impl Game {
         None
     }
 
-    // safe piece rotations
+    // safe piece ROTATIONS
     pub fn active_piece_cw(&mut self) -> bool {
         self.active_piece_rotate_direction(1)
     }
@@ -113,6 +135,10 @@ impl Game {
     }
 
     fn rotate_piece(p: &mut Piece, b: &Board, dir: RotationDirection) -> bool {
+        if dir == 0 {
+            return true;
+        }
+
         p.rotate(dir);
         for (index, kick) in p.get_kicks(dir).iter().enumerate() {
             if p.moved(*kick) {
@@ -137,7 +163,7 @@ impl Game {
     }
 
     // versus
-    fn t_spin_type(piece: &Piece, board: &Board) -> TSpinType {
+    pub fn get_t_spin_type(piece: &Piece, board: &Board) -> TSpinType {
         TSpinType::None
         // TODO
     }
@@ -165,7 +191,7 @@ impl Game {
 
     fn update(&mut self) {
         let lines_cleared = self.board.clear_lines(true);
-        let t_spin_type = Game::t_spin_type(&self.active_piece, &self.board);
+        let t_spin_type = Game::get_t_spin_type(&self.active_piece, &self.board);
         let attack_type = attack_type(t_spin_type, lines_cleared);
 
         self.game_data
@@ -173,7 +199,7 @@ impl Game {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct GameData {
     pub all_clear: bool,
     pub combo: i8,
@@ -219,5 +245,21 @@ impl GameData {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct GameRules {}
+
+#[cfg(test)]
+pub mod game_test {
+    use super::*;
+
+    #[test]
+    pub fn general_tests() {
+        let mut game = Game::new(None);
+        println!("{}", game);
+        game.active_piece_drop();
+        println!("{}", game);
+
+        assert!(false);
+
+    }
+}

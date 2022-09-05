@@ -8,7 +8,7 @@ use crate::constants::bot_constants::*;
 pub trait Player {
     fn get_game(&self) -> &Game;
     fn get_game_mut(&mut self) -> &mut Game;
-    fn get_next_move(&mut self) -> MoveList;
+    fn get_next_move(&mut self) -> CommandList;
 
     fn make_move(&mut self) -> bool {
         if self.get_game().get_game_over() {
@@ -16,6 +16,7 @@ pub trait Player {
         }
         self.get_game_mut().reset_active_piece();
         let action = self.get_next_move();
+        println!("{:?}", action);
         do_move_list(self.get_game_mut(), action);
         true
     }
@@ -47,13 +48,13 @@ impl Display for Command {
     }
 }
 
-pub fn do_move_list(game: &mut Game, commands: MoveList) {
+pub fn do_move_list(game: &mut Game, commands: CommandList) {
     for command in commands {
-        do_command(game, command)
+        do_command(game, command);
     }
 }
 
-fn do_command(game: &mut Game, command: Command) {
+pub fn do_command(game: &mut Game, command: Command) -> bool {
     match command {
         Command::None => true,
         Command::MoveLeft => game.active_piece_left(),
@@ -67,9 +68,9 @@ fn do_command(game: &mut Game, command: Command) {
             true
         }
         Command::HardDrop => {
-            let game_over = game.hard_drop();
+            let game_over = !game.hard_drop();
             game.set_game_over(game_over);
             true
         }
-    };
+    }
 }

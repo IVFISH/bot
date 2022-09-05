@@ -7,7 +7,7 @@ use crate::constants::types::*;
 use crate::point_vector::*;
 use std::fmt::{Display, Formatter};
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct Piece {
     piece_type: PieceType,
     rotation_state: RotationState,
@@ -84,7 +84,6 @@ impl Piece {
 
     pub fn get_kicks(&self, dir: RotationDirection) -> Vec<PointVector> {
         let before = self.rotation_state;
-
         let kicks;
         if self.piece_type == 4 {
             // I piece is the special child
