@@ -1,9 +1,9 @@
 #![allow(dead_code)]
 
 pub mod types {
-    use crate::piece::Piece;
-    use super::piece_constants::*;
     use super::bot_constants::*;
+    use super::piece_constants::*;
+    use crate::piece::Piece;
     use crate::point_vector::Point;
 
     pub type PieceType = usize;

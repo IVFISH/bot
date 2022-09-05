@@ -151,10 +151,10 @@ impl Board {
 
         locations.is_some()
             && locations
-            .unwrap()
-            .iter()
-            .map(|&Point(row, col)| self.get(row as usize, col as usize))
-            .any(|x| x)
+                .unwrap()
+                .iter()
+                .map(|&Point(row, col)| self.get(row as usize, col as usize))
+                .any(|x| x)
     }
 
     pub fn piece_grounded(&self, piece: &Piece) -> bool {
@@ -211,7 +211,11 @@ impl Board {
             return true;
         }
         self.remove_piece(piece, false);
-        !piece.abs_locations().unwrap().iter().any(|&x| x.0 < MAX_PLACE_HEIGHT as i8)
+        !piece
+            .abs_locations()
+            .unwrap()
+            .iter()
+            .any(|&x| x.0 < MAX_PLACE_HEIGHT as i8)
     }
 
     pub fn all_clear(&self) -> bool {

@@ -1,15 +1,15 @@
 #![allow(dead_code)]
 
-use std::fmt::{Display, Formatter};
-use std::iter::zip;
 use crate::board::Board;
 use crate::constants::bot_constants::{Command, ROTATIONS};
 use crate::constants::piece_constants::NUM_ROTATE_STATES;
 use crate::constants::types::*;
-use crate::players::{Player, do_command};
-use crate::weight::Weights;
 use crate::game::{Game, GameData};
 use crate::piece::Piece;
+use crate::players::{do_command, Player};
+use crate::weight::Weights;
+use std::fmt::{Display, Formatter};
+use std::iter::zip;
 
 pub struct Bot {
     game: Game,
@@ -43,7 +43,10 @@ impl Player for Bot {
 
     fn get_next_move(&mut self) -> CommandList {
         let (deep_moves, _, deep_scores) = self.move_placement_score(3, &self.weight.clone());
-        let deep_scores: Vec<f32> = deep_scores.iter().map(|(board, versus)| board+versus).collect();
+        let deep_scores: Vec<f32> = deep_scores
+            .iter()
+            .map(|(board, versus)| board + versus)
+            .collect();
         // for (m, s) in zip(&deep_moves, &deep_scores) {
         //     println!("{:?} {}", m, s);
         // }
@@ -64,16 +67,27 @@ impl Player for Bot {
 
 impl Bot {
     // move gen
-    fn move_placement_score(&mut self, depth: usize, weight: &Weights) -> (MoveList, PlacementList, ScoreList) {
+    fn move_placement_score(
+        &mut self,
+        depth: usize,
+        weight: &Weights,
+    ) -> (MoveList, PlacementList, ScoreList) {
         let mut dummy = self.game.clone();
         Bot::move_placement_score_1d(&mut dummy, weight)
     }
 
-    fn move_placement_score_1d(game: &mut Game, weight: &Weights) -> (MoveList, PlacementList, ScoreList) {
+    fn move_placement_score_1d(
+        game: &mut Game,
+        weight: &Weights,
+    ) -> (MoveList, PlacementList, ScoreList) {
         Bot::trivial(game, false, weight)
     }
 
-    fn trivial(game: &mut Game, hold: bool, weight: &Weights) -> (MoveList, PlacementList, ScoreList) {
+    fn trivial(
+        game: &mut Game,
+        hold: bool,
+        weight: &Weights,
+    ) -> (MoveList, PlacementList, ScoreList) {
         let mut moves = Vec::with_capacity(40);
         let mut placements = Vec::with_capacity(40);
         let mut scores = Vec::with_capacity(40);
@@ -83,8 +97,6 @@ impl Bot {
                 continue;
             }
 
-            let center = game.get_active_piece().get_center();
-
             let mut base_move;
             if hold {
                 base_move = vec![Command::Hold, ROTATIONS[direction]];
@@ -92,24 +104,42 @@ impl Bot {
                 base_move = vec![ROTATIONS[direction]];
             }
 
-            Bot::trivial_extend_direction(&mut moves, &mut placements, &mut scores,
-                                          base_move.clone(), Command::MoveLeft, game, weight);
+            Bot::trivial_extend_direction(
+                &mut moves,
+                &mut placements,
+                &mut scores,
+                base_move.clone(),
+                Command::MoveLeft,
+                game,
+                weight,
+            );
             game.reset_active_piece();
             game.active_piece_rotate_direction(direction);
-            Bot::trivial_extend_direction(&mut moves, &mut placements, &mut scores,
-                                          base_move.clone(), Command::MoveRight, game, weight);
+            Bot::trivial_extend_direction(
+                &mut moves,
+                &mut placements,
+                &mut scores,
+                base_move.clone(),
+                Command::MoveRight,
+                game,
+                weight,
+            );
             game.reset_active_piece();
-
         }
 
         (moves, placements, scores)
     }
 
-    fn trivial_extend_direction(moves: &mut MoveList, placements: &mut PlacementList, scores: &mut ScoreList,
-                                mut base_move: CommandList, command: Command,
-                                game: &mut Game, weight: &Weights) {
+    fn trivial_extend_direction(
+        moves: &mut MoveList,
+        placements: &mut PlacementList,
+        scores: &mut ScoreList,
+        mut base_move: CommandList,
+        command: Command,
+        game: &mut Game,
+        weight: &Weights,
+    ) {
         while do_command(game, command) {
-            println!("{}", game);
             let piece = game.ret_active_piece_drop();
             scores.push(Bot::score_game(game.clone(), weight, &piece));
             placements.push(piece);
@@ -119,7 +149,6 @@ impl Bot {
             moves.push(add);
         }
     }
-
 
     // scoring
     fn score_game(game: Game, weights: &Weights, piece: &Piece) -> (Score, Score) {
@@ -148,11 +177,7 @@ impl Bot {
         let adjacent_score: f32 = board
             .get_adjacent_height_differences()
             .iter()
-            .map(|&x| {
-                weight
-                    .adjacent_height_differences_weight
-                    .eval(x as f32)
-            })
+            .map(|&x| weight.adjacent_height_differences_weight.eval(x as f32))
             .sum();
 
         let total_score = weight
@@ -179,5 +204,3 @@ impl Bot {
         out
     }
 }
-
-

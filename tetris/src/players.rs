@@ -1,9 +1,9 @@
 #![allow(dead_code)]
 
-use std::fmt::{Display, Formatter};
-use crate::game::Game;
-use crate::constants::types::*;
 use crate::constants::bot_constants::*;
+use crate::constants::types::*;
+use crate::game::Game;
+use std::fmt::{Display, Formatter};
 
 pub trait Player {
     fn get_game(&self) -> &Game;
@@ -16,7 +16,7 @@ pub trait Player {
         }
         self.get_game_mut().reset_active_piece();
         let action = self.get_next_move();
-        println!("{:?}", action);
+        // println!("{:?}", action);
         do_move_list(self.get_game_mut(), action);
         true
     }

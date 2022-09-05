@@ -29,7 +29,7 @@ impl Default for Weights {
             b2b_weight: Polynomial::new(vec![0.0, -10.0, 0.0]),
             combo_weight: Polynomial::new(vec![0.0, 5.0, -2.0]),
             damage_weight: Polynomial::new(vec![0.0, 50.0, -25.0]),
-            clear_weight: Polynomial::new(vec![0.0, 50.0, -25.0])
+            clear_weight: Polynomial::new(vec![0.0, 50.0, -25.0]),
         }
     }
 }

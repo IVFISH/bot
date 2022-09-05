@@ -190,10 +190,10 @@ impl Game {
     }
 
     pub fn set_piece(&mut self) -> bool {
-        if self.board.top_out(
-            &self.active_piece,
-            &Piece::new(self.piece_queue.peek()),
-        ) {
+        if self
+            .board
+            .top_out(&self.active_piece, &Piece::new(self.piece_queue.peek()))
+        {
             return false;
         }
 
@@ -202,7 +202,6 @@ impl Game {
 
         true
     }
-
 
     fn update(&mut self) {
         let lines_cleared = self.board.clear_lines(true);
@@ -275,6 +274,5 @@ pub mod game_test {
         println!("{}", game);
 
         assert!(false);
-
     }
 }
