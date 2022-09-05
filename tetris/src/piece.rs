@@ -1,10 +1,10 @@
 #![allow(dead_code)]
 
-use std::fmt::{Display, Formatter};
 use crate::constants::piece_constants::*;
 use crate::constants::rotation::*;
 use crate::constants::types::*;
 use crate::point_vector::*;
+use std::fmt::{Display, Formatter};
 
 #[derive(Default, Clone)]
 pub struct Piece {
@@ -118,7 +118,7 @@ impl Piece {
         None
     }
 
-     // rotate
+    // rotate
     pub fn rotate(&mut self, direction: RotationDirection) {
         self.rotation_state = (self.rotation_state + direction) % NUM_ROTATE_STATES;
     }

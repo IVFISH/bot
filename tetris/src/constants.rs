@@ -45,6 +45,37 @@ pub mod piece_constants {
     ];
 }
 
+pub mod versus_constants {
+    #[derive(Debug, PartialEq, Clone)]
+    pub enum AttackType {
+        None,
+        S,
+        D,
+        T,
+        Q,
+        TSM,
+        TDM,
+        TS,
+        TD,
+        TT,
+    }
+
+    #[derive(Debug, PartialEq)]
+    pub enum TSpinType {
+        None,
+        Full,
+        Mini,
+    }
+}
+
+pub mod queue_constants {
+    pub const MIN_QUEUE_LENGTH: usize = 6;
+
+    // lehmer RNG (MINSTD)
+    pub const MULTIPLIER: usize = 16807;
+    pub const MODULUS: usize = 2147483647;
+}
+
 pub mod rotation {
     use super::piece_constants::*;
     use super::types::*;
@@ -312,27 +343,4 @@ pub mod offset {
             PointVector(-1, -1),
         ],
     ];
-}
-
-pub mod versus_constants {
-    #[derive(Debug, PartialEq, Clone)]
-    pub enum AttackType {
-        None,
-        S,
-        D,
-        T,
-        Q,
-        TSM,
-        TDM,
-        TS,
-        TD,
-        TT,
-    }
-
-    #[derive(Debug, PartialEq)]
-    pub enum TSpinType {
-        None,
-        Full,
-        Mini,
-    }
 }

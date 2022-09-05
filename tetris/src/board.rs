@@ -139,9 +139,12 @@ impl Board {
 
     pub fn piece_collision(&self, piece: &Piece) -> bool {
         let locations = piece.abs_locations();
-        locations.is_some() && !locations.unwrap().iter().map(
-            |&Point(row, col)| self.get(row as usize, col as usize)
-        ).any(|x| x)
+        locations.is_some()
+            && !locations
+                .unwrap()
+                .iter()
+                .map(|&Point(row, col)| self.get(row as usize, col as usize))
+                .any(|x| x)
     }
 
     pub fn piece_grounded(&self, piece: &Piece) -> bool {

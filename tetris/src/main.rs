@@ -3,6 +3,7 @@ mod bot;
 mod communications;
 mod constants;
 mod game;
+mod garbage;
 mod human;
 mod piece;
 mod players;
