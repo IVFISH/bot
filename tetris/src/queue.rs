@@ -2,6 +2,7 @@
 
 use crate::constants::queue_constants::*;
 use crate::constants::types::*;
+use crate::piece::Piece;
 use rand::Rng;
 use std::collections::VecDeque;
 use std::fmt::{Display, Formatter};
@@ -39,11 +40,11 @@ impl PieceQueue {
         *self.queue.front().unwrap()
     }
 
-    pub fn next(&mut self) -> PieceType {
+    pub fn next(&mut self) -> Piece {
         if self.queue.len() < MIN_QUEUE_LENGTH + 1 {
             self.next_bag();
         }
-        self.pop()
+        Piece::new(self.pop())
     }
 
     fn pop(&mut self) -> PieceType {

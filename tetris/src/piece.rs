@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use crate::constants::offset::*;
 use crate::constants::piece_constants::*;
 use crate::constants::rotation::*;
 use crate::constants::types::*;
@@ -68,8 +69,41 @@ impl Piece {
 
         Some(out)
     }
+
     pub fn get_type(&self) -> PieceType {
         self.piece_type
+    }
+
+    pub fn get_rotation_state(&self) -> RotationState {
+        self.rotation_state
+    }
+
+    pub fn get_center(&self) -> Point {
+        self.center
+    }
+
+    pub fn get_kicks(&self, dir: RotationDirection) -> Vec<PointVector> {
+        let before = self.rotation_state;
+
+        let kicks;
+        if self.piece_type == 4 {
+            // I piece is the special child
+            if dir == 2 {
+                kicks = FIVE_180_OFFSETS[before].to_vec()
+            } else {
+                kicks = FIVE_OFFSETS[before][dir / 2].to_vec();
+            }
+        } else if self.piece_type == 2 {
+            // O piece is the other special child
+            kicks = vec![O_OFFSETS[before][dir - 1]];
+        } else {
+            if dir == 2 {
+                kicks = THREE_180_OFFSETS[before].to_vec()
+            } else {
+                kicks = THREE_OFFSETS[before][dir / 2].to_vec();
+            }
+        }
+        kicks
     }
 
     pub fn get_rotation(&self) -> RotationState {
@@ -93,6 +127,9 @@ impl Piece {
         self.center.1 = col
     }
 
+    pub fn set_kick(&mut self, new_kick: usize) {
+        self.last_kick = new_kick;
+    }
     // methods
     pub fn new(piece_type: PieceType) -> Self {
         Self {

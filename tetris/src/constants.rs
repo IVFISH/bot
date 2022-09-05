@@ -46,7 +46,7 @@ pub mod piece_constants {
 }
 
 pub mod versus_constants {
-    #[derive(Debug, PartialEq, Clone)]
+    #[derive(Debug, PartialEq, Clone, Copy)]
     pub enum AttackType {
         None,
         S,

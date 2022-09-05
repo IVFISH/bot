@@ -3,7 +3,7 @@
 use crate::constants::board_constants::*;
 use crate::constants::piece_constants::*;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Copy)]
 pub struct Point(pub i8, pub i8);
 
 impl Default for Point {
@@ -25,7 +25,7 @@ impl Point {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct PointVector(pub i8, pub i8);
 
 impl PointVector {

@@ -29,12 +29,17 @@ impl Display for Board {
     }
 }
 
-impl Board {
-    pub fn new() -> Self {
+impl Default for Board {
+    fn default() -> Self {
         Self {
             arr: [[false; BOARD_WIDTH]; BOARD_HEIGHT],
             column_heights: [0; BOARD_WIDTH],
         }
+    }
+}
+impl Board {
+    pub fn new() -> Self {
+        Default::default()
     }
 
     // getters
@@ -121,10 +126,12 @@ impl Board {
     }
 
     // piece interactions
-    pub fn set_piece(&mut self, piece: &Piece, update_heights: bool) {
+    pub fn set_piece(&mut self, piece: &Piece, update_heights: bool) -> bool {
         if let Some(locations) = piece.abs_locations() {
             self.add_list(locations, update_heights);
+            return true;
         }
+        false
     }
 
     pub fn remove_piece(&mut self, piece: &Piece, update_heights: bool) {
@@ -253,6 +260,26 @@ impl Board {
             .windows(2)
             .map(|w| w[0].abs_diff(w[1]))
             .collect()
+    }
+
+    // other
+    pub fn display_with_active(&self, active_piece: &Piece) -> String {
+        let mut out = String::new();
+        let locations = active_piece.abs_locations().unwrap();
+        for row in (0..VISIBLE_BOARD_HEIGHT).rev() {
+            for col in 0..BOARD_WIDTH {
+                if self.get(row, col) {
+                    out.push_str("■ ");
+                } else if locations.contains(&Point(row as i8, col as i8)) {
+                    out.push_str("⬚ ");
+                } else {
+                    out.push_str("□ ");
+                }
+            }
+            out.push_str("\n");
+        }
+
+        out
     }
 }
 
