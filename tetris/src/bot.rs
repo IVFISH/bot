@@ -47,9 +47,7 @@ impl Player for Bot {
             .iter()
             .map(|(board, versus)| board + versus)
             .collect();
-        // for (m, s) in zip(&deep_moves, &deep_scores) {
-        //     println!("{:?} {}", m, s);
-        // }
+
         let mut min_score = f32::INFINITY;
         let mut action = vec![];
 
@@ -82,6 +80,20 @@ impl Bot {
     ) -> (MoveList, PlacementList, ScoreList) {
         let (mut moves, mut placements, mut scores) = Bot::trivial(game, false, weight);
         Bot::non_trivial(game, weight, &mut moves, &mut placements, &mut scores);
+        let hold_piece = game.get_hold_piece();
+        if hold_piece.get_type() == game.get_active_piece().get_type() {
+            return (moves, placements, scores);
+        }
+
+        let active_piece = game.get_active_piece().get_type();
+        game.set_active_piece(hold_piece);
+        let (mut hold_moves, mut hold_placements, mut hold_scores) = Bot::trivial(game, true, weight);
+        Bot::non_trivial(game, weight, &mut hold_moves, &mut hold_placements, &mut hold_scores);
+
+        moves.extend(hold_moves);
+        placements.extend(hold_placements);
+        scores.extend(hold_scores);
+        game.set_active_piece(Piece::new(active_piece));
         (moves, placements, scores)
     }
 
@@ -96,19 +108,15 @@ impl Bot {
 
     fn non_trivial_recurse(game: &mut Game, weight: &Weights, new_move: &mut CommandList,
                            moves: &mut MoveList, placements: &mut PlacementList, scores: &mut ScoreList, start: &Piece) {
-
         for (command, action) in zip(COMMANDS, ACTIONS) {
             game.set_active_piece(start.clone());
-            if !action(game) || !Bot::new_placement(&game.get_active_piece(), &placements){
+            if !(action(game) && game.board.piece_grounded(&game.get_active_piece()) && Bot::new_placement(&game.get_active_piece(), &placements)) {
                 continue;
             }
-
-            // println!("{}", game.board.display_with_active(&game.get_active_piece()));
-
             new_move.push(command);
-            new_move.push(Command::SoftDrop);
             Bot::clone_and_extend(moves, placements, scores, new_move.clone(), game, weight);
-            Bot::non_trivial_recurse(game, weight, new_move, moves, placements, scores, &start);
+            new_move.push(Command::SoftDrop);
+            Bot::non_trivial_recurse(game, weight, new_move, moves, placements, scores, &game.get_active_piece().clone());
         }
     }
 
@@ -175,11 +183,10 @@ impl Bot {
     }
 
     // scoring
-    fn score_game(game: Game, weights: &Weights, piece: &Piece) -> (Score, Score) {
-        let versus_score = 0.0;
-        let mut game = game.clone();
+    fn score_game(mut game: Game, weights: &Weights, piece: &Piece) -> (Score, Score) {
         game.board.set_piece(piece, true);
-        (Bot::score_board(&game.board, weights), versus_score)
+        game.update();
+        (Bot::score_board(&game.board, weights), Bot::score_versus(&game.game_data, weights))
     }
 
     fn score_board(board: &Board, weights: &Weights) -> Score {
@@ -189,6 +196,7 @@ impl Bot {
     }
 
     fn score_versus(game_data: &GameData, weight: &Weights) -> Score {
+        // let spin = Game::get_t_spin_type(piece, board);
         let combo_score = weight.combo_weight.eval(game_data.combo as f32);
         let b2b = weight.b2b_weight.eval(game_data.b2b as f32);
         let attack = weight.damage_weight.eval(game_data.last_sent as f32);

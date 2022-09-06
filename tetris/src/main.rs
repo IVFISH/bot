@@ -24,9 +24,9 @@ fn bot_play() {
     let mut bot = Bot::default();
     let mut pieces_counter = 0;
     let mut time = 0;
-
-    while !bot.get_game().get_game_over() && pieces_counter < 10000 {
-        println!("{}", bot.get_game());
+    println!("{}", bot.get_game());
+    while !bot.get_game().get_game_over() && pieces_counter < 100000 {
+        // println!("{}", bot.get_game());
 
         let now = time::Instant::now();
         bot.make_move();

@@ -14,7 +14,7 @@ use std::fmt::{Display, Formatter};
 pub struct Game {
     pub board: Board,
     pub piece_queue: PieceQueue,
-    game_data: GameData,
+    pub game_data: GameData,
     game_rules: GameRules,
 
     active_piece: Piece,
@@ -48,9 +48,17 @@ impl Game {
         out
     }
 
-    // active piece
+    // piece getters and setters
     pub fn get_active_piece(&self) -> &Piece {
         &self.active_piece
+    }
+
+    pub fn get_hold_piece(&self) -> Piece {
+        return if let Some(piece) = self.hold_piece {
+            Piece::new(piece)
+        } else {
+            Piece::new(self.piece_queue.peek())
+        }
     }
 
     pub fn set_active_piece(&mut self, new_piece: Piece) {
@@ -253,7 +261,7 @@ impl Game {
         true
     }
 
-    fn update(&mut self) {
+    pub fn update(&mut self) {
         let lines_cleared = self.board.clear_lines(true);
         let t_spin_type = Game::get_t_spin_type(&self.active_piece, &self.board);
         let attack_type = attack_type(t_spin_type, lines_cleared);

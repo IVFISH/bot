@@ -14,7 +14,6 @@ pub trait Player {
         if self.get_game().get_game_over() {
             return false;
         }
-        self.get_game_mut().reset_active_piece();
         let action = self.get_next_move();
         // println!("{:?}", action);
         do_move_list(self.get_game_mut(), action);
