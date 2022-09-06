@@ -85,6 +85,8 @@ pub mod queue_constants {
 }
 
 pub mod bot_constants {
+    use crate::game::Game;
+
     #[derive(Copy, Clone, Debug, PartialEq)]
     pub enum Command {
         None,
@@ -105,12 +107,25 @@ pub mod bot_constants {
         Command::RotateCCW,
     ];
 
+    pub const DIRECTIONS: [Command; 2] = [
+        Command::MoveRight,
+        Command::MoveLeft
+    ];
+
     pub const COMMANDS: [Command; 5] = [
         Command::MoveRight,
         Command::MoveLeft,
         Command::RotateCW,
         Command::RotateCCW,
         Command::Rotate180,
+    ];
+
+    pub const ACTIONS: [fn(&mut Game) -> bool; 5] = [
+        Game::active_right,
+        Game::active_left,
+        Game::active_cw,
+        Game::active_ccw,
+        Game::active_180,
     ];
 }
 

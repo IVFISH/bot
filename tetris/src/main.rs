@@ -26,13 +26,13 @@ fn bot_play() {
     let mut time = 0;
 
     while !bot.get_game().get_game_over() && pieces_counter < 10000 {
-        // println!("{}", bot.get_game());
+        println!("{}", bot.get_game());
 
         let now = time::Instant::now();
         bot.make_move();
         time += now.elapsed().as_micros();
 
-        // thread::sleep(time::Duration::from_millis(100));
+        thread::sleep(time::Duration::from_millis(0));
         pieces_counter += 1;
     }
     println!(

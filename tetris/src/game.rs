@@ -48,9 +48,13 @@ impl Game {
         out
     }
 
-    // getters
+    // active piece
     pub fn get_active_piece(&self) -> &Piece {
         &self.active_piece
+    }
+
+    pub fn set_active_piece(&mut self, new_piece: Piece) {
+        self.active_piece = new_piece;
     }
 
     // game over
@@ -63,36 +67,36 @@ impl Game {
     }
 
     // safe piece movements
-    pub fn active_piece_left(&mut self) -> bool {
+    pub fn active_left(&mut self) -> bool {
         Game::move_piece(&mut self.active_piece, &self.board, PointVector(0, -1))
     }
 
-    pub fn ret_active_piece_left(&self) -> Option<Piece> {
+    pub fn ret_active_left(&mut self) -> Option<Piece> {
         Game::ret_move_piece(&self.active_piece.clone(), &self.board, PointVector(0, -1))
     }
 
-    pub fn active_piece_right(&mut self) -> bool {
+    pub fn active_right(&mut self) -> bool {
         Game::move_piece(&mut self.active_piece, &self.board, PointVector(0, 1))
     }
 
-    pub fn ret_active_piece_right(&mut self) -> Option<Piece> {
+    pub fn ret_active_right(&mut self) -> Option<Piece> {
         Game::ret_move_piece(&self.active_piece.clone(), &self.board, PointVector(0, 1))
     }
 
-    fn active_piece_down(&mut self) -> bool {
+    fn active_down(&mut self) -> bool {
         Game::move_piece(&mut self.active_piece, &self.board, PointVector(-1, 0))
     }
 
-    pub fn active_piece_drop(&mut self) -> bool {
-        let out = self.active_piece_down();
-        while out && self.active_piece_down() {}
+    pub fn active_drop(&mut self) -> bool {
+        let out = self.active_down();
+        while out && self.active_down() {}
         out
     }
 
-    pub fn ret_active_piece_drop(&mut self) -> Piece {
+    pub fn ret_active_drop(&mut self) -> Piece {
         // TODO: make not mut
         let save = self.active_piece.clone();
-        self.active_piece_drop();
+        self.active_drop();
         let out = self.active_piece.clone();
         self.active_piece = save;
         out
@@ -118,16 +122,28 @@ impl Game {
     }
 
     // safe piece ROTATIONS
-    pub fn active_piece_cw(&mut self) -> bool {
+    pub fn active_cw(&mut self) -> bool {
         self.active_piece_rotate_direction(1)
     }
 
-    pub fn active_piece_180(&mut self) -> bool {
+    pub fn ret_active_cw(&mut self) -> Option<Piece> {
+        Game::ret_rotate_piece(&self.active_piece, &self.board, 1)
+    }
+
+    pub fn active_180(&mut self) -> bool {
         self.active_piece_rotate_direction(2)
     }
 
-    pub fn active_piece_ccw(&mut self) -> bool {
+    pub fn ret_active_180(&mut self) -> Option<Piece> {
+        Game::ret_rotate_piece(&self.active_piece, &self.board, 2)
+    }
+
+    pub fn active_ccw(&mut self) -> bool {
         self.active_piece_rotate_direction(3)
+    }
+
+    pub fn ret_active_ccw(&mut self) -> Option<Piece> {
+        Game::ret_rotate_piece(&self.active_piece, &self.board, 3)
     }
 
     pub fn active_piece_rotate_direction(&mut self, direction: RotationDirection) -> bool {
@@ -164,8 +180,42 @@ impl Game {
 
     // versus
     pub fn get_t_spin_type(piece: &Piece, board: &Board) -> TSpinType {
-        TSpinType::None
-        // TODO
+        if piece.get_type() != 6 {
+            return TSpinType::None;
+        }
+
+        let (front, back) = RELATIVE_CORNERS[piece.get_rotation_state()];
+
+        let front_count = front
+            .iter()
+            .map(|x| x.add_to_point(&piece.get_center()))
+            .flatten()
+            .filter(|x| board.get(x.0 as usize, x.1 as usize))
+            .count();
+
+        let mut back_count = back
+            .iter()
+            .map(|x| x.add_to_point(&piece.get_center()))
+            .flatten()
+            .filter(|x| board.get(x.0 as usize, x.1 as usize))
+            .count();
+
+        if (piece.get_col() == 9 && piece.get_rotation_state() == 3)
+            || (piece.get_col() == 0 && piece.get_rotation_state() == 1)
+            || (piece.get_rotation_state() + piece.get_row() == 0)
+        {
+            back_count += 2;
+        }
+
+        return if (front_count == 2 && back_count >= 1)
+            || (front_count == 1 && back_count >= 2 && piece.get_last_kick() == 4)
+        {
+            TSpinType::Full
+        } else if front_count == 1 && back_count >= 2 {
+            TSpinType::Mini
+        } else {
+            TSpinType::None
+        };
     }
 
     // other
@@ -183,7 +233,7 @@ impl Game {
     }
 
     pub fn hard_drop(&mut self) -> bool {
-        self.active_piece_drop();
+        self.active_drop();
         let out = self.set_piece();
         self.update();
         out

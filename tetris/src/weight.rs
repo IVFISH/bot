@@ -19,12 +19,12 @@ pub struct Weights {
 impl Default for Weights {
     fn default() -> Self {
         Self {
-            height_weight: Polynomial::new(vec![0.0, 5.0, 1.0]),
-            adjacent_height_differences_weight: Polynomial::new(vec![0.0, 2.0, 1.0]),
+            height_weight: Polynomial::new(vec![0.0, 5.0, 3.0]),
+            adjacent_height_differences_weight: Polynomial::new(vec![0.0, 2.0, 0.5]),
             total_height_difference_weight: Polynomial::new(vec![0.0, 3.0, 0.0]),
-            num_hole_total_weight: Polynomial::new(vec![0.0, 10.0, 1.0]),
-            num_hole_weighted_weight: Polynomial::new(vec![0.0, 0.0, 0.0]),
-            cell_covered_weight: Polynomial::new(vec![0.0, 10.0, 0.0]),
+            num_hole_total_weight: Polynomial::new(vec![0.0, 10.0, 3.0]),
+            num_hole_weighted_weight: Polynomial::new(vec![0.0, 2.0, 0.0]),
+            cell_covered_weight: Polynomial::new(vec![0.0, 5.0, 0.0]),
 
             b2b_weight: Polynomial::new(vec![0.0, -10.0, 0.0]),
             combo_weight: Polynomial::new(vec![0.0, 5.0, -2.0]),

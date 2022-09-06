@@ -57,12 +57,12 @@ pub fn do_move_list(game: &mut Game, commands: CommandList) {
 pub fn do_command(game: &mut Game, command: Command) -> bool {
     match command {
         Command::None => true,
-        Command::MoveLeft => game.active_piece_left(),
-        Command::MoveRight => game.active_piece_right(),
-        Command::SoftDrop => game.active_piece_drop(),
-        Command::RotateCW => game.active_piece_cw(),
-        Command::RotateCCW => game.active_piece_ccw(),
-        Command::Rotate180 => game.active_piece_180(),
+        Command::MoveLeft => game.active_left(),
+        Command::MoveRight => game.active_right(),
+        Command::SoftDrop => game.active_drop(),
+        Command::RotateCW => game.active_cw(),
+        Command::RotateCCW => game.active_ccw(),
+        Command::Rotate180 => game.active_180(),
         Command::Hold => {
             game.hold();
             true
