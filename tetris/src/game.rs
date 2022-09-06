@@ -58,7 +58,7 @@ impl Game {
             Piece::new(piece)
         } else {
             Piece::new(self.piece_queue.peek())
-        }
+        };
     }
 
     pub fn set_active_piece(&mut self, new_piece: Piece) {

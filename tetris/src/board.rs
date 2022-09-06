@@ -300,8 +300,6 @@ impl Board {
     }
 
     pub fn get_adjacent_height_differences(&self) -> Vec<usize> {
-        // maybe make output an array
-
         self.column_heights
             .windows(2)
             .map(|w| w[0].abs_diff(w[1]))

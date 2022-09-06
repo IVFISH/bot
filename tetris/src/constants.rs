@@ -107,10 +107,7 @@ pub mod bot_constants {
         Command::RotateCCW,
     ];
 
-    pub const DIRECTIONS: [Command; 2] = [
-        Command::MoveRight,
-        Command::MoveLeft
-    ];
+    pub const DIRECTIONS: [Command; 2] = [Command::MoveRight, Command::MoveLeft];
 
     pub const COMMANDS: [Command; 5] = [
         Command::MoveRight,

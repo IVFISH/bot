@@ -87,8 +87,15 @@ impl Bot {
 
         let active_piece = game.get_active_piece().get_type();
         game.set_active_piece(hold_piece);
-        let (mut hold_moves, mut hold_placements, mut hold_scores) = Bot::trivial(game, true, weight);
-        Bot::non_trivial(game, weight, &mut hold_moves, &mut hold_placements, &mut hold_scores);
+        let (mut hold_moves, mut hold_placements, mut hold_scores) =
+            Bot::trivial(game, true, weight);
+        Bot::non_trivial(
+            game,
+            weight,
+            &mut hold_moves,
+            &mut hold_placements,
+            &mut hold_scores,
+        );
 
         moves.extend(hold_moves);
         placements.extend(hold_placements);
@@ -97,26 +104,58 @@ impl Bot {
         (moves, placements, scores)
     }
 
-    fn non_trivial(game: &mut Game, weight: &Weights, moves: &mut MoveList, placements: &mut PlacementList, scores: &mut ScoreList) {
+    fn non_trivial(
+        game: &mut Game,
+        weight: &Weights,
+        moves: &mut MoveList,
+        placements: &mut PlacementList,
+        scores: &mut ScoreList,
+    ) {
         let max_index = moves.len();
         let mut index = 0;
         while index < max_index {
-            Bot::non_trivial_recurse(game, weight, &mut moves[index].clone(), moves, placements, scores, &placements[index].clone());
+            Bot::non_trivial_recurse(
+                game,
+                weight,
+                &mut moves[index].clone(),
+                moves,
+                placements,
+                scores,
+                &placements[index].clone(),
+            );
             index += 1;
         }
     }
 
-    fn non_trivial_recurse(game: &mut Game, weight: &Weights, new_move: &mut CommandList,
-                           moves: &mut MoveList, placements: &mut PlacementList, scores: &mut ScoreList, start: &Piece) {
+    fn non_trivial_recurse(
+        game: &mut Game,
+        weight: &Weights,
+        new_move: &mut CommandList,
+        moves: &mut MoveList,
+        placements: &mut PlacementList,
+        scores: &mut ScoreList,
+        start: &Piece,
+    ) {
         for (command, action) in zip(COMMANDS, ACTIONS) {
             game.set_active_piece(start.clone());
-            if !(action(game) && game.board.piece_grounded(&game.get_active_piece()) && Bot::new_placement(&game.get_active_piece(), &placements)) {
+            if !(action(game)
+                && game.board.piece_grounded(&game.get_active_piece())
+                && Bot::new_placement(&game.get_active_piece(), &placements))
+            {
                 continue;
             }
             new_move.push(command);
             Bot::clone_and_extend(moves, placements, scores, new_move.clone(), game, weight);
             new_move.push(Command::SoftDrop);
-            Bot::non_trivial_recurse(game, weight, new_move, moves, placements, scores, &game.get_active_piece().clone());
+            Bot::non_trivial_recurse(
+                game,
+                weight,
+                new_move,
+                moves,
+                placements,
+                scores,
+                &game.get_active_piece().clone(),
+            );
         }
     }
 
@@ -139,26 +178,50 @@ impl Bot {
                 base_move.push(Command::Hold);
             }
             base_move.push(ROTATIONS[direction]);
-            Bot::clone_and_extend(&mut moves, &mut placements, &mut scores, base_move.clone(), game, weight);
-            Bot::trivial_extend_direction(&mut moves, &mut placements, &mut scores, base_move.clone(), Command::MoveLeft, game, weight);
+            Bot::clone_and_extend(
+                &mut moves,
+                &mut placements,
+                &mut scores,
+                base_move.clone(),
+                game,
+                weight,
+            );
+            Bot::trivial_extend_direction(
+                &mut moves,
+                &mut placements,
+                &mut scores,
+                base_move.clone(),
+                Command::MoveLeft,
+                game,
+                weight,
+            );
             game.reset_active_piece();
             game.active_piece_rotate_direction(direction);
-            Bot::trivial_extend_direction(&mut moves, &mut placements, &mut scores, base_move.clone(), Command::MoveRight, game, weight);
+            Bot::trivial_extend_direction(
+                &mut moves,
+                &mut placements,
+                &mut scores,
+                base_move.clone(),
+                Command::MoveRight,
+                game,
+                weight,
+            );
             game.reset_active_piece();
         }
 
         (moves, placements, scores)
     }
 
-    fn clone_and_extend(moves: &mut MoveList,
-                        placements: &mut PlacementList,
-                        scores: &mut ScoreList,
-                        mut new_move: CommandList,
-                        game: &mut Game,
-                        weight: &Weights) {
+    fn clone_and_extend(
+        moves: &mut MoveList,
+        placements: &mut PlacementList,
+        scores: &mut ScoreList,
+        mut new_move: CommandList,
+        game: &mut Game,
+        weight: &Weights,
+    ) {
         let piece = game.ret_active_drop();
         new_move.push(Command::SoftDrop);
-        // println!("{:?}\n{}", new_move, game.board.display_with_active(&piece));
         moves.push(new_move);
         scores.push(Bot::score_game(game.clone(), weight, &piece));
         placements.push(piece);
@@ -186,7 +249,10 @@ impl Bot {
     fn score_game(mut game: Game, weights: &Weights, piece: &Piece) -> (Score, Score) {
         game.board.set_piece(piece, true);
         game.update();
-        (Bot::score_board(&game.board, weights), Bot::score_versus(&game.game_data, weights))
+        (
+            Bot::score_board(&game.board, weights),
+            Bot::score_versus(&game.game_data, weights),
+        )
     }
 
     fn score_board(board: &Board, weights: &Weights) -> Score {

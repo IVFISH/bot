@@ -82,7 +82,9 @@ impl Piece {
         self.center
     }
 
-    pub fn get_last_kick(&self) -> usize {self.last_kick }
+    pub fn get_last_kick(&self) -> usize {
+        self.last_kick
+    }
 
     pub fn get_kicks(&self, dir: RotationDirection) -> Vec<PointVector> {
         let before = self.rotation_state;
