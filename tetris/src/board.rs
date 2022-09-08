@@ -103,14 +103,12 @@ impl Board {
         for location in piece.abs_locations().unwrap() {
             self.add(location.row, location.col, update_heights);
         }
-
     }
 
     pub fn remove_piece(&mut self, piece: &Placement, update_heights: bool) {
         for location in piece.abs_locations().unwrap() {
             self.remove(location.row, location.col, update_heights);
         }
-
     }
 
     pub fn max_filled_height(&self) -> usize {
@@ -264,7 +262,6 @@ impl Board {
     }
 
     pub fn clear_lines(&mut self, update_heights: bool) -> usize {
-
         let full_rows = self.all_full_rows();
         let num_full_rows = self.all_full_rows().len();
         let highest = self.max_filled_height();
@@ -486,7 +483,7 @@ pub enum AttackType {
 pub enum TSpinType {
     None,
     Full,
-    Mini
+    Mini,
 }
 
 const RELATIVE_CORNERS: [([MoveVector; 2], [MoveVector; 2]); 4] = [

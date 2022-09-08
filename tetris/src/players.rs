@@ -1,6 +1,6 @@
 use crate::game::*;
-use std::fmt::{Display, Formatter};
 use crate::Weights;
+use std::fmt::{Display, Formatter};
 
 pub trait Player {
     fn make_move(&mut self) -> bool {

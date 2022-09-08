@@ -185,14 +185,13 @@ impl Game {
     }
 
     fn return_safe_move_piece_by_vector(&self, p: &Placement, v: MoveVector) -> Placement {
-
         let moved = p.ret_moved_by_vec(v);
 
         // checks if piece is invalid
         let safe = self.board.check_valid_location(&moved).is_ok();
 
         if !safe {
-            return *p
+            return *p;
         }
 
         moved
@@ -259,9 +258,9 @@ impl Game {
     pub fn return_piece_soft_drop(&self, p: &Placement) -> Placement {
         let mut out = p.clone();
 
-        while self.piece_soft_drop(&mut out){}
+        while self.piece_soft_drop(&mut out) {}
 
-        return out
+        return out;
     }
 
     fn active_piece_down(&mut self) -> bool {
@@ -299,16 +298,20 @@ impl Game {
         false
     }
 
-    fn ret_rotated_with_kick(&self, p: &Placement, dir: RotationDirection, kicks: Vec<MoveVector>) -> Placement {
+    fn ret_rotated_with_kick(
+        &self,
+        p: &Placement,
+        dir: RotationDirection,
+        kicks: Vec<MoveVector>,
+    ) -> Placement {
         let mut out = p.ret_rotated(dir);
 
         for index in 0..kicks.len() {
             if out.move_by_vector(kicks[index]) {
                 if self.board.check_valid_location(&out).is_ok() {
                     out.last_kick = index;
-                    return out
-                }
-                else{
+                    return out;
+                } else {
                     out.move_by_vector(kicks[index].negative());
                 }
             }
@@ -678,23 +681,29 @@ pub mod damage_calculations {
     }
 
     const BACK_TO_BACK_CONVERSION: [f32; 5] = [1.0, 1.25, 1.5, 1.75, 2.0];
-    const WEIRD_DAMAGE_TABLE: [[usize; 20]; 3] =
-        [
-            [0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3],
-            [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5],
-            [0; 20]
-        ];
+    const WEIRD_DAMAGE_TABLE: [[usize; 20]; 3] = [
+        [0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3],
+        [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5],
+        [0; 20],
+    ];
 
     fn attack_type_to_index_special(attack: AttackType) -> usize {
         match attack {
             AttackType::S => 0,
             AttackType::TSM => 0,
             AttackType::TDM => 1,
-            _ => 2
+            _ => 2,
         }
     }
 
-    pub const BACK_TO_BACK_TYPES: [AttackType; 6] = [AttackType::TS, AttackType::TD, AttackType::TT, AttackType::TSM, AttackType::TDM, AttackType::Q];
+    pub const BACK_TO_BACK_TYPES: [AttackType; 6] = [
+        AttackType::TS,
+        AttackType::TD,
+        AttackType::TT,
+        AttackType::TSM,
+        AttackType::TDM,
+        AttackType::Q,
+    ];
 
     fn b2b_to_level(chain_length: i8) -> usize {
         match chain_length {
@@ -717,10 +726,12 @@ pub mod damage_calculations {
         let b2b = game.b2b;
         let all_clear_damage = 10 * game.all_clear as usize;
 
-        let without_b2b = (combo + 4) * ATTACK_TYPE_CONVERSION[attack_type_to_index(attack_type)] / 4
+        let without_b2b = (combo + 4) * ATTACK_TYPE_CONVERSION[attack_type_to_index(attack_type)]
+            / 4
             + WEIRD_DAMAGE_TABLE[attack_type_to_index_special(attack_type)][combo];
 
-        (without_b2b as f32 * BACK_TO_BACK_CONVERSION[b2b_to_level(b2b)]) as usize + all_clear_damage
+        (without_b2b as f32 * BACK_TO_BACK_CONVERSION[b2b_to_level(b2b)]) as usize
+            + all_clear_damage
     }
 
     pub fn attack_type(t_spin: TSpinType, lines_cleared: usize) -> AttackType {
@@ -734,13 +745,13 @@ pub mod damage_calculations {
             2 => match t_spin {
                 TSpinType::None => AttackType::D,
                 TSpinType::Mini => AttackType::TDM,
-                _ => AttackType::TD
-            }
+                _ => AttackType::TD,
+            },
             _ => match t_spin {
                 TSpinType::None => AttackType::S,
                 TSpinType::Mini => AttackType::TSM,
-                _ => AttackType::TS
-            }
+                _ => AttackType::TS,
+            },
         }
     }
 }

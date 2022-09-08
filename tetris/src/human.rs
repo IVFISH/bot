@@ -29,7 +29,9 @@ impl Player for Human {
     fn get_game_mut(&mut self) -> &mut Game {
         &mut self.game
     }
-    fn get_game(&self) -> &Game { &self.game}
+    fn get_game(&self) -> &Game {
+        &self.game
+    }
 
     fn get_next_move(&mut self) -> MoveList {
         if let Some(eshan) = &self.next_move {

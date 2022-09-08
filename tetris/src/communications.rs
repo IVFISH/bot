@@ -8,11 +8,11 @@ use serde::{Deserialize, Serialize};
 use serde_json;
 use serde_json::json;
 use std::{net::SocketAddr, time::Duration};
+use std::{thread, time};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::time::sleep;
 use tokio_tungstenite::{accept_async, tungstenite::Error};
 use tungstenite::{Message, Result};
-use std::{thread, time};
 
 #[derive(Serialize, Deserialize)]
 pub struct Suggestion {
@@ -59,7 +59,16 @@ async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
                 match parsed_type {
                     "rules" => bot = create_bot_from_parsed(&parsed),
                     "play" => {
-                        let converted: Vec<Vec<bool>> = parsed["board"].as_array().unwrap().iter().map(|wrappedvec: &serde_json::Value| {wrappedvec.as_array().unwrap().iter().map(|wrappedbool: &serde_json::Value| {wrappedbool.as_bool().unwrap()}).collect()}).collect();
+                        let mut converted: Vec<Vec<bool>> = vec![Vec::with_capacity(10); 40];
+                        for row in parsed["board"].as_array().unwrap() {
+                            converted.push(
+                                row.as_array()
+                                    .unwrap()
+                                    .iter()
+                                    .map(|wrapped_bool| wrapped_bool.as_bool().unwrap())
+                                    .collect()
+                            );
+                        }
                         bot.get_game_mut().board.set_board(converted);
                         // println!("local: {}, client: {}", bot.get_game().game_data.pieces_placed, parsed["placed"]);
                         if (bot.get_game().game_data.pieces_placed != parsed["placed"]) {

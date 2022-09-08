@@ -14,10 +14,7 @@ impl Population {
             bots.push(bot.give_birth());
         }
 
-        Self {
-            bots
-        }
-
+        Self { bots }
     }
 
     fn get_best(&self) -> usize {
@@ -27,7 +24,6 @@ impl Population {
     }
 
     fn reset_population(&mut self) {
-
         let best = &self.bots[self.get_best()];
         let population_size = self.bots.len();
 
@@ -39,22 +35,22 @@ impl Population {
         self.bots = bots;
     }
 
-    fn run_all(&mut self, num_pieces: usize)
-    {
+    fn run_all(&mut self, num_pieces: usize) {
         // This runs all the bots in the population for a specified number of pieces
         for mut bot in &mut self.bots {
             bot.make_n_moves(num_pieces);
         }
     }
 
-    fn cost(player: & Bot) -> f32 {
+    fn cost(player: &Bot) -> f32 {
         // some measure of board state and versus stats
         player.get_game().game_data.app()
     }
 
     fn save_best_to_json(&self, generation: usize) {
         let best = &self.bots[self.get_best()];
-        best.weight.to_json(format!("./weights/{}.json", generation));
+        best.weight
+            .to_json(format!("./weights/{}.json", generation));
     }
 
     pub fn train(&mut self, num_generations: usize, num_pieces: usize, save_interval: usize) {
