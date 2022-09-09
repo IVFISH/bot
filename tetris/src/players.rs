@@ -3,7 +3,6 @@
 use crate::constants::bot_constants::*;
 use crate::constants::types::*;
 use crate::game::Game;
-use std::fmt::{Display, Formatter};
 
 pub trait Player {
     fn get_game(&self) -> &Game;
@@ -26,24 +25,6 @@ pub trait Player {
                 break;
             }
         }
-    }
-}
-
-impl Display for Command {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Command::None => write!(f, "None")?,
-            Command::MoveLeft => write!(f, "MoveLeft")?,
-            Command::MoveRight => write!(f, "MoveRight")?,
-            Command::SoftDrop => write!(f, "SoftDrop")?,
-            Command::RotateCW => write!(f, "RotateCW")?,
-            Command::RotateCCW => write!(f, "RotateCCW")?,
-            Command::Rotate180 => write!(f, "Rotate180")?,
-            Command::Hold => write!(f, "Hold")?,
-            Command::HardDrop => write!(f, "HardDrop")?,
-        }
-
-        Ok(())
     }
 }
 

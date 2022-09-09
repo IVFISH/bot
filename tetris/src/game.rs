@@ -6,8 +6,9 @@ use crate::constants::types::{PieceType, RotationDirection};
 use crate::constants::versus_constants::*;
 use crate::piece::Piece;
 use crate::point_vector::PointVector;
-use crate::queue::{piece_type_to_string, PieceQueue};
+use crate::queue::{piece_type_to_string, BagType, PieceQueue};
 use crate::versus::*;
+use game_rules_and_data::*;
 use std::fmt::{Display, Formatter};
 
 #[derive(Default, Clone)]
@@ -48,12 +49,23 @@ impl Game {
         out
     }
 
+    pub fn from_rules(seed: Option<usize>, game_rules: GameRules) -> Self {
+        Self {
+            piece_queue: PieceQueue::new(seed),
+            game_rules,
+            ..Default::default()
+        }
+    }
     // piece getters and setters
     pub fn get_active_piece(&self) -> &Piece {
         &self.active_piece
     }
 
-    pub fn get_hold_piece(&self) -> Piece {
+    pub fn get_hold_piece(&self) -> Option<PieceType> {
+        self.hold_piece
+    }
+
+    pub fn get_hold_piece_or_next(&self) -> Piece {
         return if let Some(piece) = self.hold_piece {
             Piece::new(piece)
         } else {
@@ -271,54 +283,152 @@ impl Game {
     }
 }
 
-#[derive(Default, Clone)]
-pub struct GameData {
-    pub all_clear: bool,
-    pub combo: i8,
-    pub b2b: i8,
+pub mod game_rules_and_data {
+    use std::str::FromStr;
+    use super::*;
+    use crate::constants::board_constants::{MAX_PLACE_HEIGHT};
 
-    pub pieces_placed: usize,
-    pub lines_cleared: usize,
-    pub lines_sent: u16,
-    pub last_sent: u8,
-    pub last_cleared: usize,
+    #[derive(Default, Clone)]
+    pub struct GameData {
+        pub all_clear: bool,
+        pub combo: i8,
+        pub b2b: i8,
 
-    pub game_over: bool,
-}
+        pub pieces_placed: usize,
+        pub lines_cleared: usize,
+        pub lines_sent: u16,
+        pub last_sent: u8,
+        pub last_cleared: usize,
 
-impl GameData {
-    pub fn update(&mut self, lines_cleared: usize, attack: AttackType, all_clear: bool) {
-        self.pieces_placed += 1;
+        pub game_over: bool,
+    }
 
-        if lines_cleared == 0 {
-            self.combo = 0;
-            self.all_clear = false;
-            self.last_cleared = 0;
-            return;
+    impl GameData {
+        pub fn update(&mut self, lines_cleared: usize, attack: AttackType, all_clear: bool) {
+            self.pieces_placed += 1;
+
+            if lines_cleared == 0 {
+                self.combo = 0;
+                self.all_clear = false;
+                self.last_cleared = 0;
+                return;
+            }
+
+            self.lines_cleared += lines_cleared;
+            self.last_cleared = lines_cleared;
+
+            // update lines sent before adding b2b/combo
+            let lines_sent = calc_damage(self, attack, lines_cleared);
+            self.lines_sent += lines_sent as u16;
+            self.last_sent = lines_sent as u8;
+
+            let b2b = BACK_TO_BACK_TYPES.contains(&attack);
+            if b2b {
+                self.b2b += 1;
+            } else {
+                self.b2b = 0;
+            }
+            self.combo += 1;
+
+            self.all_clear = all_clear;
         }
+    }
 
-        self.lines_cleared += lines_cleared;
-        self.last_cleared = lines_cleared;
+    #[derive(Clone)]
+    pub struct GameRules {
+        pub bag_type: BagType,
+        pub allow_180: bool,
+        pub allow_hard_drop: bool,
+        pub allow_b2b_chain: bool,
+        pub max_board_height: usize,
+        pub kick_set: KickSet,
+        pub spin_bonus: SpinBonus,
+    }
 
-        // update lines sent before adding b2b/combo
-        let lines_sent = calc_damage(self, attack, lines_cleared);
-        self.lines_sent += lines_sent as u16;
-        self.last_sent = lines_sent as u8;
-
-        let b2b = BACK_TO_BACK_TYPES.contains(&attack);
-        if b2b {
-            self.b2b += 1;
-        } else {
-            self.b2b = 0;
+    impl Default for GameRules {
+        fn default() -> Self {
+            Self {
+                bag_type: Default::default(),
+                allow_180: true,
+                allow_hard_drop: true,
+                allow_b2b_chain: true,
+                max_board_height: MAX_PLACE_HEIGHT,
+                kick_set: Default::default(),
+                spin_bonus: Default::default()
+            }
         }
-        self.combo += 1;
+    }
 
-        self.all_clear = all_clear;
+    #[derive(Clone)]
+    pub enum KickSet {
+        None,
+        SRSPlus,
+        SRS,
+        SRSX,
+        TetraX,
+        NRS,
+        ARS,
+        ASC,
+    }
+
+    impl FromStr for KickSet {
+        type Err = ();
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            Ok(match s {
+                "SRS+" => KickSet::SRSPlus,
+                "SRS" => KickSet::SRS,
+                "SRS-X" => KickSet::SRSX,
+                "TETRA-X" => KickSet::TetraX,
+                "NRS" => KickSet::NRS,
+                "ARS" => KickSet::ARS,
+                "ASC" => KickSet::ASC,
+                "none" => KickSet::None,
+                other => {
+                    eprintln!("unknown kickset '{}'", other);
+                    KickSet::SRSPlus
+                }
+            })
+        }
+    }
+
+    impl Default for KickSet {
+        fn default() -> Self {
+            KickSet::SRSPlus
+        }
+    }
+
+    #[derive(Clone)]
+    pub enum SpinBonus {
+        TSpin,
+        All,
+        Stupid,
+        None,
+    }
+
+    impl FromStr for SpinBonus {
+        type Err = ();
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            Ok(match s {
+                "T-spins" => SpinBonus::TSpin,
+                "all" => SpinBonus::All,
+                "stupid" => SpinBonus::Stupid,
+                "none" => SpinBonus::None,
+                other => (|| {
+                    eprintln!("unknown spinbonus '{}'", other);
+                    SpinBonus::TSpin
+                })(),
+            })
+        }
+    }
+
+    impl Default for SpinBonus {
+        fn default() -> Self {
+            SpinBonus::TSpin
+        }
     }
 }
-
-#[derive(Default, Clone)]
-pub struct GameRules {}
 
 #[cfg(test)]
 pub mod game_test {

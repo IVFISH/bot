@@ -79,6 +79,10 @@ impl Board {
     }
 
     // setters
+    pub fn set_arr(&mut self, arr: [[bool; BOARD_WIDTH]; BOARD_HEIGHT]) {
+        self.arr = arr;
+    }
+
     pub fn add(&mut self, row: usize, col: usize, update_heights: bool) {
         if update_heights && !self.arr[row][col] {
             self.update_height_add(col, row);

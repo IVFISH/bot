@@ -4,12 +4,14 @@ use crate::board::Board;
 use crate::constants::bot_constants::*;
 use crate::constants::piece_constants::NUM_ROTATE_STATES;
 use crate::constants::types::*;
-use crate::game::{Game, GameData};
+use crate::game::{Game};
+use crate::game::game_rules_and_data::*;
 use crate::piece::Piece;
 use crate::players::{do_command, Player};
 use crate::weight::Weights;
 use std::fmt::{Display, Formatter};
 use std::iter::zip;
+use crate::communications::Suggestion;
 
 pub struct Bot {
     game: Game,
@@ -64,7 +66,37 @@ impl Player for Bot {
 }
 
 impl Bot {
+    // initialization
+    pub fn new(game: Game) -> Self {
+        Self {
+            game,
+            ..Default::default()
+        }
+    }
+
     // move gen
+    fn command_list_string(commands: &CommandList) -> Vec<String> {
+        commands
+        .iter()
+        .filter(|&&command| command != Command::None)
+        .map(|&command| command.to_string())
+        .collect()
+    }
+
+    pub fn suggest_and_move(&mut self) -> Suggestion {
+        let action = self.get_next_move();
+        let action = Bot::command_list_string(&action);
+
+        let out = Suggestion {
+            input_list: action,
+            info: "".to_string(),
+        };
+        self.make_move();
+        // println!("{}", self);
+        // thread::sleep(time::Duration::from_millis(250));
+        out
+    }
+
     fn move_placement_score(
         &mut self,
         depth: usize,
@@ -80,7 +112,7 @@ impl Bot {
     ) -> (MoveList, PlacementList, ScoreList) {
         let (mut moves, mut placements, mut scores) = Bot::trivial(game, false, weight);
         Bot::non_trivial(game, weight, &mut moves, &mut placements, &mut scores);
-        let hold_piece = game.get_hold_piece();
+        let hold_piece = game.get_hold_piece_or_next();
         if hold_piece.get_type() == game.get_active_piece().get_type() {
             return (moves, placements, scores);
         }

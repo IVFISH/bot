@@ -1,5 +1,5 @@
 use crate::constants::versus_constants::*;
-use crate::game::GameData;
+use crate::game::game_rules_and_data::GameData;
 
 // d, t, q, ts, td, tt
 const ATTACK_TYPE_CONVERSION: [usize; 7] = [1, 2, 4, 2, 4, 6, 0];

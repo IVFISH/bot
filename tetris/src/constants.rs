@@ -82,9 +82,11 @@ pub mod queue_constants {
     // lehmer RNG (MINSTD)
     pub const MULTIPLIER: usize = 16807;
     pub const MODULUS: usize = 2147483647;
+
 }
 
 pub mod bot_constants {
+    use std::fmt::{Display, Formatter};
     use crate::game::Game;
 
     #[derive(Copy, Clone, Debug, PartialEq)]
@@ -98,6 +100,24 @@ pub mod bot_constants {
         Rotate180,
         HardDrop,
         Hold,
+    }
+
+    impl Display for Command {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            match self {
+                Command::None => write!(f, "None")?,
+                Command::MoveLeft => write!(f, "MoveLeft")?,
+                Command::MoveRight => write!(f, "MoveRight")?,
+                Command::SoftDrop => write!(f, "SoftDrop")?,
+                Command::RotateCW => write!(f, "RotateCW")?,
+                Command::RotateCCW => write!(f, "RotateCCW")?,
+                Command::Rotate180 => write!(f, "Rotate180")?,
+                Command::Hold => write!(f, "Hold")?,
+                Command::HardDrop => write!(f, "HardDrop")?,
+            }
+
+            Ok(())
+        }
     }
 
     pub const ROTATIONS: [Command; 4] = [

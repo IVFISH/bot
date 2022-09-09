@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 mod board;
 mod bot;
 mod communications;
@@ -17,7 +19,8 @@ use crate::players::Player;
 use std::{thread, time};
 
 fn main() {
-    bot_play();
+    // bot_play();
+    // tetrio_play()
 }
 
 fn bot_play() {
@@ -39,4 +42,8 @@ fn bot_play() {
         time / (bot.get_game().game_data.pieces_placed as u128)
     );
     println!("{}", bot.get_game());
+}
+
+fn tetrio_play() {
+    communications::init()
 }
