@@ -1,11 +1,15 @@
 #![allow(dead_code)]
 
 pub mod types {
+    use crate::constants::board_constants::*;
     use super::bot_constants::*;
     use super::piece_constants::*;
     use crate::piece::Piece;
     use crate::point_vector::Point;
 
+    pub type BoardArray = [usize; BOARD_WIDTH];
+    pub type Row = usize;
+    pub type Column = usize;
     pub type PieceType = usize;
     pub type RotationState = usize;
     pub type RotationDirection = usize;

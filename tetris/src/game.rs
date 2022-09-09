@@ -267,14 +267,14 @@ impl Game {
             return false;
         }
 
-        self.board.set_piece(&self.active_piece, true);
+        self.board.set_piece(&self.active_piece);
         self.active_piece = self.piece_queue.next();
 
         true
     }
 
     pub fn update(&mut self) {
-        let lines_cleared = self.board.clear_lines(true);
+        let lines_cleared = self.board.clear_lines();
         let t_spin_type = Game::get_t_spin_type(&self.active_piece, &self.board);
         let attack_type = attack_type(t_spin_type, lines_cleared);
 
@@ -438,9 +438,9 @@ pub mod game_test {
     pub fn general_tests() {
         let mut game = Game::new(None);
         println!("{}", game);
-        game.active_piece_drop();
+        game.active_drop();
         println!("{}", game);
 
-        assert!(false);
+        // assert!(false);
     }
 }
