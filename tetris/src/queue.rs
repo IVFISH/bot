@@ -18,10 +18,13 @@ pub struct PieceQueue {
 
 impl PieceQueue {
     pub fn new(optional_seed: Option<usize>) -> Self {
-        Self {
+        let mut out = Self {
             seed: optional_seed.unwrap_or_else(|| rand::thread_rng().gen_range(0..MODULUS - 1)),
             ..Default::default()
-        }
+        };
+
+        out.next_bag();
+        out
     }
 
     pub fn new_alt_randomizer(optional_seed: Option<usize>, randomizer: BagType) -> Self {

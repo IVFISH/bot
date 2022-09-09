@@ -111,7 +111,7 @@ impl Board {
         }
     }
 
-    fn set_row(&mut self, row: usize, new_row: [bool; BOARD_WIDTH]) {
+    pub fn set_row(&mut self, row: usize, new_row: Vec<bool>) {
         for (col, &item) in new_row.iter().enumerate() {
             self.set(row, col, item as usize);
         }

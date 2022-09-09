@@ -19,8 +19,8 @@ use crate::players::Player;
 use std::{thread, time};
 
 fn main() {
-    bot_play();
-    // tetrio_play()
+    // bot_play();
+    tetrio_play()
 }
 
 fn bot_play() {
@@ -44,7 +44,7 @@ fn bot_play() {
     );
     println!("{}", bot.get_game());
 }
-//
-// fn tetrio_play() {
-//     communications::init()
-// }
+
+fn tetrio_play() {
+    communications::init()
+}

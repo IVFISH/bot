@@ -11,7 +11,7 @@ use crate::players::{do_command, Player};
 use crate::weight::Weights;
 use std::fmt::{Display, Formatter};
 use std::iter::zip;
-// use crate::communications::Suggestion;
+use crate::communications::Suggestion;
 
 pub struct Bot {
     game: Game,
@@ -83,19 +83,19 @@ impl Bot {
         .collect()
     }
 
-    // pub fn suggest_and_move(&mut self) -> Suggestion {
-    //     let action = self.get_next_move();
-    //     let action = Bot::command_list_string(&action);
-    //
-    //     let out = Suggestion {
-    //         input_list: action,
-    //         info: "".to_string(),
-    //     };
-    //     self.make_move();
-    //     // println!("{}", self);
-    //     // thread::sleep(time::Duration::from_millis(250));
-    //     out
-    // }
+    pub fn suggest_and_move(&mut self) -> Suggestion {
+        let action = self.get_next_move();
+        let action = Bot::command_list_string(&action);
+
+        let out = Suggestion {
+            input_list: action,
+            info: "".to_string(),
+        };
+        self.make_move();
+        // println!("{}", self);
+        std::thread::sleep(std::time::Duration::from_millis(1000));
+        out
+    }
 
     fn move_placement_score(
         &mut self,
