@@ -93,7 +93,7 @@ impl Bot {
         };
         self.make_move();
         // println!("{}", self);
-        std::thread::sleep(std::time::Duration::from_millis(1000));
+        std::thread::sleep(std::time::Duration::from_millis(100));
         out
     }
 

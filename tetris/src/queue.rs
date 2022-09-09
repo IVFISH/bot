@@ -24,6 +24,7 @@ impl PieceQueue {
         };
 
         out.next_bag();
+        out.next();
         out
     }
 
@@ -46,9 +47,10 @@ impl PieceQueue {
     pub fn peek_index(&self, index: usize) -> PieceType { *self.queue.get(index).unwrap()}
 
     pub fn next(&mut self) -> Piece {
-        if self.queue.len() < MIN_QUEUE_LENGTH + 1 {
+        if self.queue.len() <= MIN_QUEUE_LENGTH {
             self.next_bag();
         }
+
         Piece::new(self.pop())
     }
 

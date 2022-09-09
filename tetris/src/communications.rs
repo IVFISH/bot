@@ -46,6 +46,7 @@ async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
 
     // Echo incoming WebSocket messages and send a message periodically every second.
     let mut bot = Bot::default();
+    bot.get_game_mut().hard_drop();
 
     loop {
         tokio::select! {
@@ -62,9 +63,11 @@ async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
                 match parsed_type {
                     "rules" => bot = create_bot_from_parsed(&parsed),
                     "play" => {
-                        for (r_index, row) in parsed["board"].as_array().unwrap().iter().enumerate() {
+                        // println!("{}", parsed["board"]);
+                        for (r_index, row) in parsed["board"].as_array().unwrap().iter().rev().enumerate() {
                             bot.get_game_mut().board.set_row(r_index, row.as_array().unwrap().iter().map(|col| col.as_bool().unwrap()).collect())
                         }
+                        // println!("{}", bot.get_game().board);
 
                         // println!("local: {}, client: {}", bot.get_game().game_data.pieces_placed, parsed["placed"]);
                         if bot.get_game().game_data.pieces_placed != parsed["placed"] {
@@ -72,7 +75,7 @@ async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
                             bot.get_game().game_data.pieces_placed, parsed["placed"]);
                         }
                         for i in 0..6 {
-                            if piece_type_to_string(bot.get_game().piece_queue.peek_index(i)) != parsed["queue"].as_array().unwrap()[i].as_str().unwrap() {
+                            if piece_type_to_string(bot.get_game().piece_queue.peek_index(i)).to_lowercase() != parsed["queue"].as_array().unwrap()[i].as_str().unwrap() {
                                 eprintln!("Mismatched Queue: expected {}, but received {} instead", bot.get_game().piece_queue, parsed["queue"]);
                                 break;
                             }
