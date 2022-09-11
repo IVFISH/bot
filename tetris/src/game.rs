@@ -122,6 +122,16 @@ impl Game {
         out
     }
 
+    pub fn move_active(&mut self, v: PointVector) -> bool {
+        if self.active_piece.moved(v) {
+            if self.board.piece_valid_location(&self.active_piece) {
+                return true;
+            }
+            self.active_piece.moved(v.negative());
+        }
+        false
+    }
+
     fn move_piece(p: &mut Piece, b: &Board, v: PointVector) -> bool {
         if p.moved(v) {
             if b.piece_valid_location(p) {

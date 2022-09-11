@@ -13,13 +13,14 @@ mod population;
 mod queue;
 mod versus;
 mod weight;
+mod command_controller;
 
 use crate::bot::*;
 use crate::players::Player;
 use std::{thread, time};
 
 fn main() {
-    // bot_play();
+    bot_play();
     // tetrio_play()
 }
 
@@ -28,13 +29,13 @@ fn bot_play() {
     let mut time = 0;
     println!("{}", bot.get_game());
     while !bot.get_game().get_game_over() && bot.get_game().game_data.pieces_placed < 100000 {
-        // println!("{}", bot.get_game());
+        println!("{}", bot.get_game());
 
         let now = time::Instant::now();
         bot.make_move();
         time += now.elapsed().as_micros();
 
-        thread::sleep(time::Duration::from_millis(0));
+        thread::sleep(time::Duration::from_millis(100));
     }
     println!(
         "Making {} moves took {} microseconds on average",

@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 
-use crate::constants::bot_constants::*;
 use crate::constants::types::*;
 use crate::game::Game;
+use crate::command_controller::do_command;
 
 pub trait Player {
     fn get_game(&self) -> &Game;
@@ -31,26 +31,5 @@ pub trait Player {
 pub fn do_move_list(game: &mut Game, commands: CommandList) {
     for command in commands {
         do_command(game, command);
-    }
-}
-
-pub fn do_command(game: &mut Game, command: Command) -> bool {
-    match command {
-        Command::None => true,
-        Command::MoveLeft => game.active_left(),
-        Command::MoveRight => game.active_right(),
-        Command::SoftDrop => game.active_drop(),
-        Command::RotateCW => game.active_cw(),
-        Command::RotateCCW => game.active_ccw(),
-        Command::Rotate180 => game.active_180(),
-        Command::Hold => {
-            game.hold();
-            true
-        }
-        Command::HardDrop => {
-            let game_over = !game.hard_drop();
-            game.set_game_over(game_over);
-            true
-        }
     }
 }

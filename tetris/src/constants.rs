@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 pub mod types {
+    use crate::game::Game;
     use super::bot_constants::*;
     use super::piece_constants::*;
     use crate::piece::Piece;
@@ -15,6 +16,7 @@ pub mod types {
     pub type MoveList = Vec<CommandList>;
     pub type ScoreList = Vec<(Score, Score)>;
     pub type PlacementList = Vec<Piece>;
+    pub type Action = fn(&mut Game) -> bool;
 }
 
 pub mod board_constants {
@@ -87,6 +89,7 @@ pub mod queue_constants {
 
 pub mod bot_constants {
     use std::fmt::{Display, Formatter};
+    use crate::constants::types::Action;
     use crate::game::Game;
 
     #[derive(Copy, Clone, Debug, PartialEq)]
@@ -137,7 +140,7 @@ pub mod bot_constants {
         Command::Rotate180,
     ];
 
-    pub const ACTIONS: [fn(&mut Game) -> bool; 5] = [
+    pub const ACTIONS: [Action; 5] = [
         Game::active_right,
         Game::active_left,
         Game::active_cw,

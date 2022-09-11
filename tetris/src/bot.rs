@@ -7,7 +7,8 @@ use crate::constants::types::*;
 use crate::game::{Game};
 use crate::game::game_rules_and_data::*;
 use crate::piece::Piece;
-use crate::players::{do_command, Player};
+use crate::players::Player;
+use crate::command_controller::{Controller, do_command};
 use crate::weight::Weights;
 use std::fmt::{Display, Formatter};
 use std::iter::zip;
@@ -16,6 +17,7 @@ use crate::communications::Suggestion;
 pub struct Bot {
     game: Game,
     weight: Weights,
+    controller: Controller,
 }
 
 impl Display for Bot {
@@ -30,6 +32,7 @@ impl Default for Bot {
         Self {
             game: Game::new(None),
             weight: Weights::default(),
+            controller: Controller::default()
         }
     }
 }
