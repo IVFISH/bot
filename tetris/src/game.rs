@@ -18,8 +18,8 @@ pub struct Game {
     pub game_data: GameData,
     game_rules: GameRules,
 
-    active_piece: Piece,
-    hold_piece: Option<PieceType>,
+    pub active_piece: Piece,
+    pub hold_piece: Option<PieceType>,
 }
 
 impl Display for Game {

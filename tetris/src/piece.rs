@@ -9,10 +9,10 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Default, Clone, Debug)]
 pub struct Piece {
-    piece_type: PieceType,
-    rotation_state: RotationState,
-    center: Point,
-    last_kick: usize,
+    pub piece_type: PieceType,
+    pub rotation_state: RotationState,
+    pub center: Point,
+    pub last_kick: usize,
 }
 
 impl PartialEq for Piece {

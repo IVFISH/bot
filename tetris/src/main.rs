@@ -35,7 +35,7 @@ fn bot_play() {
         bot.make_move();
         time += now.elapsed().as_micros();
 
-        thread::sleep(time::Duration::from_millis(100));
+        thread::sleep(time::Duration::from_millis(0));
     }
     println!(
         "Making {} moves took {} microseconds on average",

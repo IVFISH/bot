@@ -47,7 +47,7 @@ impl Player for Bot {
     }
 
     fn get_next_move(&mut self) -> CommandList {
-        let (deep_moves, _, deep_scores) = self.move_placement_score(3, &self.weight.clone());
+        let (deep_moves, _, deep_scores) = self.move_placement_score(2, &self.weight.clone());
         let deep_scores: Vec<f32> = deep_scores
             .iter()
             .map(|(board, versus)| board + versus)
@@ -56,10 +56,12 @@ impl Player for Bot {
         let mut min_score = f32::INFINITY;
         let mut action = vec![];
 
-        for (moves, score) in zip(deep_moves, deep_scores) {
+        // println!("{:?}, {:?}",deep_moves.len(), deep_scores.len(),);
+
+        for (moves, score) in zip(deep_moves.clone(), deep_scores) {
             if score < min_score {
                 min_score = score;
-                action = moves;
+                action = moves.clone();
             }
         }
 
@@ -100,13 +102,81 @@ impl Bot {
         out
     }
 
-    fn move_placement_score(
+    pub fn move_placement_score(
         &mut self,
         depth: usize,
-        weight: &Weights,
-    ) -> (MoveList, PlacementList, ScoreList) {
+        weights: &Weights,
+    ) -> (MoveList, Vec<PlacementList>, ScoreList) {
         let mut dummy = self.game.clone();
-        Bot::move_placement_score_1d(&mut dummy, weight)
+        let (mut moves, mut placementss, mut scores) =
+            Bot::move_placement_score_1d(&mut dummy, weights);
+
+        let mut placements = vec![];
+        for place in placementss{
+            placements.push(vec!(place))
+        }
+        // let mut placements: Vec<PlacementList> = placements.iter().map(|x| vec![*x]).collect();
+
+        if depth <= 1 {
+            return (moves, placements, scores);
+        }
+
+        let mut outmoves = MoveList::new();
+        let mut outplace : Vec<PlacementList> = vec![];
+        let mut outscores : ScoreList = vec![];
+
+        let mut index = 0;
+        while placements[index].len() < depth {
+            let game_save = dummy.clone();
+            for p in placements[index].clone() {
+                if dummy.hold_piece.is_none() && dummy.piece_queue.peek() == p.piece_type {
+                    dummy.hold();
+                } else if dummy.hold_piece == Some(p.piece_type) {
+                    dummy.hold();
+                } else if dummy.active_piece.piece_type != p.piece_type {
+                    println!("NOO");
+                }
+                dummy.active_piece = p;
+                if dummy.hard_drop() {
+                    continue;
+                }
+            }
+
+            let (_, mut add_placements, mut add_scores) =
+                Bot::move_placement_score_1d(&mut dummy, weights);
+
+            //TODO only keep the top x add_placements (pruning)
+
+            for i in 0..add_placements.len() {
+                let mut place : Vec<Piece> = placements[index].clone();
+
+                let mut versus_score : Score = scores[index].1;
+                versus_score += add_scores[i].1;
+
+                moves.push(moves[index].clone());
+
+                place.push(add_placements[i].clone());
+                placements.push(place.clone());
+
+                scores.push((add_scores[i].0, versus_score));
+
+                if placements[index].len() >= depth - 1 {
+                    outmoves.push(moves[index].clone());
+                    outplace.push(place.clone());
+                    outscores.push((add_scores[i].0, versus_score.clone()));
+
+                    // println!("{}", versus_score);
+                }
+            }
+
+            // if placements[index].len() >= num_moves - 1 {
+            //     outscores.extend(add_scores);
+            // }
+
+            index += 1;
+            dummy = game_save;
+        }
+        (outmoves, outplace, outscores)
     }
 
     fn move_placement_score_1d(
