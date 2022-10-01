@@ -276,8 +276,38 @@ impl Board {
         (holes_count_total, holes_count_weighted, cell_covered_count)
     }
 
+    fn check_hor_t(arr: Vec<usize>) -> bool {
+        // only for horizontal t slots rn
+
+        // 1 0 0
+        // 0 0 0
+        // 1 0 1
+
+        // 0 0 1
+        // 0 0 0
+        // 1 0 1
+
+        // arr == [0b101, 0b000, 0b001] || arr == [0b001, 0b000, 0b101]
+        arr == vec![5, 0, 1] || arr == vec![1, 0, 5]
+
+    }
     pub fn t_slot(&self) -> usize {
-        unimplemented!()
+        let mut out = 0;
+
+        for columns in self.arr.windows(3) {
+
+            for row in 0..BOARD_HEIGHT {
+                // create a 3x3 grid
+                let mask = 0b111 << row;
+                let columns = columns.iter().map(|x| x & mask).collect();
+
+                // checks if it is a t slot
+                out += Board::check_hor_t(columns) as usize;
+
+            }
+        }
+        out
+
     }
 
     pub fn get_max_height_difference(&self) -> usize {

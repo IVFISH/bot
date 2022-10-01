@@ -10,6 +10,7 @@ pub struct Weights {
     pub num_hole_weighted_weight: Polynomial<f32>,
     pub cell_covered_weight: Polynomial<f32>,
 
+    pub t_slot_weight: Polynomial<f32>,
     pub b2b_weight: Polynomial<f32>,
     pub combo_weight: Polynomial<f32>,
     pub damage_weight: Polynomial<f32>,
@@ -26,6 +27,7 @@ impl Default for Weights {
             num_hole_weighted_weight: Polynomial::new(vec![0.0, 2.0, 0.0]),
             cell_covered_weight: Polynomial::new(vec![0.0, 5.0, 0.0]),
 
+            t_slot_weight: Polynomial::new(vec![0.0, -1.0, 0.0]),
             b2b_weight: Polynomial::new(vec![0.0, -10.0, 0.0]),
             combo_weight: Polynomial::new(vec![0.0, 5.0, -2.0]),
             damage_weight: Polynomial::new(vec![0.0, 50.0, -25.0]),

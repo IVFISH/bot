@@ -291,6 +291,7 @@ impl Bot {
         Bot::get_holes_and_cell_covered_score(board, weights)
             + Bot::get_height_score(board, weights)
             + Bot::get_height_differences_score(board, weights)
+            + Bot::get_t_slot_score(board, weights)
     }
 
     fn score_versus(game_data: &GameData, weight: &Weights) -> Score {
@@ -315,6 +316,15 @@ impl Bot {
             .eval(board.get_max_height_difference() as f32);
 
         adjacent_score + total_score
+    }
+
+    fn get_t_slot_score(board: &Board, weight: &Weights) -> f32 {
+        let out = board.t_slot();
+        if out != 0 {
+            // println!("{} {}", board, out);
+            // panic!();
+        }
+        weight.t_slot_weight.eval(board.t_slot() as f32)
     }
 
     fn get_height_score(board: &Board, weight: &Weights) -> f32 {
