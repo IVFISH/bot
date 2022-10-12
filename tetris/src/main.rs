@@ -29,12 +29,13 @@ fn bot_play() {
     println!("{}", bot.get_game());
     while !bot.get_game().get_game_over() && bot.get_game().game_data.pieces_placed < 10000 {
         println!("{}", bot.get_game());
+        println!("{}", bot.get_game().board.t_slot());
 
         let now = time::Instant::now();
         bot.make_move();
         time += now.elapsed().as_micros();
 
-        thread::sleep(time::Duration::from_millis(100));
+        thread::sleep(time::Duration::from_millis(0));
         // println!("{}", bot.get_game());
     }
     println!(

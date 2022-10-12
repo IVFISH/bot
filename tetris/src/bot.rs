@@ -60,6 +60,9 @@ impl Player for Bot {
             }
         }
 
+        println!("{:?}", action);
+        println!("{}", min_score);
+
         action.push(Command::HardDrop);
         action
     }
@@ -93,18 +96,86 @@ impl Bot {
         };
         self.make_move();
         // println!("{}", self);
-        std::thread::sleep(std::time::Duration::from_millis(100));
+        std::thread::sleep(std::time::Duration::from_millis(0));
         out
     }
 
-    fn move_placement_score(
+    pub fn move_placement_score(
         &mut self,
         depth: usize,
-        weight: &Weights,
-    ) -> (MoveList, PlacementList, ScoreList) {
-        let mut dummy = self.game.clone();
-        Bot::move_placement_score_1d(&mut dummy, weight)
-    }
+        weights: &Weights,
+        ) -> (MoveList, Vec<PlacementList>, ScoreList) {
+            let mut dummy = self.game.clone();
+            let (mut moves, mut placementss, mut scores) =
+                Bot::move_placement_score_1d(&mut dummy, weights);
+
+            let mut placements = vec![];
+            for place in placementss{
+                placements.push(vec!(place))
+            }
+            // let mut placements: Vec<PlacementList> = placements.iter().map(|x| vec![*x]).collect();
+
+            if depth <= 1 {
+                return (moves, placements, scores);
+            }
+
+            let mut outmoves = MoveList::new();
+            let mut outplace : Vec<PlacementList> = Vec::new();
+            let mut outscores : ScoreList = Vec::new();
+
+            let mut index = 0;
+            while placements[index].len() < depth {
+                let game_save = dummy.clone();
+                for p in placements[index].clone() {
+                    if dummy.hold_piece.is_none() && dummy.piece_queue.peek() == p.piece_type {
+                        dummy.hold();
+                    } else if dummy.hold_piece == Some(p.piece_type) {
+                        dummy.hold();
+                    } else if dummy.active_piece.piece_type != p.piece_type {
+                        println!("NOO");
+                    }
+                    dummy.active_piece = p;
+                    if dummy.hard_drop() {
+                        continue;
+                    }
+                }
+
+                let (_, mut add_placements, mut add_scores) =
+                    Bot::move_placement_score_1d(&mut dummy, weights);
+
+                //TODO only keep the top x add_placements (pruning)
+
+                for i in 0..add_placements.len() {
+                    let mut place : Vec<Piece> = placements[index].clone();
+
+                    let mut versus_score : Score = scores[index].1;
+                    versus_score += add_scores[i].1;
+
+                    moves.push(moves[index].clone());
+
+                    place.push(add_placements[i].clone());
+                    placements.push(place.clone());
+
+                    scores.push((add_scores[i].0, versus_score));
+
+                    if placements[index].len() >= depth - 1 {
+                        outmoves.push(moves[index].clone());
+                        outplace.push(place.clone());
+                        outscores.push((add_scores[i].0, versus_score.clone()));
+
+                        // println!("{}", versus_score);
+                    }
+                }
+
+                // if placements[index].len() >= num_moves - 1 {
+                //     outscores.extend(add_scores);
+                // }
+
+                index += 1;
+                dummy = game_save;
+            }
+            (outmoves, outplace, outscores)
+        }
 
     fn move_placement_score_1d(
         game: &mut Game,
@@ -291,7 +362,7 @@ impl Bot {
         Bot::get_holes_and_cell_covered_score(board, weights)
             + Bot::get_height_score(board, weights)
             + Bot::get_height_differences_score(board, weights)
-            + Bot::get_t_slot_score(board, weights)
+            // + Bot::get_t_slot_score(board, weights)
     }
 
     fn score_versus(game_data: &GameData, weight: &Weights) -> Score {
@@ -301,7 +372,17 @@ impl Bot {
         let attack = weight.damage_weight.eval(game_data.last_sent as f32);
         let clear = weight.clear_weight.eval(game_data.last_cleared as f32);
 
-        combo_score + b2b + attack + clear
+        let mut extra = 0.0;
+
+        // println!("{}, {}", game_data.last_cleared, game_data.last_sent);
+
+        // println!("{}, {}", clear, attack);
+
+        if game_data.last_cleared != (0 as usize) && game_data.last_sent != (0 as u8){
+            // println!("{}, {}", game_data.last_cleared, game_data.last_sent);
+        }
+
+        combo_score + b2b + attack + clear + extra
     }
 
     fn get_height_differences_score(board: &Board, weight: &Weights) -> f32 {
@@ -318,7 +399,7 @@ impl Bot {
         adjacent_score + total_score
     }
 
-    fn get_t_slot_score(board: &Board, weight: &Weights) -> f32 {
+    pub(crate) fn get_t_slot_score(board: &Board, weight: &Weights) -> f32 {
         let out = board.t_slot();
         if out != 0 {
             // println!("{} {}", board, out);

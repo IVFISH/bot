@@ -18,8 +18,8 @@ pub struct Game {
     pub game_data: GameData,
     game_rules: GameRules,
 
-    active_piece: Piece,
-    hold_piece: Option<PieceType>,
+    pub active_piece: Piece,
+    pub hold_piece: Option<PieceType>,
 }
 
 impl Display for Game {
@@ -274,9 +274,19 @@ impl Game {
     }
 
     pub fn update(&mut self) {
+        let mut ya = false;
+
         let lines_cleared = self.board.clear_lines();
         let t_spin_type = Game::get_t_spin_type(&self.active_piece, &self.board);
+        if t_spin_type == TSpinType::Full && lines_cleared > 0 {
+            ya = true;
+            println!("grrr");
+        }
         let attack_type = attack_type(t_spin_type, lines_cleared);
+        if ya {println!("{:?}", attack_type);}
+
+
+        // if attack_type != AttackType::None{println!("{:?}", attack_type);}
 
         self.game_data
             .update(lines_cleared, attack_type, self.board.all_clear());
@@ -311,6 +321,7 @@ pub mod game_rules_and_data {
                 self.combo = 0;
                 self.all_clear = false;
                 self.last_cleared = 0;
+                self.last_sent = 0;
                 return;
             }
 
