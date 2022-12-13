@@ -10,6 +10,7 @@ use crate::queue::{piece_type_to_string, BagType, PieceQueue};
 use crate::versus::*;
 use game_rules_and_data::*;
 use std::fmt::{Display, Formatter};
+use crate::game::game_rules_and_data::SpinBonus::TSpin;
 
 #[derive(Default, Clone)]
 pub struct Game {
@@ -274,18 +275,19 @@ impl Game {
     }
 
     pub fn update(&mut self) {
-        let mut ya = false;
-
-        let lines_cleared = self.board.clear_lines();
+        let mut dummy = self.board.clone();
+        dummy.add_list(self.active_piece.abs_locations().unwrap());
+        let lines_cleared = dummy.clear_lines();
+        self.board.clear_lines();
         let t_spin_type = Game::get_t_spin_type(&self.active_piece, &self.board);
-        if t_spin_type == TSpinType::Full && lines_cleared > 0 {
-            ya = true;
-            println!("grrr");
-        }
+        // if t_spin_type == TSpinType::Full{
+        //     println!("YEAH {}", lines_cleared);
+        //     println!("DUM \n {}", dummy);
+        //     println!("REAL {}", self.board);
+        //     println!("{}", self.active_piece);
+        //     println!("{:?}", self.active_piece.center);
+        // }
         let attack_type = attack_type(t_spin_type, lines_cleared);
-        if ya {println!("{:?}", attack_type);}
-
-
         // if attack_type != AttackType::None{println!("{:?}", attack_type);}
 
         self.game_data
@@ -297,6 +299,7 @@ pub mod game_rules_and_data {
     use std::str::FromStr;
     use super::*;
     use crate::constants::board_constants::{MAX_PLACE_HEIGHT};
+    use crate::constants::versus_constants::AttackType::TD;
 
     #[derive(Default, Clone)]
     pub struct GameData {
@@ -309,6 +312,8 @@ pub mod game_rules_and_data {
         pub lines_sent: u16,
         pub last_sent: u8,
         pub last_cleared: usize,
+
+        pub t_spin: bool,
 
         pub game_over: bool,
     }
@@ -327,6 +332,10 @@ pub mod game_rules_and_data {
 
             self.lines_cleared += lines_cleared;
             self.last_cleared = lines_cleared;
+
+            if attack == TD{
+                self.t_spin = true;
+            }
 
             // update lines sent before adding b2b/combo
             let lines_sent = calc_damage(self, attack, lines_cleared);

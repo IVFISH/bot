@@ -6,6 +6,7 @@ use crate::constants::rotation::*;
 use crate::constants::types::*;
 use crate::point_vector::*;
 use std::fmt::{Display, Formatter};
+use crate::constants::board_constants::{BOARD_HEIGHT, BOARD_WIDTH};
 
 #[derive(Default, Clone, Debug)]
 pub struct Piece {
@@ -146,9 +147,15 @@ impl Piece {
 
     // move
     pub fn moved(&mut self, v: PointVector) -> bool {
-        if let Some(point) = v.add_to_point(&self.center) {
-            self.center = point;
-            return true;
+        if self.abs_locations() == None {return false}
+        if let Some(moved) = v.add_to_point(&self.center) {
+            for point in self.abs_locations().unwrap(){
+                if v.add_to_point(&point) == None {
+                    return false
+                }
+            }
+            self.center = moved;
+            return true
         }
         false
     }

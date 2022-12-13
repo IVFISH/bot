@@ -164,13 +164,14 @@ impl Bot {
             (outmoves, outplace, outscores)
         }
 
-    fn move_placement_score_1d(
+    pub(crate) fn move_placement_score_1d(
         game: &mut Game,
         weight: &Weights,
     ) -> (MoveList, PlacementList, ScoreList) {
         let (mut moves, mut placements, mut scores) = Bot::trivial(game, false, weight);
         Bot::non_trivial(game, weight, &mut moves, &mut placements, &mut scores);
         let hold_piece = game.get_hold_piece_or_next();
+
         if hold_piece.get_type() == game.get_active_piece().get_type() {
             return (moves, placements, scores);
         }
@@ -349,7 +350,7 @@ impl Bot {
         Bot::get_holes_and_cell_covered_score(board, weights)
             + Bot::get_height_score(board, weights)
             + Bot::get_height_differences_score(board, weights)
-            // + Bot::get_t_slot_score(board, weights)
+            + Bot::get_t_slot_score(board, weights)
     }
 
     fn score_versus(game_data: &GameData, weight: &Weights) -> Score {
@@ -361,12 +362,15 @@ impl Bot {
 
         let mut extra = 0.0;
 
-        // println!("{}, {}", game_data.last_cleared, game_data.last_sent);
+        if game_data.last_cleared <= (2 as usize) && game_data.last_sent >= (2 as u8){
+            // println!("THINGY: {}, {}", game_data.last_cleared, game_data.last_sent);
+        }
 
         // println!("{}, {}", clear, attack);
 
-        if game_data.last_cleared != (0 as usize) && game_data.last_sent != (0 as u8){
-            // println!("{}, {}", game_data.last_cleared, game_data.last_sent);
+        if game_data.last_cleared as usize == (2 as usize) && game_data.last_sent as u8 == (4 as u8){
+            println!("GOOD");
+            extra -= 10000.0;
         }
 
         combo_score + b2b + attack + clear + extra

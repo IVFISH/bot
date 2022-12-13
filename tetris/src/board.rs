@@ -167,7 +167,7 @@ impl Board {
     pub fn piece_grounded(&self, piece: &Piece) -> bool {
         if let Some(down) = piece.ret_moved(PointVector(-1, 0)) {
             return self.piece_collision(&down);
-        };
+        }
         true
     }
 
