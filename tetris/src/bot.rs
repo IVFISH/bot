@@ -44,7 +44,7 @@ impl Player for Bot {
     }
 
     fn get_next_move(&mut self) -> CommandList {
-        let (deep_moves, _, deep_scores) = self.move_placement_score(3, &self.weight.clone());
+        let (deep_moves, _, deep_scores) = self.move_placement_score(2, &self.weight.clone());
         let deep_scores: Vec<f32> = deep_scores
             .iter()
             .map(|(board, versus)| board + versus)
@@ -86,19 +86,6 @@ impl Bot {
         .collect()
     }
 
-    pub fn suggest_and_move(&mut self) -> Suggestion {
-        let action = self.get_next_move();
-        let action = Bot::command_list_string(&action);
-
-        let out = Suggestion {
-            input_list: action,
-            info: "".to_string(),
-        };
-        self.make_move();
-        // println!("{}", self);
-        std::thread::sleep(std::time::Duration::from_millis(0));
-        out
-    }
 
     pub fn move_placement_score(
         &mut self,

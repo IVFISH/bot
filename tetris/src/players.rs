@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use crate::communications::Suggestion;
 use crate::constants::bot_constants::*;
 use crate::constants::types::*;
 use crate::game::Game;
@@ -25,6 +26,31 @@ pub trait Player {
                 break;
             }
         }
+    }
+
+    fn make_suggest_move(&mut self) -> Suggestion {
+        if self.get_game().get_game_over() {
+            return Suggestion {
+                input_list: Vec::new(),
+                info: "bot died".to_string(),
+            };
+        }
+        let action = self.get_next_move();
+        let out = Suggestion {
+            input_list: Self::command_list_string(&action),
+            info: "".to_string(),
+        };
+        // println!("{:?}", action);
+        do_move_list(self.get_game_mut(), action);
+        out
+    }
+
+    fn command_list_string(commands: &CommandList) -> Vec<String> {
+        commands
+            .iter()
+            .filter(|&&command| command != Command::None)
+            .map(|&command| command.to_string())
+            .collect()
     }
 }
 

@@ -90,11 +90,10 @@ async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
 
                         // println!("{}", bot);
 
-                        thread::sleep(time::Duration::from_millis(0));
-                        ws_sender.send(Message::Text(serde_json::to_string(&json!(bot.suggest_and_move())).unwrap())).await?;
+                        ws_sender.send(Message::Text(serde_json::to_string(&json!(bot.make_suggest_move())).unwrap())).await?;
                     },
                     "stop" => println!("stop game"),
-                    "start" => ws_sender.send(Message::Text(serde_json::to_string(&json!(bot.suggest_and_move())).unwrap())).await?,
+                    "start" => ws_sender.send(Message::Text(serde_json::to_string(&json!(bot.make_suggest_move())).unwrap())).await?,
                     other => eprintln!("unexpected packet of type {}", other),
                 }
 
