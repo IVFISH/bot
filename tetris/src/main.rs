@@ -22,8 +22,8 @@ use crate::piece::Piece;
 use crate::weight::Weights;
 
 fn main() {
-    bot_play();
-    // tetrio_play()
+    // bot_play();
+    tetrio_play()
 }
 
 fn bot_play() {
@@ -55,6 +55,17 @@ fn bot_play() {
     game.board.add(0, 9);
     game.board.add(1, 9);
     game.board.add(2, 9);
+
+    // bot.make_move();
+    // println!("UNGA BUNGA \n{}", bot.get_game());
+    //
+    // println!("LAST CLEARED: {}", bot.get_game().game_data.last_cleared);
+    // println!("TOTAL CLEARED: {}", bot.get_game().game_data.lines_cleared);
+    // println!("LAST SENT: {}", bot.get_game().game_data.last_sent);
+    // println!("TOTAL SENT: {}", bot.get_game().game_data.lines_sent);
+
+
+
     let mut time = 0;
     println!("{}", bot.get_game());
     while !bot.get_game().get_game_over() && bot.get_game().game_data.pieces_placed < 10000 {

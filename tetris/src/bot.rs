@@ -114,17 +114,11 @@ impl Bot {
             while placements[index].len() < depth {
                 let game_save = dummy.clone();
                 for p in placements[index].clone() {
-                    if dummy.hold_piece.is_none() && dummy.piece_queue.peek() == p.piece_type {
-                        dummy.hold();
-                    } else if dummy.hold_piece == Some(p.piece_type) {
-                        dummy.hold();
-                    } else if dummy.active_piece.piece_type != p.piece_type {
-                        println!("NOO");
-                    }
                     dummy.active_piece = p;
-                    if dummy.hard_drop() {
-                        continue;
-                    }
+                    // if dummy.hard_drop() {
+                    //     continue;
+                    // }
+                    dummy.set_piece();
                 }
 
                 let (_, mut add_placements, mut add_scores) =
@@ -170,7 +164,10 @@ impl Bot {
     ) -> (MoveList, PlacementList, ScoreList) {
         let (mut moves, mut placements, mut scores) = Bot::trivial(game, false, weight);
         Bot::non_trivial(game, weight, &mut moves, &mut placements, &mut scores);
+
         let hold_piece = game.get_hold_piece_or_next();
+
+        // return (moves, placements, scores);
 
         if hold_piece.get_type() == game.get_active_piece().get_type() {
             return (moves, placements, scores);
@@ -339,6 +336,7 @@ impl Bot {
     // scoring
     fn score_game(mut game: Game, weights: &Weights, piece: &Piece) -> (Score, Score) {
         game.board.set_piece(piece);
+        game.active_piece = piece.clone();
         game.update();
         (
             Bot::score_board(&game.board, weights),
@@ -362,15 +360,16 @@ impl Bot {
 
         let mut extra = 0.0;
 
-        if game_data.last_cleared <= (2 as usize) && game_data.last_sent >= (2 as u8){
-            // println!("THINGY: {}, {}", game_data.last_cleared, game_data.last_sent);
-        }
-
         // println!("{}, {}", clear, attack);
 
         if game_data.last_cleared as usize == (2 as usize) && game_data.last_sent as u8 == (4 as u8){
-            println!("GOOD");
+            // println!("GOOD");
             extra -= 10000.0;
+        }
+
+        if game_data.last_cleared as usize == (1 as usize) && game_data.last_sent as u8 == (2 as u8){
+            // println!("GOOD");
+            extra -= 5000.0;
         }
 
         combo_score + b2b + attack + clear + extra

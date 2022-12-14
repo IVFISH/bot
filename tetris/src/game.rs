@@ -255,9 +255,7 @@ impl Game {
 
     pub fn hard_drop(&mut self) -> bool {
         self.active_drop();
-        let out = self.set_piece();
-        self.update();
-        out
+        return self.set_piece()
     }
 
     pub fn set_piece(&mut self) -> bool {
@@ -269,26 +267,16 @@ impl Game {
         }
 
         self.board.set_piece(&self.active_piece);
+        self.update();
         self.active_piece = self.piece_queue.next();
 
         true
     }
 
     pub fn update(&mut self) {
-        let mut dummy = self.board.clone();
-        dummy.add_list(self.active_piece.abs_locations().unwrap());
-        let lines_cleared = dummy.clear_lines();
-        self.board.clear_lines();
         let t_spin_type = Game::get_t_spin_type(&self.active_piece, &self.board);
-        // if t_spin_type == TSpinType::Full{
-        //     println!("YEAH {}", lines_cleared);
-        //     println!("DUM \n {}", dummy);
-        //     println!("REAL {}", self.board);
-        //     println!("{}", self.active_piece);
-        //     println!("{:?}", self.active_piece.center);
-        // }
+        let lines_cleared = self.board.clear_lines();
         let attack_type = attack_type(t_spin_type, lines_cleared);
-        // if attack_type != AttackType::None{println!("{:?}", attack_type);}
 
         self.game_data
             .update(lines_cleared, attack_type, self.board.all_clear());
