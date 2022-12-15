@@ -357,6 +357,7 @@ impl Bot {
         let b2b = weight.b2b_weight.eval(game_data.b2b as f32);
         let attack = weight.damage_weight.eval(game_data.last_sent as f32);
         let clear = weight.clear_weight.eval(game_data.last_cleared as f32);
+        let pc = game_data.all_clear;
 
         let mut extra = 0.0;
 
@@ -367,9 +368,13 @@ impl Bot {
             extra -= 10000.0;
         }
 
+        if pc {
+            extra -= 100000.0;
+        }
+
         if game_data.last_cleared as usize == (1 as usize) && game_data.last_sent as u8 == (2 as u8){
             // println!("GOOD");
-            extra -= 5000.0;
+            extra -= 100.0;
         }
 
         combo_score + b2b + attack + clear + extra
@@ -390,12 +395,7 @@ impl Bot {
     }
 
     pub(crate) fn get_t_slot_score(board: &Board, weight: &Weights) -> f32 {
-        let out = board.t_slot();
-        if out != 0 {
-            // println!("{} {}", board, out);
-            // panic!();
-        }
-        weight.t_slot_weight.eval(board.t_slot() as f32)
+        weight.t_slot_weight.eval(board.t_slot(board.get_max_height()) as f32)
     }
 
     fn get_height_score(board: &Board, weight: &Weights) -> f32 {

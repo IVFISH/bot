@@ -291,19 +291,35 @@ impl Board {
         arr == vec![5, 0, 1] || arr == vec![1, 0, 5]
 
     }
-    pub fn t_slot(&self) -> usize {
+    pub fn t_slot(&self, height: usize) -> usize {
+        // let big = self.arr[0] >> 23
+        //                 * self.arr[1] >> 46
+        //                 * self.arr[2] >> 69
+        //                 * self.arr[3] >> 92
+        //                 * self.arr[4] >> 115
+        //                 * self.arr[5] >> 138
+        //                 * self.arr[6] >> 161
+        //                 * self.arr[7] >> 184
+        //                 * self.arr[8] >> 207
+        //                 * self.arr[9] >> 230;
+
+        // for col in self.arr{
+        //
+        // }
+        if height < 3 {
+            return 0
+        }
+
         let mut out = 0;
 
         for columns in self.arr.windows(3) {
-
-            for row in 0..BOARD_HEIGHT {
+            for row in 0..(height-3) {
                 // create a 3x3 grid
                 let mask = 0b111 << row;
                 let columns = columns.iter().map(|x| x & mask).collect();
 
                 // checks if it is a t slot
                 out += Board::check_hor_t(columns) as usize;
-
             }
         }
         out
