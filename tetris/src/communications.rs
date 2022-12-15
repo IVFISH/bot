@@ -89,7 +89,7 @@ async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
                         }
 
                         // println!("{}", bot);
-                        thread::sleep(time::Duration::from_millis(0));
+                        thread::sleep(time::Duration::from_millis(250));
 
                         ws_sender.send(Message::Text(serde_json::to_string(&json!(bot.make_suggest_move())).unwrap())).await?;
                     },

@@ -17,11 +17,20 @@ mod weight;
 use crate::bot::*;
 use crate::players::Player;
 use std::{thread, time};
+use crate::board::Board;
 use crate::constants::versus_constants::AttackType::T;
 use crate::piece::Piece;
 use crate::weight::Weights;
 
 fn main() {
+
+    // let mut b = Board::new();
+    // b.set_row(0, vec![true, true, true, true, true, false, true, true, true, true]);
+    // b.set_row(1, vec![false, true, true, true, true, false, true, true, true, true]);
+    // b.set_row(3, vec![false, true, false, false, false, false, false, false, false, false]);
+    // println!("{}", b);
+    // println!("{:?}", b.get_arr());
+    // println!("{}", b.get_arr()[1] >> 1);
     // bot_play();
     tetrio_play()
 }
