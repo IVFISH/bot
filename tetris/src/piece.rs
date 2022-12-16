@@ -88,7 +88,7 @@ impl Piece {
     }
 
     pub fn get_kicks(&self, dir: RotationDirection) -> Vec<PointVector> {
-        let before = (self.rotation_state - dir + NUM_ROTATE_STATES) % NUM_ROTATE_STATES;
+        let before = (self.rotation_state + NUM_ROTATE_STATES - dir ) % NUM_ROTATE_STATES;
         let kicks;
         if self.piece_type == 4 {
             // I piece is the special child
