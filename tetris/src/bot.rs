@@ -118,6 +118,21 @@ impl Bot {
         Err(0) // shitty error, make this better
     }
 
+    pub fn moves_to_placements (
+        game: &mut Game,
+        bag: &[Piece; 7],
+    ) -> Result<CommandList, usize> {
+        let (moves, placements, _) = Bot::move_placement_score_1d(game, &Weights::default());
+        for (m, p) in zip(moves, placements) {
+            for piece in bag {
+                if &p == piece {
+                    return Ok(m);
+                }
+            }
+        }
+        Err(0) // shitty error, make this better
+    }
+
     pub fn do_opener(&mut self) -> Result<CommandList, usize> {
         const TKI: [Piece; 7] = [
             Piece{piece_type: 0, rotation_state: 0, center: Point(1,4), last_kick: 0},
@@ -126,10 +141,10 @@ impl Bot {
             Piece{piece_type: 3, rotation_state: 1, center: Point(1,6), last_kick: 0},
             Piece{piece_type: 4, rotation_state: 0, center: Point(0,4), last_kick: 0},
             Piece{piece_type: 5, rotation_state: 2, center: Point(3,4), last_kick: 0},
-            Piece{piece_type: 4, rotation_state: 0, center: Point(0,4), last_kick: 0}, // always invalid
+            Piece{piece_type: 8, rotation_state: 0, center: Point(0,4), last_kick: 0}, // always invalid
         ];
         let placement = &TKI[self.get_game().active_piece.piece_type as usize];
-        return Bot::moves_to_placement(self.get_game_mut(), placement);
+        return Bot::moves_to_placements(self.get_game_mut(), &TKI);
     }
 
     pub fn move_placement_score(
