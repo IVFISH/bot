@@ -46,6 +46,10 @@ impl PieceQueue {
 
     pub fn peek_index(&self, index: usize) -> PieceType { *self.queue.get(index).unwrap()}
 
+    pub fn get_queue(&self) -> &VecDeque<PieceType> {
+        &self.queue
+    }
+
     pub fn next(&mut self) -> Piece {
         if self.queue.len() <= MIN_QUEUE_LENGTH {
             self.next_bag();

@@ -5,18 +5,20 @@ use crate::game::Game;
 use crate::players::*;
 use crate::queue::piece_type_to_string;
 
+use crate::constants::types::PieceType;
+use crate::game::game_rules_and_data::GameRules;
+use crate::Piece;
 use futures_util::{SinkExt, StreamExt};
 use log::*;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use serde_json::json;
-use std::{net::SocketAddr};
+use std::collections::VecDeque;
+use std::net::SocketAddr;
 use std::{thread, time};
 use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::{accept_async, tungstenite::Error};
 use tungstenite::{Message, Result};
-use crate::game::game_rules_and_data::GameRules;
-use crate::Piece;
 
 #[derive(Serialize, Deserialize)]
 pub struct Suggestion {
@@ -64,30 +66,45 @@ async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
                 match parsed_type {
                     "rules" => bot = create_bot_from_parsed(&parsed),
                     "play" => {
-                        // println!("{}", parsed["board"]);
+
+                        // Set bot board to tetrio board
                         for (r_index, row) in parsed["board"].as_array().unwrap().iter().rev().enumerate() {
                             bot.get_game_mut().board.set_row(r_index, row.as_array().unwrap().iter().map(|col| col.as_bool().unwrap()).collect())
                         }
-                        // println!("{}", bot.get_game().board);
 
-                        // println!("local: {}, client: {}", bot.get_game().game_data.pieces_placed, parsed["placed"]);
-                        if bot.get_game().game_data.pieces_placed != parsed["placed"] {
-                            eprintln!("DESYNCED!!! Bot is has placed {} pieces, but client has placed {} pieces!",
-                            bot.get_game().game_data.pieces_placed, parsed["placed"]);
+                        // Error Correction
+                        let tetrio_piece = str_to_piece_type(parsed["current"].as_str().unwrap());
+                        let bot_piece = bot.get_game().active_piece.piece_type;
+                        if tetrio_piece != bot_piece {
+                            eprintln!(
+                                "Active Piece Desynched: expected {}, but recieved {} instead",
+                                piece_to_string(Some(bot_piece)),
+                                piece_to_string(Some(tetrio_piece)));
                         }
-                        for i in 0..6 {
-                            if piece_type_to_string(bot.get_game().piece_queue.peek_index(i)).to_lowercase() != parsed["queue"].as_array().unwrap()[i].as_str().unwrap() {
-                                eprintln!("Mismatched Queue: expected {}, but received {} instead", bot.get_game().piece_queue, parsed["queue"]);
-                                break;
-                            }
-                            // if (parsed["queue"].as_array().unwrap()[i].as_str().unwrap())
-                        }
-                        let current_hold = piece_to_string(bot.get_game().get_hold_piece());
 
-                        if current_hold != parsed["hold"].as_str().unwrap_or_else(|| "*") {
-                             eprintln!("Mismatched Hold: expected {} as hold, received {} instead", current_hold
-                            , parsed["hold"].as_str().unwrap_or_else(|| "*"));
+                        let mut tetrio_queue: VecDeque<PieceType> = VecDeque::new();
+                        let bot_queue = bot.get_game().piece_queue.get_queue();
+
+                        for piece in parsed["queue"].as_array().unwrap(){
+                            tetrio_queue.push_back(str_to_piece_type(piece.as_str().unwrap()))
                         }
+
+                        if &tetrio_queue != bot_queue {
+                            eprintln!("Mismatched Queue: expected {}, but received {} instead", bot.get_game().piece_queue, parsed["queue"]);
+                            bot.get_game_mut().piece_queue.set_queue(tetrio_queue);
+                        }
+
+                        let bot_hold = piece_to_string(bot.get_game().get_hold_piece());
+                        let tetrio_hold = parsed["hold"].as_str().unwrap_or_else(|| "*");
+                        if bot_hold != tetrio_hold{
+                             eprintln!("Mismatched Hold: expected {} as hold, received {} instead", bot_hold
+                            , tetrio_hold);
+                            bot.get_game_mut().hold_piece = str_to_piece(tetrio_hold);
+                        }
+
+                        // Primitive speedcap
+                        thread::sleep(time::Duration::from_millis(2000));
+                        // Calculate and send move
                         ws_sender.send(Message::Text(serde_json::to_string(&json!(bot.make_suggest_move())).unwrap())).await?;
                     },
                     "stop" => println!("stop game"),
@@ -100,6 +117,32 @@ async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
                         ws_sender.send(Message::Text(serde_json::to_string(&json!(bot.make_suggest_move())).unwrap())).await?
                     },
                     other => eprintln!("unexpected packet of type {}", other),
+                }
+
+                fn str_to_piece(piece: &str) -> Option<usize> {
+                    match piece {
+                                "z" => Some(0),
+                                "l" => Some(1),
+                                "o" => Some(2),
+                                "s" => Some(3),
+                                "i" => Some(4),
+                                "j" => Some(5),
+                                "t" => Some(6),
+                                _ => None,
+                            }
+                }
+
+                fn str_to_piece_type(piece: &str) -> PieceType {
+                    match piece {
+                                "z" => 0,
+                                "l" => 1,
+                                "o" => 2,
+                                "s" => 3,
+                                "i" => 4,
+                                "j" => 5,
+                                "t" => 6,
+                                _ => panic!(),
+                            }
                 }
 
                 fn piece_to_string(piece: Option<usize>) -> &'static str {
@@ -126,16 +169,26 @@ async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
 }
 
 fn create_bot_from_parsed(parsed: &serde_json::Value) -> Bot {
-    Bot::new(Game::from_rules(Some(parsed["seed"].as_u64().unwrap() as usize),
-                              GameRules {
-                                  bag_type: parsed["bagtype"].as_str().unwrap_or("singleplayer").parse().unwrap(),
-                                  allow_hard_drop: parsed["allow_harddrop"].as_bool().unwrap_or(true),
-                                  allow_180: parsed["allow180"].as_bool().unwrap(),
-                                  allow_b2b_chain: parsed["b2bchaining"].as_bool().unwrap_or(true),
-                                  max_board_height: parsed["boardheight"].as_u64().unwrap() as usize,
-                                  kick_set: parsed["kickset"].as_str().unwrap().parse().unwrap(),
-                                  spin_bonus: parsed["spinbonuses"].as_str().unwrap_or("singleplayer").parse().unwrap(),
-                              }))
+    Bot::new(Game::from_rules(
+        Some(parsed["seed"].as_u64().unwrap() as usize),
+        GameRules {
+            bag_type: parsed["bagtype"]
+                .as_str()
+                .unwrap_or("singleplayer")
+                .parse()
+                .unwrap(),
+            allow_hard_drop: parsed["allow_harddrop"].as_bool().unwrap_or(true),
+            allow_180: parsed["allow180"].as_bool().unwrap(),
+            allow_b2b_chain: parsed["b2bchaining"].as_bool().unwrap_or(true),
+            max_board_height: parsed["boardheight"].as_u64().unwrap() as usize,
+            kick_set: parsed["kickset"].as_str().unwrap().parse().unwrap(),
+            spin_bonus: parsed["spinbonuses"]
+                .as_str()
+                .unwrap_or("singleplayer")
+                .parse()
+                .unwrap(),
+        },
+    ))
 }
 
 #[tokio::main]
