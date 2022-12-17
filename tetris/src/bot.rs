@@ -143,7 +143,6 @@ impl Bot {
             Piece{piece_type: 5, rotation_state: 2, center: Point(3,4), last_kick: 0},
             Piece{piece_type: 8, rotation_state: 0, center: Point(0,4), last_kick: 0}, // always invalid
         ];
-        let placement = &TKI[self.get_game().active_piece.piece_type as usize];
         return Bot::moves_to_placements(self.get_game_mut(), &TKI);
     }
 
