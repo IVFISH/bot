@@ -16,6 +16,7 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::{accept_async, tungstenite::Error};
 use tungstenite::{Message, Result};
 use crate::game::game_rules_and_data::GameRules;
+use crate::Piece;
 
 #[derive(Serialize, Deserialize)]
 pub struct Suggestion {
@@ -87,14 +88,17 @@ async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
                              eprintln!("Mismatched Hold: expected {} as hold, received {} instead", current_hold
                             , parsed["hold"].as_str().unwrap_or_else(|| "*"));
                         }
-
-                        // println!("{}", bot);
-                        thread::sleep(time::Duration::from_millis(250));
-
                         ws_sender.send(Message::Text(serde_json::to_string(&json!(bot.make_suggest_move())).unwrap())).await?;
                     },
                     "stop" => println!("stop game"),
-                    "start" => ws_sender.send(Message::Text(serde_json::to_string(&json!(bot.make_suggest_move())).unwrap())).await?,
+                    "start" => {
+                        let mut i_hate_osk: usize = 21; // 0+1+2+3+4+5+6 = 21
+                        for i in 0..6 {
+                            i_hate_osk -= bot.get_game().piece_queue.peek_index(i)
+                        }
+                        bot.get_game_mut().set_active_piece(Piece::new(i_hate_osk));
+                        ws_sender.send(Message::Text(serde_json::to_string(&json!(bot.make_suggest_move())).unwrap())).await?
+                    },
                     other => eprintln!("unexpected packet of type {}", other),
                 }
 

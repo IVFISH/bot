@@ -12,10 +12,12 @@ use crate::weight::Weights;
 use std::fmt::{Display, Formatter};
 use std::iter::zip;
 use crate::communications::Suggestion;
+use crate::Point;
 
 pub struct Bot {
     game: Game,
     weight: Weights,
+    opener: bool,
 }
 
 impl Display for Bot {
@@ -30,6 +32,7 @@ impl Default for Bot {
         Self {
             game: Game::new(None),
             weight: Weights::default(),
+            opener: true,
         }
     }
 }
@@ -44,6 +47,23 @@ impl Player for Bot {
     }
 
     fn get_next_move(&mut self) -> CommandList {
+        // R, C
+        let mut action = vec![];
+
+        if self.opener {
+            match self.do_opener() {
+                Ok(m) => {
+                    action = m;
+                    action.push(Command::HardDrop);
+                    return action;
+                },
+                Err(_) => {
+                    eprintln!("opener sequence terminated");
+                    self.opener = false
+                }
+            }
+        }
+
         let (deep_moves, _, deep_scores) = self.move_placement_score(2, &self.weight.clone());
         let deep_scores: Vec<f32> = deep_scores
             .iter()
@@ -51,7 +71,6 @@ impl Player for Bot {
             .collect();
 
         let mut min_score = f32::INFINITY;
-        let mut action = vec![];
 
         for (moves, score) in zip(deep_moves, deep_scores) {
             if score < min_score {
@@ -86,6 +105,32 @@ impl Bot {
         .collect()
     }
 
+    pub fn moves_to_placement (
+        game: &mut Game,
+        piece: &Piece,
+    ) -> Result<CommandList, usize> {
+        let (moves, placements, _) = Bot::move_placement_score_1d(game, &Weights::default());
+        for (m, p) in zip(moves, placements) {
+            if &p == piece {
+                return Ok(m);
+            }
+        }
+        Err(0) // shitty error, make this better
+    }
+
+    pub fn do_opener(&mut self) -> Result<CommandList, usize> {
+        const TKI: [Piece; 7] = [
+            Piece{piece_type: 0, rotation_state: 0, center: Point(1,4), last_kick: 0},
+            Piece{piece_type: 1, rotation_state: 1, center: Point(1,0), last_kick: 0},
+            Piece{piece_type: 2, rotation_state: 0, center: Point(0,8), last_kick: 0},
+            Piece{piece_type: 3, rotation_state: 1, center: Point(1,6), last_kick: 0},
+            Piece{piece_type: 4, rotation_state: 0, center: Point(0,4), last_kick: 0},
+            Piece{piece_type: 5, rotation_state: 2, center: Point(3,4), last_kick: 0},
+            Piece{piece_type: 4, rotation_state: 0, center: Point(0,4), last_kick: 0}, // always invalid
+        ];
+        let placement = &TKI[self.get_game().active_piece.piece_type as usize];
+        return Bot::moves_to_placement(self.get_game_mut(), placement);
+    }
 
     pub fn move_placement_score(
         &mut self,
