@@ -30,8 +30,6 @@ use crate::opener::*;
 fn test_opener() {
 
     let test = VecDeque::from(vec!([1, 2, 3]));
-    let othertest= Vec::from_iter(test.into_iter());
-
 
     let opener_sequence = [
         Piece { piece_type: 0, rotation_state: 0, center: Point(1, 4), last_kick: 0 },
@@ -76,10 +74,10 @@ fn main() {
 
 fn more_test() {
     let mut bot = Bot::default();
-    // bot.get_game_mut().active_piece = Piece::new(6);
-    // bot.get_game_mut().piece_queue.set_queue(VecDeque::from([2, 5, 3, 0, 1, 4]));
+    bot.get_game_mut().active_piece = Piece::new(2);
+    bot.get_game_mut().piece_queue.set_queue(VecDeque::from([0, 3, 4, 5, 6, 1]));
     println!("{}", bot);
-    bot.make_n_moves(7);
+    bot.make_n_moves(6);
     println!("{}", bot);
 
 }

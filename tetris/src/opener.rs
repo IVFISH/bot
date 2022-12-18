@@ -91,45 +91,56 @@ impl Opener {
         return out;
     }
 
-    fn solve_dependency(queue: &PieceOrder, dependency: &Dependency) -> Option<PieceOrder> {
-        let mut queue: VecDeque<PieceType> = queue.clone().try_into().unwrap();
-        let mut dependency: VecDeque<PieceType> = dependency.dependency.clone().try_into().unwrap();
-        let important_pieces = dependency.clone();
-        let mut out = Vec::new();
+    fn satisfy_dependency(queue: &PieceOrder, dependency: &Dependency) -> bool {
+        queue
+            .iter()
+            .filter(|piece| dependency.dependency.contains(piece))
+            .zip(&dependency.dependency)
+            .all(|(a, b)| a == b)
+    }
 
-        while queue.len() > 0 {
-            if !important_pieces.contains(&queue[0]) {
-                out.push(queue.pop_front().unwrap());
-                continue
-            } else if queue.len() > 1 && !important_pieces.contains(&queue[1]) {
-                out.push(queue.remove(1).unwrap());
-                continue
+    fn satisfy_dependencies(queue: &PieceOrder, dependencies: &Dependencies) -> bool {
+        dependencies
+            .iter()
+            .all(|dependency| Self::satisfy_dependency(queue, dependency))
+    }
+
+    fn queue_variations(queue: PieceOrder, hold: PieceType) -> Vec<PieceOrder> {
+        if queue.len() < 1 {
+            vec![vec![hold]]
+        } else {
+            let mut out = Vec::new();
+            let mut cdr = queue.clone();
+            let car = cdr.remove(0);
+
+            for mut variation in Self::queue_variations(cdr.clone(), hold) {
+                variation.insert(0, car);
+                out.push(variation);
+            }
+            for mut variation in Self::queue_variations(cdr.clone(), car) {
+                variation.insert(0, hold);
+                out.push(variation);
             }
 
-            if let Some(target) = dependency.pop_front() {
-                if queue[0] == target {
-                    out.push(queue.pop_front().unwrap());
-                } else if queue.len() > 1 && queue[1] == target {
-                    out.push(queue.remove(1).unwrap());
-                } else {
-                    return None
-                }
-            } else {
-                out.extend(queue);
-                return Some(out)
-            }
+            out
         }
-        Some(out)
     }
 
     pub fn solve_bag(&mut self, queue: &PieceOrder) -> bool {
-        for dependency in self.dependencies.iter() {
-            if let Some(piece_order) = Self::solve_dependency(queue, dependency) {
-                self.piece_order = piece_order;
-                return true;
-            }
+        let mut queue = queue.clone();
+        let hold = queue.remove(0);
+
+        let variations = Self::queue_variations(queue, hold);
+        let mut filtered = variations
+            .into_iter()
+            .filter(|queue| Self::satisfy_dependencies(queue, &self.dependencies))
+            .collect::<Vec<PieceOrder>>();
+        if let Some(queue) = filtered.pop() {
+            self.piece_order = queue;
+            true
+        } else {
+            false
         }
-        false
     }
 
 }
