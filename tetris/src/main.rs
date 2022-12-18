@@ -24,10 +24,33 @@ use crate::game::Game;
 use crate::piece::Piece;
 use crate::weight::Weights;
 use crate::point_vector::Point;
+use crate::opener::*;
+
+fn test_opener() {
+    let opener_sequence = [
+        Piece { piece_type: 0, rotation_state: 0, center: Point(1, 4), last_kick: 0 },
+        Piece { piece_type: 1, rotation_state: 1, center: Point(1, 0), last_kick: 0 },
+        Piece { piece_type: 2, rotation_state: 0, center: Point(0, 8), last_kick: 0 },
+        Piece { piece_type: 3, rotation_state: 1, center: Point(1, 6), last_kick: 0 },
+        Piece { piece_type: 4, rotation_state: 0, center: Point(0, 4), last_kick: 0 },
+        Piece { piece_type: 5, rotation_state: 2, center: Point(3, 4), last_kick: 0 },
+        Piece { piece_type: 6, rotation_state: 0, center: Point(0, 4), last_kick: 0 }, // always invalid
+    ];
+
+    let dependency = Dependency {eshanv2: vec![4, 0, 5, 6]};
+
+    let mut opener = Opener::new(vec![opener_sequence], vec![dependency]);
+    let now = std::time::Instant::now();
+    let test = opener.solve_bag(&vec![2, 0, 3, 4, 5, 6, 1]);
+    println!("{}", now.elapsed().as_micros());
+    println!("{}", test);
+    println!("{:?}", opener.piece_order);
+}
 
 fn main() {
+    test_opener()
     // bot_play();
-    tetrio_play()
+    // tetrio_play()
 }
 
 fn bot_play() {

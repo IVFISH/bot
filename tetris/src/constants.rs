@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 pub mod types {
+    use std::collections::VecDeque;
     use crate::constants::board_constants::*;
     use crate::opener::Dependency;
     use super::bot_constants::*;
