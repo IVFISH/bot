@@ -13,6 +13,7 @@ mod population;
 mod queue;
 mod versus;
 mod weight;
+mod opener;
 
 use crate::bot::*;
 use crate::players::Player;

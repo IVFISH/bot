@@ -2,6 +2,7 @@
 
 pub mod types {
     use crate::constants::board_constants::*;
+    use crate::opener::Dependency;
     use super::bot_constants::*;
     use super::piece_constants::*;
     use crate::piece::Piece;
@@ -13,12 +14,17 @@ pub mod types {
     pub type PieceType = usize;
     pub type RotationState = usize;
     pub type RotationDirection = usize;
+    pub type BagNumber = usize;
     pub type RotationLocations = [[Point; PIECE_SIZE]; NUM_ROTATE_STATES];
     pub type CommandList = Vec<Command>;
     pub type Score = f32;
     pub type MoveList = Vec<CommandList>;
     pub type ScoreList = Vec<(Score, Score)>;
     pub type PlacementList = Vec<Piece>;
+    pub type BagPlacement = [Piece; 7];
+    pub type OpenerSequence = Vec<BagPlacement>;
+    pub type Dependencies = Vec<Dependency>;
+    pub type PieceOrder = Vec<PieceType>;
 }
 
 pub mod board_constants {
