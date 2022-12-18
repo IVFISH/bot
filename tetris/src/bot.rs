@@ -1,5 +1,4 @@
 #![allow(dead_code)]
-
 use crate::board::Board;
 use crate::constants::bot_constants::*;
 use crate::constants::piece_constants::NUM_ROTATE_STATES;
@@ -12,12 +11,13 @@ use crate::weight::Weights;
 use std::fmt::{Display, Formatter};
 use std::iter::zip;
 use crate::communications::Suggestion;
-use crate::Point;
+use crate::{Dependency, Opener, OpenerStatus, Point};
+
 
 pub struct Bot {
     game: Game,
     weight: Weights,
-    opener: bool,
+    opener: Opener
 }
 
 impl Display for Bot {
@@ -32,7 +32,7 @@ impl Default for Bot {
         Self {
             game: Game::new(None),
             weight: Weights::default(),
-            opener: true,
+            opener: Opener::default(),
         }
     }
 }
@@ -50,7 +50,12 @@ impl Player for Bot {
         // R, C
         let mut action = vec![];
 
-        if self.opener {
+        if self.opener.status == OpenerStatus::New {
+            let mut sequence = vec![self.get_game().active_piece.piece_type];
+            sequence.append(&mut self.get_game().piece_queue.get_vec());
+            self.opener.init(&sequence);
+        }
+        if self.opener.status == OpenerStatus::Active {
             match self.do_opener() {
                 Ok(m) => {
                     action = m;
@@ -59,7 +64,7 @@ impl Player for Bot {
                 },
                 Err(_) => {
                     eprintln!("opener sequence terminated");
-                    self.opener = false
+                    self.opener.status = OpenerStatus::Invalid
                 }
             }
         }
@@ -134,16 +139,22 @@ impl Bot {
     }
 
     pub fn do_opener(&mut self) -> Result<CommandList, usize> {
-        const TKI: [Piece; 7] = [
-            Piece{piece_type: 0, rotation_state: 0, center: Point(1,4), last_kick: 0},
-            Piece{piece_type: 1, rotation_state: 1, center: Point(1,0), last_kick: 0},
-            Piece{piece_type: 2, rotation_state: 0, center: Point(0,8), last_kick: 0},
-            Piece{piece_type: 3, rotation_state: 1, center: Point(1,6), last_kick: 0},
-            Piece{piece_type: 4, rotation_state: 0, center: Point(0,4), last_kick: 0},
-            Piece{piece_type: 5, rotation_state: 2, center: Point(3,4), last_kick: 0},
-            Piece{piece_type: 8, rotation_state: 0, center: Point(0,4), last_kick: 0}, // always invalid
-        ];
-        return Bot::moves_to_placements(self.get_game_mut(), &TKI);
+        match self.opener.status {
+            OpenerStatus::New => {
+                panic!("comment this out if it appears");
+                self.opener.solve_bag(&self.get_game().piece_queue.get_vec());
+                Err(122)
+            },
+            OpenerStatus::Active => {
+                let mut sequence = vec![self.get_game().active_piece.piece_type];
+                sequence.append(&mut self.get_game().piece_queue.get_vec());
+                Bot::moves_to_placement(&mut self.get_game().clone(),&self.opener.next_placement(&sequence))
+            },
+            OpenerStatus::Invalid => {
+                panic!("wtf");
+                Err(124) },
+        }
+
     }
 
     pub fn move_placement_score(

@@ -18,6 +18,7 @@ mod opener;
 use crate::bot::*;
 use crate::players::Player;
 use std::{thread, time};
+use std::collections::VecDeque;
 use crate::board::Board;
 use crate::constants::versus_constants::AttackType::T;
 use crate::game::Game;
@@ -27,6 +28,11 @@ use crate::point_vector::Point;
 use crate::opener::*;
 
 fn test_opener() {
+
+    let test = VecDeque::from(vec!([1, 2, 3]));
+    let othertest= Vec::from_iter(test.into_iter());
+
+
     let opener_sequence = [
         Piece { piece_type: 0, rotation_state: 0, center: Point(1, 4), last_kick: 0 },
         Piece { piece_type: 1, rotation_state: 1, center: Point(1, 0), last_kick: 0 },
@@ -37,46 +43,68 @@ fn test_opener() {
         Piece { piece_type: 6, rotation_state: 0, center: Point(0, 4), last_kick: 0 }, // always invalid
     ];
 
-    let dependency = Dependency {eshanv2: vec![4, 0, 5, 6]};
+    let dependency = Dependency {dependency: vec![4, 0, 5, 6]};
 
     let mut opener = Opener::new(vec![opener_sequence], vec![dependency]);
-    let now = std::time::Instant::now();
-    let test = opener.solve_bag(&vec![2, 0, 3, 4, 5, 6, 1]);
-    println!("{}", now.elapsed().as_micros());
-    println!("{}", test);
-    println!("{:?}", opener.piece_order);
+    println!("{:?}", opener.status);
+    opener.init(&vec![2, 0, 3, 4, 5, 6, 1]);
+    println!("{:?}", opener.status);
+    println!("{}", opener.next_placement(&vec![2, 0, 3, 4, 5, 6, 1]));
+    println!("{}", opener.next_placement(&vec![2, 0, 3, 4, 5, 6, 1]));
+    println!("{}", opener.next_placement(&vec![2, 0, 3, 4, 5, 6, 1]));
+    println!("{}", opener.next_placement(&vec![2, 0, 3, 4, 5, 6, 1]));
+    println!("{}", opener.next_placement(&vec![2, 0, 3, 4, 5, 6, 1]));
+    println!("{}", opener.next_placement(&vec![2, 0, 3, 4, 5, 6, 1]));
+    println!("{}", opener.next_placement(&vec![2, 0, 3, 4, 5, 6, 1]));
+    println!("{:?}", opener.status);
+
+    println!("unexpected stuff");
+    let mut test = Opener::default();
+
+
+
+    // let test = opener.solve_bag(&vec![2, 0, 3, 4, 5, 6, 1]);
+    // println!("{}", test);
 }
 
 fn main() {
-    test_opener()
+    // test_opener()
     // bot_play();
     // tetrio_play()
+    more_test();
 }
 
+fn more_test() {
+    let mut bot = Bot::default();
+    // bot.get_game_mut().active_piece = Piece::new(6);
+    // bot.get_game_mut().piece_queue.set_queue(VecDeque::from([2, 5, 3, 0, 1, 4]));
+    println!("{}", bot);
+    bot.make_n_moves(7);
+    println!("{}", bot);
+
+}
 fn bot_play() {
     let mut bot = Bot::default();
     println!("{}", bot.get_game().board.get_arr().len());
 
-    // let mut time = 0;
-    // println!("{}", bot.get_game());
-    // while !bot.get_game().get_game_over() && bot.get_game().game_data.pieces_placed < 10000 {
-    //     println!("{}", bot.get_game());
-    //     println!("tslot: {}", bot.get_game().board.t_slot());
-    //     println!("sent: {}", bot.get_game().game_data.lines_sent);
-    //
-    //     let now = time::Instant::now();
-    //     bot.make_move();
-    //     time += now.elapsed().as_micros();
-    //
-    //     thread::sleep(time::Duration::from_millis(0));
-    //     // println!("{}", bot.get_game());
-    // }
-    // println!(
-    //     "Making {} moves took {} microseconds on average",
-    //     bot.get_game().game_data.pieces_placed,
-    //     time / (bot.get_game().game_data.pieces_placed as u128)
-    // );
-    // println!("{}", bot.get_game());
+    let mut time = 0;
+    while !bot.get_game().get_game_over() && bot.get_game().game_data.pieces_placed < 10000 {
+
+        let now = time::Instant::now();
+        bot.make_move();
+        time += now.elapsed().as_micros();
+
+        thread::sleep(time::Duration::from_millis(0));
+        // println!("{}", bot.get_game());
+        println!("{}", bot.get_game());
+
+    }
+    println!(
+        "Making {} moves took {} microseconds on average",
+        bot.get_game().game_data.pieces_placed,
+        time / (bot.get_game().game_data.pieces_placed as u128)
+    );
+    println!("{}", bot.get_game());
 }
 
 // fn bot_play() {

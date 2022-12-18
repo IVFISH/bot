@@ -50,6 +50,14 @@ impl PieceQueue {
         &self.queue
     }
 
+    pub fn get_vec(&self) -> Vec<PieceType> {
+        let mut out: Vec<PieceType> = Vec::new();
+        for p in self.get_queue().into_iter() {
+            out.push(*p);
+        }
+        out
+    }
+
     pub fn next(&mut self) -> Piece {
         if self.queue.len() <= MIN_QUEUE_LENGTH {
             self.next_bag();
