@@ -18,7 +18,7 @@ pub mod openers {
                         Piece { piece_type: 6, rotation_state: 0, center: Point(3, 4), last_kick: 0 },
                     ],
                     [
-                        Piece { piece_type: 0, rotation_state: 3, center: Point(1, 4), last_kick: 0 },
+                        Piece { piece_type: 0, rotation_state: 1, center: Point(1, 3), last_kick: 0 },
                         Piece { piece_type: 1, rotation_state: 1, center: Point(1, 7), last_kick: 0 },
                         Piece { piece_type: 2, rotation_state: 0, center: Point(0, 0), last_kick: 0 },
                         Piece { piece_type: 3, rotation_state: 1, center: Point(1, 8), last_kick: 0 },
