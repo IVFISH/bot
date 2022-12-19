@@ -20,6 +20,7 @@ use crate::players::Player;
 use std::{thread, time};
 use std::collections::VecDeque;
 use crate::board::Board;
+use crate::constants::types::Dependencies;
 use crate::constants::versus_constants::AttackType::T;
 use crate::game::Game;
 use crate::piece::Piece;
@@ -43,7 +44,7 @@ fn test_opener() {
 
     let dependency = Dependency {dependency: vec![4, 0, 5, 6]};
 
-    let mut opener = Opener::new(vec![opener_sequence], vec![dependency]);
+    let mut opener = Opener::new(vec![opener_sequence], vec!(vec![dependency]));
     println!("{:?}", opener.status);
     opener.init(&vec![2, 0, 3, 4, 5, 6, 1]);
     println!("{:?}", opener.status);
@@ -68,8 +69,46 @@ fn test_opener() {
 fn main() {
     // test_opener()
     // bot_play();
-    // tetrio_play()
-    more_test();
+    tetrio_play()
+    // more_test();
+    // ndt_test();
+}
+
+fn ndt_test() {
+    // 0 1 2 3 4 5 6
+    // Z L O S I J T
+    const NDT1: [Piece; 7] = [
+        Piece{piece_type: 0, rotation_state: 0, center: Point(1,8), last_kick: 0},
+        Piece{piece_type: 1, rotation_state: 0, center: Point(0,4), last_kick: 0},
+        Piece{piece_type: 2, rotation_state: 0, center: Point(0,0), last_kick: 0},
+        Piece{piece_type: 3, rotation_state: 0, center: Point(1,4), last_kick: 0},
+        Piece{piece_type: 4, rotation_state: 1, center: Point(2,6), last_kick: 0},
+        Piece{piece_type: 5, rotation_state: 0, center: Point(0,8), last_kick: 0},
+        Piece{piece_type: 6, rotation_state: 0, center: Point(3,4), last_kick: 0},
+    ];
+    let DEP1: Dependencies = vec![
+        Dependency{ dependency: vec![1, 3, 6] }, // L<S<T
+        Dependency{ dependency: vec![5, 0] },    // J<Z
+    ];
+    const NDT2: [Piece; 7] = [
+        Piece{piece_type: 0, rotation_state: 1, center: Point(5,6), last_kick: 0},
+        Piece{piece_type: 1, rotation_state: 3, center: Point(5,3), last_kick: 0},
+        Piece{piece_type: 2, rotation_state: 0, center: Point(3,7), last_kick: 0},
+        Piece{piece_type: 3, rotation_state: 1, center: Point(5,4), last_kick: 0},
+        Piece{piece_type: 4, rotation_state: 1, center: Point(4,9), last_kick: 0},
+        Piece{piece_type: 5, rotation_state: 1, center: Point(0,3), last_kick: 0},
+        Piece{piece_type: 6, rotation_state: 2, center: Point(2,2), last_kick: 0},
+    ];
+    let DEP2: Dependencies = vec![            // can be improved, idc
+        Dependency{ dependency: vec![2, 0] },   // O<Z
+        Dependency{ dependency: vec![0, 6] },   // T must be last
+        Dependency{ dependency: vec![1, 6] },
+        Dependency{ dependency: vec![2, 6] },
+        Dependency{ dependency: vec![3, 6] },
+        Dependency{ dependency: vec![4, 6] },
+        Dependency{ dependency: vec![5, 6] },
+    ];
+    let ndt = Opener::new(vec![NDT1, NDT2], vec![DEP1, DEP2]);
 }
 
 fn more_test() {
@@ -79,6 +118,9 @@ fn more_test() {
     println!("{}", bot);
     bot.make_n_moves(6);
     println!("{}", bot);
+    bot.make_move();
+    println!("{}", bot);
+
 
 }
 fn bot_play() {
