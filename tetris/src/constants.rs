@@ -23,7 +23,8 @@ pub mod types {
     pub type ScoreList = Vec<(Score, Score)>;
     pub type PlacementList = Vec<Piece>;
     pub type BagPlacement = [Piece; 7];
-    pub type OpenerSequence = Vec<BagPlacement>;
+    pub type BagPlacements = Vec<BagPlacement>;
+    pub type OpenerSequence = Vec<BagPlacements>;
     pub type Dependencies = Vec<Dependency>;
     pub type PieceOrder = Vec<PieceType>;
 }
