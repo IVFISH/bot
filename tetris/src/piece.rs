@@ -61,11 +61,7 @@ impl Piece {
         let mut out = Vec::with_capacity(4);
 
         for location in rotation_locations {
-            if let Some(location) = location.add(&self.center) {
-                out.push(location);
-            } else {
-                return None;
-            }
+            out.push(location.add(&self.center));
         }
 
         Some(out)
@@ -158,6 +154,11 @@ impl Piece {
             return true
         }
         false
+    }
+
+    pub fn unsafe_move (&mut self, v: PointVector) {
+        self.center.0 += v.0;
+        self.center.1 += v.1;
     }
 
     pub fn ret_moved(&self, v: PointVector) -> Option<Self> {

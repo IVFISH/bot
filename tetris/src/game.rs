@@ -160,7 +160,10 @@ impl Game {
     }
 
     pub fn active_ccw(&mut self) -> bool {
-        self.active_piece_rotate_direction(3)
+        // println!("CCW REACHED");
+        let out = self.active_piece_rotate_direction(3);
+        // println!("ccw? {}", out);
+        out
     }
 
     pub fn ret_active_ccw(&mut self) -> Option<Piece> {
@@ -175,19 +178,28 @@ impl Game {
         if dir == 0 {
             return true;
         }
-
+        let s = p.clone();
         p.rotate(dir);
         for (index, kick) in p.get_kicks(dir).iter().enumerate() {
+            if kick.0 == -1 && kick.1 == 1 {
+                // println!("THINGY {:?}", p.abs_locations());
+            }
+            let mut k = false;
             if p.moved(*kick) {
+                k = true;
+                if kick.0 == -1 && kick.1 == 1 {
+                    // println!("THINGY 2");
+                }
                 if b.piece_valid_location(&p) {
                     p.set_kick(index);
                     return true;
                 } else {
-                    p.moved(kick.negative());
+                    p.unsafe_move(kick.negative())
                 }
             }
         }
         p.rotate(NUM_ROTATE_STATES - dir);
+        println!("):");
         false
     }
 

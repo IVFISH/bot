@@ -13,7 +13,16 @@ impl Default for Point {
 }
 
 impl Point {
-    pub fn add(&self, other: &Self) -> Option<Point> {
+    pub fn add(&self, other: &Self) -> Point {
+        Point(self.0 + other.0, self.1 + other.1)
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct PointVector(pub i8, pub i8);
+
+impl PointVector {
+    pub fn add_to_point(&self, other: &Point) -> Option<Point> {
         let row = self.0 + other.0;
         let col = self.1 + other.1;
 
@@ -23,13 +32,8 @@ impl Point {
 
         None
     }
-}
 
-#[derive(Debug, Clone, Copy)]
-pub struct PointVector(pub i8, pub i8);
-
-impl PointVector {
-    pub fn add_to_point(&self, other: &Point) -> Option<Point> {
+    pub fn unsafe_add_to_point(&self, other: &Point) -> Option<Point> {
         let row = self.0 + other.0;
         let col = self.1 + other.1;
 

@@ -103,7 +103,7 @@ async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
                         }
 
                         // Primitive speedcap
-                        thread::sleep(time::Duration::from_millis(2000));
+                        thread::sleep(time::Duration::from_millis(200));
                         // Calculate and send move
                         ws_sender.send(Message::Text(serde_json::to_string(&json!(bot.make_suggest_move())).unwrap())).await?;
                     },

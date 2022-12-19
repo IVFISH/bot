@@ -269,7 +269,7 @@ impl Bot {
         placements: &mut PlacementList,
         scores: &mut ScoreList,
     ) {
-        let max_index = moves.len();
+        let mut max_index = moves.len();
         let mut index = 0;
         while index < max_index {
             Bot::non_trivial_recurse(
@@ -283,6 +283,16 @@ impl Bot {
             );
             index += 1;
         }
+        // let mut i = 0;
+        // while i < placements.len(){
+        //     if !game.board.piece_grounded(&placements[i]) {
+        //         moves.remove(i);
+        //         placements.remove(i);
+        //         scores.remove(i);
+        //     }
+        //     else { i += 1; }
+        // }
+        // println!("MPS: {:?}, {:?}, {:?}", moves.len(), placements.len(), scores.len());
     }
 
     fn non_trivial_recurse(
@@ -294,17 +304,42 @@ impl Bot {
         scores: &mut ScoreList,
         start: &Piece,
     ) {
+        // println!("{}", zip(COMMANDS, ACTIONS).len());
         for (command, action) in zip(COMMANDS, ACTIONS) {
             game.set_active_piece(start.clone());
-            if !(action(game)
-                && game.board.piece_grounded(&game.get_active_piece())
-                && Bot::new_placement(&game.get_active_piece(), &placements))
-            {
+            // let mut c = false;
+            // if game.active_piece.piece_type == 6 && game.active_piece.center.0 < 7 && game.active_piece.center.1 < 3 {
+            //     println!("bababa \n{}", game);
+            //     println!("{}", command);
+            //     println!("{:?}", game.active_piece);
+            //     if command == Command::RotateCCW {
+            //         c = true;
+            //         println!("c IS TRUE");
+            //     }
+            // }
+            if !action(game) {
+                // if c {
+                //     println!("SAD \n{}", game);
+                //     println!("{}", command);
+                //     println!("{:?}", game.active_piece);
+                // }
+                continue;
+            }
+            // if c {
+            //     println!("ababa \n{}", game);
+            //     println!("{}", command);
+            //     println!("{:?}", game.active_piece);
+            // }
+            let sd = game.active_drop();
+            if !Bot::new_placement(&game.get_active_piece(), &placements) {
                 continue;
             }
             new_move.push(command);
-            Bot::clone_and_extend(moves, placements, scores, new_move.clone(), game, weight);
-            new_move.push(Command::SoftDrop);
+            if sd { new_move.push(Command::SoftDrop); }
+            moves.push(new_move.clone());
+            placements.push(game.clone().active_piece);
+            scores.push(Bot::score_game(game.clone(), weight, &game.active_piece));
+            // Bot::clone_and_extend(moves, placements, scores, new_move.clone(), game, weight);
             Bot::non_trivial_recurse(
                 game,
                 weight,
@@ -378,7 +413,7 @@ impl Bot {
         game: &mut Game,
         weight: &Weights,
     ) {
-        let piece = game.ret_active_drop();
+        let piece = game.clone().ret_active_drop();
         new_move.push(Command::SoftDrop);
         moves.push(new_move);
         scores.push(Bot::score_game(game.clone(), weight, &piece));

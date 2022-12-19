@@ -147,6 +147,7 @@ pub mod bot_constants {
         Command::RotateCW,
         Command::RotateCCW,
         Command::Rotate180,
+        // Command::SoftDrop,
     ];
 
     pub const ACTIONS: [fn(&mut Game) -> bool; 5] = [
@@ -155,6 +156,7 @@ pub mod bot_constants {
         Game::active_cw,
         Game::active_ccw,
         Game::active_180,
+        // Game::active_drop,
     ];
 }
 
