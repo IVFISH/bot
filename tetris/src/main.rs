@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 mod board;
+mod book;
 mod bot;
 mod communications;
 mod constants;

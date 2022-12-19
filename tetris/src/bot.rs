@@ -12,6 +12,7 @@ use std::fmt::{Display, Formatter};
 use std::iter::zip;
 use crate::communications::Suggestion;
 use crate::{Dependency, Opener, OpenerStatus, Point};
+use crate::book::openers;
 
 
 pub struct Bot {
@@ -32,7 +33,7 @@ impl Default for Bot {
         Self {
             game: Game::new(None),
             weight: Weights::default(),
-            opener: Opener::default(),
+            opener: openers::tki(),
         }
     }
 }
