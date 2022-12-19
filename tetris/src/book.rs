@@ -54,6 +54,7 @@ pub mod openers {
                     vec![
                         Dependency { dependency: vec![5, 6] },    // J<T
                         Dependency { dependency: vec![1, 4] },    // L<I
+                        Dependency { dependency: vec![5, 4] },    // J<I
                     ]],
                 vec![
                     vec![
