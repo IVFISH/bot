@@ -139,6 +139,7 @@ impl Opener {
                 return true;
             }
         }
+        println!("unable to solve");
         false
     }
 

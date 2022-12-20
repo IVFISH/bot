@@ -199,7 +199,7 @@ impl Game {
             }
         }
         p.rotate(NUM_ROTATE_STATES - dir);
-        println!("):");
+        // println!("):");
         false
     }
 

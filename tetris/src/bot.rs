@@ -13,6 +13,7 @@ use std::iter::zip;
 use crate::communications::Suggestion;
 use crate::{Dependency, Opener, OpenerStatus, Point};
 use crate::book::openers;
+use crate::point_vector::PointVector;
 
 
 pub struct Bot {
@@ -33,7 +34,7 @@ impl Default for Bot {
         Self {
             game: Game::new(None),
             weight: Weights::default(),
-            opener: openers::tki(),
+            opener: openers::ndt(),
         }
     }
 }
@@ -140,22 +141,12 @@ impl Bot {
     }
 
     pub fn do_opener(&mut self) -> Result<CommandList, usize> {
-        match self.opener.status {
-            OpenerStatus::New => {
-                panic!("comment this out if it appears");
-                self.opener.solve_bag(&self.get_game().piece_queue.get_vec());
-                Err(122)
-            },
-            OpenerStatus::Active => {
-                let mut sequence = vec![self.get_game().active_piece.piece_type];
-                sequence.append(&mut self.get_game().piece_queue.get_vec());
-                Bot::moves_to_placement(&mut self.get_game().clone(),&self.opener.next_placement(&sequence))
-            },
-            OpenerStatus::Invalid => {
-                panic!("wtf");
-                Err(124) },
-        }
-
+        let mut sequence = vec![self.get_game().active_piece.piece_type];
+        sequence.append(&mut self.get_game().piece_queue.get_vec());
+        let mut placement = self.opener.next_placement(&sequence);
+        placement.moved(PointVector(0 - self.get_game().game_data.lines_cleared as i8, 0));
+        println!("{}", placement);
+        Bot::moves_to_placement(&mut self.get_game().clone(), &placement)
     }
 
     pub fn move_placement_score(
