@@ -10,6 +10,9 @@ use crate::players::{do_command, Player};
 use crate::weight::Weights;
 use std::fmt::{Display, Formatter};
 use std::iter::zip;
+use std::{thread, time};
+use std::cmp::Ordering::Equal;
+use futures_util::stream::iter;
 use crate::communications::Suggestion;
 use crate::{Dependency, Opener, OpenerStatus, Point};
 use crate::book::openers;
@@ -34,7 +37,7 @@ impl Default for Bot {
         Self {
             game: Game::new(None),
             weight: Weights::default(),
-            opener: openers::ndt(),
+            opener: Opener::default(),
         }
     }
 }
@@ -71,7 +74,9 @@ impl Player for Bot {
             }
         }
 
-        let (deep_moves, _, deep_scores) = self.move_placement_score(2, &self.weight.clone());
+        // thread::sleep(time::Duration::from_millis(250));
+
+        let (deep_moves, _, deep_scores) = self.move_placement_score(7, &self.weight.clone());
         let deep_scores: Vec<f32> = deep_scores
             .iter()
             .map(|(board, versus)| board + versus)
@@ -85,6 +90,8 @@ impl Player for Bot {
                 action = moves;
             }
         }
+
+
 
         println!("{:?}", action);
         println!("{}", min_score);
@@ -154,70 +161,93 @@ impl Bot {
         depth: usize,
         weights: &Weights,
         ) -> (MoveList, Vec<PlacementList>, ScoreList) {
+            let now = time::Instant::now();
             let mut dummy = self.game.clone();
-            let (mut moves, mut placementss, mut scores) =
+            let (mvs, plcmnts, scrs) =
                 Bot::move_placement_score_1d(&mut dummy, weights);
 
-            let mut placements = vec![];
-            for place in placementss{
-                placements.push(vec!(place))
-            }
-            // let mut placements: Vec<PlacementList> = placements.iter().map(|x| vec![*x]).collect();
+            //# placements kept after prune for versus and scores (2n placements are kept)
+            let n = 5;
+
+            let mut moves = vec![Vec::new(); 2];
+            moves[0] = mvs;
+
+            let mut placements = vec![Vec::new(); 2];
+            placements[0] = plcmnts.into_iter().map(|x| vec!(x)).collect();
+
+            let mut scores = vec![Vec::new(); 2];
+            scores[0] = scrs;
 
             if depth <= 1 {
-                return (moves, placements, scores);
+                return (moves[0].clone(), placements[0].clone(), scores[0].clone());
             }
 
-            let mut outmoves = MoveList::new();
-            let mut outplace : Vec<PlacementList> = Vec::new();
-            let mut outscores : ScoreList = Vec::new();
-
+            let mut curr_depth = 0;
             let mut index = 0;
-            while placements[index].len() < depth {
-                let game_save = dummy.clone();
-                for p in placements[index].clone() {
-                    dummy.active_piece = p;
-                    // if dummy.hard_drop() {
-                    //     continue;
-                    // }
-                    dummy.set_piece();
-                }
+            let prune_depth = 2;
 
-                let (_, mut add_placements, mut add_scores) =
-                    Bot::move_placement_score_1d(&mut dummy, weights);
+            while curr_depth < depth-1 {
+                // println!("LEEEROOYYY");
+                // println!("{}, {}", placements[0].len(), curr_depth);
+                while index < placements[0].len() {
+                    // println!("JENKINS");
+                    //set save
+                    let game_save = dummy.clone();
 
-                //TODO only keep the top x add_placements (pruning)
-
-                for i in 0..add_placements.len() {
-                    let mut place : Vec<Piece> = placements[index].clone();
-
-                    let mut versus_score : Score = scores[index].1;
-                    versus_score += add_scores[i].1;
-
-                    moves.push(moves[index].clone());
-
-                    place.push(add_placements[i].clone());
-                    placements.push(place.clone());
-
-                    scores.push((add_scores[i].0, versus_score));
-
-                    if placements[index].len() >= depth - 1 {
-                        outmoves.push(moves[index].clone());
-                        outplace.push(place.clone());
-                        outscores.push((add_scores[i].0, versus_score.clone()));
-
-                        // println!("{}", versus_score);
+                    //set dummy/cloned game
+                    for p in placements[0][index].clone() {
+                        dummy.active_piece = p;
+                        dummy.set_piece();
                     }
+
+                    let (_, mut add_placements, mut add_scores) =
+                        Bot::move_placement_score_1d(&mut dummy, weights);
+
+                    for i in 0..add_placements.len() {
+                        let mut place = placements[0][index].clone();
+
+                        let mut versus_score = scores[0][index].1;
+                        versus_score += add_scores[i].1;
+
+                        let m = moves[0][index].clone();
+                        moves[1].push(m);
+
+                        place.push(add_placements[i].clone());
+                        placements[1].push(place.clone());
+
+                        scores[1].push((add_scores[i].0, versus_score));
+                    }
+                    index += 1;
+                    dummy = game_save;
                 }
+                //pruning
+                if (curr_depth) % prune_depth == 0 {
+                    let combined_scores: Vec<Score> = scores[1].clone().into_iter().map(|(versus, board)| versus + board).collect();
 
-                // if placements[index].len() >= num_moves - 1 {
-                //     outscores.extend(add_scores);
-                // }
+                    let mut enumerated_placements: Vec<(usize, PlacementList)> = placements[1].clone().into_iter().enumerate().collect();
+                    enumerated_placements.sort_by(|(i1, _), (i2, _)| combined_scores[*i1].partial_cmp(&combined_scores[*i2]).unwrap());
+                    placements[1] = enumerated_placements[..n].into_iter().map(|(_, placement_list)| placement_list.clone()).collect();
 
-                index += 1;
-                dummy = game_save;
+                    let mut enumerated_moves: Vec<(usize, CommandList)> = moves[1].clone().into_iter().enumerate().collect();
+                    enumerated_moves.sort_by(|(i1, _), (i2, _)| combined_scores[*i1].partial_cmp(&combined_scores[*i2]).unwrap());
+                    moves[1] = enumerated_moves[..n].into_iter().map(|(_, command_list)| command_list.clone()).collect();
+
+                    scores[1].sort_by(|(v1, b1), (v2, b2)| (v1 + b1).partial_cmp(&(v2 + b2)).unwrap());
+                    scores[1] = scores[1][..n].to_vec();
+                }
+                // println!("INNER TIME: {}", now.elapsed().as_millis());
+                moves.remove(0);
+                moves.push(Vec::new());
+                placements.remove(0);
+                placements.push(Vec::new());
+                scores.remove(0);
+                scores.push(Vec::new());
+                index = 0;
+                curr_depth += 1;
             }
-            (outmoves, outplace, outscores)
+            // println!("MPS: {:?}, {:?}, {:?}", moves[0].len(), placements[0].len(), scores[0].len());
+            // println!("TIME: {}", now.elapsed().as_millis());
+            (moves[0].clone(), placements[0].clone(), scores[0].clone())
         }
 
     pub(crate) fn move_placement_score_1d(
@@ -261,7 +291,7 @@ impl Bot {
         placements: &mut PlacementList,
         scores: &mut ScoreList,
     ) {
-        let mut max_index = moves.len();
+        let max_index = moves.len();
         let mut index = 0;
         while index < max_index {
             Bot::non_trivial_recurse(

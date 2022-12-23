@@ -55,8 +55,6 @@ impl Display for Piece {
 impl Piece {
     // getters
     pub fn abs_locations(&self) -> Option<Vec<Point>> {
-        // errors if theres a negative index
-
         let rotation_locations = &PIECE_ROTATIONS[self.piece_type][self.rotation_state];
         let mut out = Vec::with_capacity(4);
 
