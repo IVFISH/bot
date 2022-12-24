@@ -291,13 +291,16 @@ impl Board {
         arr == vec![5, 0, 1] || arr == vec![1, 0, 5]
 
     }
-    pub fn t_slot(&self, height: usize) -> usize {
-        if height < 3 {
+    pub fn t_slot(&self) -> usize {
+        let h = self.get_max_height();
+        let l = self.get_min_height();
+
+        if h - l < 3 {
             return 0
         }
 
         let mut out = 0;
-        for row in 0..(height-3) {
+        for row in l..(h-3) {
             let mask = 0b111 << row;
             for columns in self.arr.windows(3) {
                 // create a 3x3 grid
