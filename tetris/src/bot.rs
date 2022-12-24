@@ -13,7 +13,7 @@ use std::iter::zip;
 use std::{mem, thread, time};
 use std::cmp::Ordering::Equal;
 use futures_util::stream::iter;
-use itertools::izip;
+use itertools::{izip, Itertools};
 use crate::communications::Suggestion;
 use crate::{Dependency, Opener, OpenerStatus, Point};
 use crate::book::openers;
@@ -61,6 +61,7 @@ impl Player for Bot {
             sequence.append(&mut self.get_game().piece_queue.get_vec());
             self.opener.init(&sequence);
         }
+
         if self.opener.status == OpenerStatus::Active {
             match self.do_opener() {
                 Ok(m) => {
@@ -173,7 +174,7 @@ impl Bot {
             }
 
             let mut next_moves = MoveList::new();
-            let mut next_placements: Vec<Vec<Piece>> = Vec::new();
+            let mut next_placements = Vec::new();
             let mut next_scores = ScoreList::new();
 
             //pruning parameters
@@ -181,52 +182,54 @@ impl Bot {
             let prune_depth = 1;
 
             for curr_depth in 1..depth {
-                //pruning curr_mps
+                // pruning curr_mps
                 if (curr_depth) % prune_depth == 0 {
-                    //TODO! use multiple scoring functions
-                    let combined_scores: Vec<Score> = curr_scores.clone().into_iter().map(|(versus, board)| versus + board).collect();
+                    // TODO! use multiple scoring functions
+                    let combined_scores: Vec<Score> = curr_scores.iter().map(|(versus, board)| versus + board).collect();
 
-                    let mut enumerated_placements: Vec<(usize, PlacementList)> = curr_placements.clone().into_iter().enumerate().collect();
-                    enumerated_placements.sort_by(|(i1, _), (i2, _)| combined_scores[*i1].partial_cmp(&combined_scores[*i2]).unwrap());
-                    enumerated_placements.truncate(n);
-                    curr_placements = enumerated_placements.into_iter().map(|(_, p)| p).collect();
+                    curr_placements = curr_placements
+                        .into_iter()
+                        .enumerate()
+                        .sorted_by(|&(i1, _), &(i2, _)| combined_scores[i1].partial_cmp(&combined_scores[i2]).unwrap())
+                        .take(n)
+                        .map(|(_, p)| p)
+                        .collect();
 
-                    let mut enumerated_moves: Vec<(usize, CommandList)> = curr_moves.clone().into_iter().enumerate().collect();
-                    enumerated_moves.sort_by(|(i1, _), (i2, _)| combined_scores[*i1].partial_cmp(&combined_scores[*i2]).unwrap());
-                    enumerated_moves.truncate(n);
-                    curr_moves = enumerated_moves.into_iter().map(|(_, m)| m).collect();
+                    curr_moves = curr_moves
+                        .into_iter()
+                        .enumerate()
+                        .sorted_by(|&(i1, _), &(i2, _)| combined_scores[i1].partial_cmp(&combined_scores[i2]).unwrap())
+                        .take(n)
+                        .map(|(_, m)| m)
+                        .collect();
 
                     curr_scores.sort_by(|(v1, b1), (v2, b2)| (v1 + b1).partial_cmp(&(v2 + b2)).unwrap());
                     curr_scores.truncate(n);
                 }
 
-                //generating next_mps
-                for (one_move, mut placements, scores) in izip!(curr_moves.clone(), curr_placements.clone(), curr_scores.clone()) {
-                    let game_save = dummy.clone();
+                // generating next_mps
+                for (one_move, mut placements, (_, versus_score)) in izip!(curr_moves, curr_placements, curr_scores) {
+                    let mut dummy = dummy.clone();
 
                     //set dummy/cloned game
                     for p in &placements {
-                        dummy.set_active_piece(p.clone());
-                        dummy.set_piece();
+                        dummy.board.set_piece(p);
                     }
 
                     let (_, mut add_placements, mut add_scores) =
                         Bot::move_placement_score_1d(&mut dummy, weights);
 
-                    for (place_to_add, score_to_add) in zip(add_placements, add_scores) {
-                        let mut accumulated_versus_score = scores.1 + score_to_add.1;
+                    for (add_place, (board_score, add_versus)) in zip(add_placements, add_scores) {
+                        let versus_score = versus_score + add_versus;
+                        let mut placements = placements.clone();
+                        placements.push(add_place);
 
                         next_moves.push(one_move.clone());
-
-                        //TODO! make this better
-                        placements.push(place_to_add);
-                        next_placements.push(placements.clone());
-                        placements.pop();
-
-                        next_scores.push((score_to_add.0, accumulated_versus_score));
+                        next_scores.push((board_score, versus_score));
+                        next_placements.push(placements);
                     }
-                    dummy = game_save;
                 }
+
                 curr_moves = mem::take(&mut next_moves);
                 curr_placements = mem::take(&mut next_placements);
                 curr_scores = mem::take(&mut next_scores);
@@ -234,17 +237,15 @@ impl Bot {
             (curr_moves, curr_placements, curr_scores)
         }
 
-    pub(crate) fn move_placement_score_1d(
+    pub fn move_placement_score_1d(
         game: &mut Game,
         weight: &Weights,
     ) -> (MoveList, PlacementList, ScoreList) {
-        let (mut moves, mut placements, mut scores) = Bot::trivial(game, false, weight);
+        let (mut moves, mut placements, mut scores) =
+            Bot::trivial(game, false, weight);
         Bot::non_trivial(game, weight, &mut moves, &mut placements, &mut scores);
 
         let hold_piece = game.get_hold_piece_or_next();
-
-        // return (moves, placements, scores);
-
         if hold_piece.get_type() == game.get_active_piece().get_type() {
             return (moves, placements, scores);
         }
@@ -253,52 +254,31 @@ impl Bot {
         game.set_active_piece(hold_piece);
         let (mut hold_moves, mut hold_placements, mut hold_scores) =
             Bot::trivial(game, true, weight);
-        Bot::non_trivial(
-            game,
-            weight,
-            &mut hold_moves,
-            &mut hold_placements,
-            &mut hold_scores,
-        );
+        Bot::non_trivial(game, weight, &mut hold_moves, &mut hold_placements, &mut hold_scores);
 
         moves.extend(hold_moves);
         placements.extend(hold_placements);
         scores.extend(hold_scores);
         game.set_active_piece(Piece::new(active_piece));
+
         (moves, placements, scores)
     }
 
-    fn non_trivial(
-        game: &mut Game,
-        weight: &Weights,
-        moves: &mut MoveList,
-        placements: &mut PlacementList,
-        scores: &mut ScoreList,
-    ) {
-        let max_index = moves.len();
-        let mut index = 0;
-        while index < max_index {
+    fn non_trivial(game: &mut Game, weight: &Weights, moves: &mut MoveList,
+                   placements: &mut PlacementList, scores: &mut ScoreList) {
+        let t_moves = moves.clone();
+        let t_placements = placements.clone();
+        for (mut t_move, t_place) in zip(t_moves, t_placements) {
             Bot::non_trivial_recurse(
                 game,
                 weight,
-                &mut moves[index].clone(),
+                &mut t_move,
                 moves,
                 placements,
                 scores,
-                &placements[index].clone(),
+                &t_place,
             );
-            index += 1;
         }
-        // let mut i = 0;
-        // while i < placements.len(){
-        //     if !game.board.piece_grounded(&placements[i]) {
-        //         moves.remove(i);
-        //         placements.remove(i);
-        //         scores.remove(i);
-        //     }
-        //     else { i += 1; }
-        // }
-        // println!("MPS: {:?}, {:?}, {:?}", moves.len(), placements.len(), scores.len());
     }
 
     fn non_trivial_recurse(
@@ -310,32 +290,11 @@ impl Bot {
         scores: &mut ScoreList,
         start: &Piece,
     ) {
-        // println!("{}", zip(COMMANDS, ACTIONS).len());
         for (command, action) in zip(COMMANDS, ACTIONS) {
-            game.set_active_piece(start.clone());
-            // let mut c = false;
-            // if game.active_piece.piece_type == 6 && game.active_piece.center.0 < 7 && game.active_piece.center.1 < 3 {
-            //     println!("bababa \n{}", game);
-            //     println!("{}", command);
-            //     println!("{:?}", game.active_piece);
-            //     if command == Command::RotateCCW {
-            //         c = true;
-            //         println!("c IS TRUE");
-            //     }
-            // }
+            game.set_active_piece(*start);
             if !action(game) {
-                // if c {
-                //     println!("SAD \n{}", game);
-                //     println!("{}", command);
-                //     println!("{:?}", game.active_piece);
-                // }
                 continue;
             }
-            // if c {
-            //     println!("ababa \n{}", game);
-            //     println!("{}", command);
-            //     println!("{:?}", game.active_piece);
-            // }
             let sd = game.active_drop();
             if !Bot::new_placement(&game.get_active_piece(), &placements) {
                 continue;
@@ -447,7 +406,7 @@ impl Bot {
     // scoring
     fn score_game(mut game: Game, weights: &Weights, piece: &Piece) -> (Score, Score) {
         game.board.set_piece(piece);
-        game.active_piece = piece.clone();
+        game.active_piece = *piece;
         game.update();
         (
             Bot::score_board(&game.board, weights),

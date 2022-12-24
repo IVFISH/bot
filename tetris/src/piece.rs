@@ -8,7 +8,7 @@ use crate::point_vector::*;
 use std::fmt::{Display, Formatter};
 use crate::constants::board_constants::{BOARD_HEIGHT, BOARD_WIDTH};
 
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Debug, Copy, Clone)]
 pub struct Piece {
     pub piece_type: PieceType,
     pub rotation_state: RotationState,
@@ -160,7 +160,7 @@ impl Piece {
     }
 
     pub fn ret_moved(&self, v: PointVector) -> Option<Self> {
-        let mut piece = self.clone();
+        let mut piece = *self;
         if piece.moved(v) {
             return Some(piece);
         }
@@ -173,7 +173,7 @@ impl Piece {
     }
 
     pub fn ret_rotated(&self, direction: RotationDirection) -> Self {
-        let mut out = self.clone();
+        let mut out = *self;
         out.rotate(direction);
         out
     }
