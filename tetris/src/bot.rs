@@ -10,7 +10,7 @@ use crate::players::{do_command, Player};
 use crate::weight::Weights;
 use std::fmt::{Display, Formatter};
 use std::iter::zip;
-use std::{thread, time};
+use std::{mem, thread, time};
 use std::cmp::Ordering::Equal;
 use futures_util::stream::iter;
 use itertools::izip;
@@ -182,9 +182,8 @@ impl Bot {
 
             for curr_depth in 1..depth {
                 //pruning curr_mps
-
-                //TODO! use multiple scoring functions
                 if (curr_depth) % prune_depth == 0 {
+                    //TODO! use multiple scoring functions
                     let combined_scores: Vec<Score> = curr_scores.clone().into_iter().map(|(versus, board)| versus + board).collect();
 
                     let mut enumerated_placements: Vec<(usize, PlacementList)> = curr_placements.clone().into_iter().enumerate().collect();
@@ -203,7 +202,6 @@ impl Bot {
 
                 //generating next_mps
                 for (one_move, mut placements, scores) in izip!(curr_moves.clone(), curr_placements.clone(), curr_scores.clone()) {
-                    //set save
                     let game_save = dummy.clone();
 
                     //set dummy/cloned game
@@ -229,15 +227,9 @@ impl Bot {
                     }
                     dummy = game_save;
                 }
-                //TODO! MAKE THIS MORE EFFICIENT
-                //  IDEA: find a way to "reassign" a variable name (curr_x) to the next_x value?
-                curr_moves = next_moves.clone();
-                curr_placements = next_placements.clone();
-                curr_scores = next_scores.clone();
-
-                next_moves.clear();
-                next_placements.clear();
-                next_scores.clear();
+                curr_moves = mem::take(&mut next_moves);
+                curr_placements = mem::take(&mut next_placements);
+                curr_scores = mem::take(&mut next_scores);
             }
             (curr_moves, curr_placements, curr_scores)
         }
