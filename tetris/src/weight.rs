@@ -28,7 +28,7 @@ impl Default for Weights {
             cell_covered_weight: Polynomial::new(vec![0.0, 10.0, 0.0]),
 
             t_slot_weight: Polynomial::new(vec![0.0, -250.0, 50.0]),
-            b2b_weight: Polynomial::new(vec![0.0, -25.0, -5.0]),
+            b2b_weight: Polynomial::new(vec![0.0, 0.0, -5.0]),
             combo_weight: Polynomial::new(vec![0.0, 2.0, -2.0]),
             damage_weight: Polynomial::new(vec![0.0, 0.0, -5.0]),
             clear_weight: Polynomial::new(vec![0.0, 0.0, -5.0]),

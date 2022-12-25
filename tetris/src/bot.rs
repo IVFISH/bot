@@ -163,9 +163,9 @@ impl Bot {
         depth: usize,
         weights: &Weights,
         ) -> (MoveList, Vec<PlacementList>, ScoreList) {
-            let mut dummy = self.game.clone();
+            let mut original_game = self.game.clone();
             let (mut curr_moves, temp_placements, mut curr_scores) =
-                Bot::move_placement_score_1d(&mut dummy, weights);
+                Bot::move_placement_score_1d(&mut original_game, weights);
 
             let mut curr_placements: Vec<PlacementList> = temp_placements.into_iter().map(|x| vec!(x)).collect();
 
@@ -178,30 +178,22 @@ impl Bot {
             let mut next_scores = ScoreList::new();
 
             //pruning parameters
-            let n = 50;
+            let n = 20;
             let prune_depth = 1;
 
             for curr_depth in 1..depth {
                 // pruning curr_mps
                 if (curr_depth) % prune_depth == 0 {
                     // TODO! use multiple scoring functions
-                    let combined_scores: Vec<Score> = curr_scores.iter().map(|(versus, board)| versus + board).collect();
+                    let combined_scores: Vec<Score> = curr_scores.iter().map(|(board, versus)| board + versus).collect();
 
-                    curr_placements = curr_placements
-                        .into_iter()
+                    (curr_moves, curr_placements) =
+                        zip(curr_moves, curr_placements)
                         .enumerate()
                         .sorted_by(|&(i1, _), &(i2, _)| combined_scores[i1].partial_cmp(&combined_scores[i2]).unwrap())
                         .take(n)
                         .map(|(_, p)| p)
-                        .collect();
-
-                    curr_moves = curr_moves
-                        .into_iter()
-                        .enumerate()
-                        .sorted_by(|&(i1, _), &(i2, _)| combined_scores[i1].partial_cmp(&combined_scores[i2]).unwrap())
-                        .take(n)
-                        .map(|(_, m)| m)
-                        .collect();
+                        .unzip();
 
                     curr_scores.sort_by(|(v1, b1), (v2, b2)| (v1 + b1).partial_cmp(&(v2 + b2)).unwrap());
                     curr_scores.truncate(n);
@@ -209,11 +201,12 @@ impl Bot {
 
                 // generating next_mps
                 for (one_move, mut placements, (_, versus_score)) in izip!(curr_moves, curr_placements, curr_scores) {
-                    let mut dummy = dummy.clone();
+                    let mut dummy = original_game.clone();
 
                     //set dummy/cloned game
                     for p in &placements {
                         dummy.board.set_piece(p);
+                        dummy.update();
                     }
 
                     let (_, mut add_placements, mut add_scores) =
@@ -229,7 +222,6 @@ impl Bot {
                         next_placements.push(placements);
                     }
                 }
-
                 curr_moves = mem::take(&mut next_moves);
                 curr_placements = mem::take(&mut next_placements);
                 curr_scores = mem::take(&mut next_scores);
