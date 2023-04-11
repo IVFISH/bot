@@ -34,6 +34,9 @@ pub mod board_constants {
     pub const BOARD_HEIGHT: usize = 40;
     pub const VISIBLE_BOARD_HEIGHT: usize = 23;
     pub const MAX_PLACE_HEIGHT: usize = 20;
+
+    pub const ZERO_ONE: usize = 0x5555555555;
+    pub const ONE_ZERO: usize = 0xAAAAAAAAAA;
 }
 
 pub mod piece_constants {
@@ -102,6 +105,7 @@ pub mod bot_constants {
     use crate::game::Game;
 
     #[derive(Copy, Clone, Debug, PartialEq)]
+
     pub enum Command {
         None,
         MoveLeft,

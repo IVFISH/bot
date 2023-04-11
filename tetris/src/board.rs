@@ -325,6 +325,29 @@ impl Board {
             .collect()
     }
 
+    pub fn get_parities(&self) -> [bool; 2] {
+        let mut colum = 0;
+        let mut czech = 0;
+        for (i, col) in self.arr.iter().enumerate() {
+            let ones = col.count_ones() as usize;
+            let blacks = (col & ZERO_ONE).count_ones() as usize;
+            let whites = (col & ONE_ZERO).count_ones() as usize;
+            colum = colum + (i%2)     * ones
+                - ((i+1)%2) * ones;
+            czech = czech + (i%2)     * (blacks - whites)
+                - ((i+1)%2) * (blacks - whites);
+        }
+        return [czech != 0, colum != 0];
+    }
+
+    pub fn get_mino_count(&self) -> usize {
+        let mut out: usize = 0;
+        for col in self.get_arr(){
+            out += col.count_ones() as usize;
+        }
+        return out;
+    }
+
     // other
     pub fn display_with_active(&self, active_piece: &Piece) -> String {
         let mut out = String::new();

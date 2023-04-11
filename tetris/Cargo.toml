@@ -7,7 +7,7 @@ edition = "2021"
 [dependencies]
 rand = "0.8.5"
 polynomial = "0.2.4"
-itertools = "0.8"
+itertools = "0.10.5"
 
 tungstenite = "*"
 serde = { version = "1.0.78", features = ["derive"] }

@@ -77,7 +77,7 @@ impl Player for Bot {
 
         // thread::sleep(time::Duration::from_millis(250));
 
-        let (deep_moves, _, deep_scores) = self.move_placement_score(14, &self.weight.clone());
+        let (deep_moves, _, deep_scores) = self.move_placement_score(7, &self.weight.clone());
         let deep_scores: Vec<f32> = deep_scores
             .iter()
             .map(|(board, versus)| board + versus)
@@ -176,7 +176,7 @@ impl Bot {
             let mut next_scores = ScoreList::new();
 
             //pruning parameters
-            let n = 20;
+            let n = 50;
             let prune_depth = 1;
 
             for curr_depth in 1..depth {
@@ -463,20 +463,8 @@ impl Bot {
 
         let mut extra = 0.0;
 
-        // println!("{}, {}", clear, attack);
-
-        if game_data.last_cleared as usize == (2 as usize) && game_data.last_sent as u8 == (4 as u8){
-            // println!("GOOD");
-            extra -= 10000.0;
-        }
-
         if pc {
             extra -= 100000.0;
-        }
-
-        if game_data.last_cleared as usize == (1 as usize) && game_data.last_sent as u8 == (2 as u8){
-            // println!("GOOD");
-            extra -= 100.0;
         }
 
         combo_score + b2b + attack + clear + extra

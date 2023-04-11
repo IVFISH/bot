@@ -6,7 +6,6 @@ mod bot;
 mod communications;
 mod constants;
 mod game;
-mod human;
 mod piece;
 mod players;
 mod point_vector;
@@ -30,8 +29,8 @@ use crate::point_vector::Point;
 use crate::opener::*;
 
 fn main() {
-    // bot_play();
-    tetrio_play();
+    bot_play();
+    // tetrio_play();
 
     // more_test();
     // dt_test();
