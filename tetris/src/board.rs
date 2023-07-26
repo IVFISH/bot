@@ -325,19 +325,19 @@ impl Board {
             .collect()
     }
 
-    pub fn get_parities(&self) -> [bool; 2] {
-        let mut colum = 0;
-        let mut czech = 0;
+    pub fn get_parities(&self) -> (bool, bool) {
+        let mut col_parity: i32 = 0;
+        let mut checkerboard_parity: i32 = 0;
         for (i, col) in self.arr.iter().enumerate() {
             let ones = col.count_ones() as usize;
-            let blacks = (col & ZERO_ONE).count_ones() as usize;
-            let whites = (col & ONE_ZERO).count_ones() as usize;
-            colum = colum + (i%2)     * ones
-                - ((i+1)%2) * ones;
-            czech = czech + (i%2)     * (blacks - whites)
-                - ((i+1)%2) * (blacks - whites);
+            let blacks = (col & ZERO_ONE).count_ones() as i32;
+            let whites = (col & ONE_ZERO).count_ones() as i32;
+            col_parity = col_parity + (((i%2) * ones) as i32)
+                - ((((i+1)%2) * ones) as i32);
+            checkerboard_parity = checkerboard_parity + ((i%2) as i32) * (blacks - whites)
+                - (((i+1)%2) as i32) * (blacks - whites);
         }
-        return [czech != 0, colum != 0];
+        return (checkerboard_parity == 0, col_parity == 0)
     }
 
     pub fn get_mino_count(&self) -> usize {
@@ -381,7 +381,7 @@ mod board_tests {
         println!("{}", board.get(1, 1));
         println!("{}", board.get(2, 1));
 
-        board.set_row(4, [false, false, false, true, true, true, false, true, true, true]);
+        board.set_row(4, vec!(false, false, false, true, true, true, false, true, true, true));
         println!("{}", board);
     }
 
@@ -419,23 +419,46 @@ mod board_tests {
     fn test_heights_2() {
         let mut board = Board::new();
 
-        board.set_row(8, [true; BOARD_WIDTH]);
+        board.set_row(8, vec!(true; BOARD_WIDTH));
         board.add_list(vec![Point(5, 2), Point(3, 2), Point(5, 3)]);
         assert_eq!(board.get_heights(), [9; BOARD_WIDTH]);
         board.remove_row(8);
         assert_eq!(board.get_heights(), [0, 0, 6, 6, 0, 0, 0, 0, 0, 0]);
 
-        board.set_row(8, [true; BOARD_WIDTH]);
+        board.set_row(8, vec!(true; BOARD_WIDTH));
         board.add(9, 3);
         println!("{}", board);
         board.clear_lines();
         println!("{}", board);
         assert_eq!(board.get_heights(), [0, 0, 6, 9, 0, 0, 0, 0, 0, 0]);
 
-        board.set_row(6, [true; BOARD_WIDTH]);
-        board.set_row(7, [true; BOARD_WIDTH]);
+        board.set_row(6, vec!(true; BOARD_WIDTH));
+        board.set_row(7, vec!(true; BOARD_WIDTH));
         assert_eq!(board.get_heights(), [8, 8, 8, 9, 8, 8, 8, 8, 8, 8]);
         board.clear_lines();
         assert_eq!(board.get_heights(), [0, 0, 6, 7, 0, 0, 0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn test_parity() {
+        let mut board = Board::new();
+        // T PIECE
+        board.add(0,1);
+        board.add(1,1);
+        board.add(1,2);
+        board.add(2,1);
+        println!("{}", board);
+        assert_eq!(board.get_parities(), (false, false));
+
+        board.remove_row(0);
+        board.remove_row(1);
+        board.remove_row(2);
+        // L PIECE
+        board.add(0,1);
+        board.add(0,2);
+        board.add(1,1);
+        board.add(2,1);
+        println!("{}", board);
+        assert_eq!(board.get_parities(), (true, false));
     }
 }
