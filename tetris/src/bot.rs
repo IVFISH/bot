@@ -77,7 +77,7 @@ impl Player for Bot {
 
         // thread::sleep(time::Duration::from_millis(250));
 
-        let (deep_moves, _, deep_scores) = self.move_placement_score(7, &self.weight.clone());
+        let (deep_moves, _, deep_scores) = self.move_placement_score(10, &self.weight.clone());
         let deep_scores: Vec<f32> = deep_scores
             .iter()
             .map(|(board, versus)| board + versus)
@@ -176,7 +176,7 @@ impl Bot {
             let mut next_scores = ScoreList::new();
 
             //pruning parameters
-            let n = 50;
+            let n = 200;
             let prune_depth = 1;
 
             for curr_depth in 1..depth {
@@ -440,7 +440,31 @@ impl Bot {
         game.board.set_piece(piece);
         game.active_piece = piece.clone();
         game.update();
-        (
+        //TODO: put all the logic in nice places
+        if true {
+            if game.board.get_max_height() > 4{
+                return (100000.0, 100000.0)
+            }
+
+            let parity = game.board.get_parities();
+            let mut pieces_to_pc = 40 - game.board.get_mino_count()/4;
+
+            let mut usable_queue = game.piece_queue.get_queue().clone();
+            usable_queue.truncate(pieces_to_pc);
+            if !game.hold_piece.is_none(){
+                usable_queue.push_back(game.hold_piece.unwrap());
+            }
+
+            if parity.0 == false && (!usable_queue.contains(&6) || game.board.get_min_height() >= 2){
+                return (100000.0, 100000.0)
+            }
+
+            if parity.1 == false && !(usable_queue.contains(&1) || usable_queue.contains(&5) || usable_queue.contains(&6) || !game.board.get_min_height() >= 2){
+                return (100000.0, 100000.0)
+            }
+        }
+
+        return (
             Bot::score_board(&game.board, weights),
             Bot::score_versus(&game.game_data, weights),
         )

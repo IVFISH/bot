@@ -460,5 +460,15 @@ mod board_tests {
         board.add(2,1);
         println!("{}", board);
         assert_eq!(board.get_parities(), (true, false));
+        board.remove_row(0);
+        board.remove_row(1);
+        board.remove_row(2);
+
+        // ONE OF THE CASES
+
+        board.set_row(0, vec!(true, true, true, true, true, true, true, true, false, false));
+        board.set_row(1, vec!(true, true, true, true, true, true, true, true, false, false));
+        println!("{}", board);
+        assert_eq!(board.get_parities(), (true, true));
     }
 }
