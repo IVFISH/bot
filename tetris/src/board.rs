@@ -287,8 +287,8 @@ impl Board {
         // 0 0 0
         // 1 0 1
 
-        // arr == [0b101, 0b000, 0b001] || arr == [0b001, 0b000, 0b101]
-        arr == vec![5, 0, 1] || arr == vec![1, 0, 5]
+        arr == [0b101, 0b000, 0b001] || arr == [0b001, 0b000, 0b101]
+        // arr == vec![5, 0, 1] || arr == vec![1, 0, 5]
 
     }
     pub fn t_slot(&self) -> usize {
@@ -304,7 +304,7 @@ impl Board {
             let mask = 0b111 << row;
             for columns in self.arr.windows(3) {
                 // create a 3x3 grid
-                let columns = columns.iter().map(|x| x & mask).collect();
+                let columns: Vec<usize> = columns.iter().map(|x| x & mask).collect();
 
                 // checks if it is a t slot
                 out += Board::check_hor_t(columns) as usize;
@@ -470,5 +470,17 @@ mod board_tests {
         board.set_row(1, vec!(true, true, true, true, true, true, true, true, false, false));
         println!("{}", board);
         assert_eq!(board.get_parities(), (true, true));
+        board.remove_row(0);
+        board.remove_row(1);
+        board.remove_row(2);
+
+        // ONE OTHER OF THE CASES
+
+        board.set_row(0, vec!(true, false, false, false, false, true, true, true, true, true));
+        println!("{}", board);
+        assert_eq!(board.get_parities(), (true, true));
+        board.remove_row(0);
+        board.remove_row(1);
+        board.remove_row(2);
     }
 }

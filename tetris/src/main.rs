@@ -59,7 +59,7 @@ fn bot_play() {
         bot.make_move();
         time += now.elapsed().as_micros();
 
-        thread::sleep(time::Duration::from_millis(50));
+        thread::sleep(time::Duration::from_millis(0));
         // println!("{}", bot.get_game());
         println!("{}", bot.get_game());
 

@@ -6,7 +6,7 @@ use crate::constants::types::*;
 use crate::game::{Game};
 use crate::game::game_rules_and_data::*;
 use crate::piece::Piece;
-use crate::players::{do_command, Player};
+use crate::players::{do_command, do_move_list, Player};
 use crate::weight::Weights;
 use std::fmt::{Display, Formatter};
 use std::iter::zip;
@@ -17,6 +17,7 @@ use itertools::{izip, Itertools};
 use crate::communications::Suggestion;
 use crate::{Dependency, Opener, OpenerStatus, Point};
 use crate::book::openers;
+use crate::constants::board_constants::BOARD_WIDTH;
 use crate::point_vector::PointVector;
 
 
@@ -77,18 +78,20 @@ impl Player for Bot {
 
         // thread::sleep(time::Duration::from_millis(250));
 
-        let (deep_moves, _, deep_scores) = self.move_placement_score(10, &self.weight.clone());
+        let (deep_moves, places, deep_scores) = self.move_placement_score(11, &self.weight.clone());
         let deep_scores: Vec<f32> = deep_scores
             .iter()
             .map(|(board, versus)| board + versus)
             .collect();
 
         let mut min_score = f32::INFINITY;
+        let mut p = PlacementList::new();
 
-        for (moves, score) in zip(deep_moves, deep_scores) {
+        for (moves, place, score) in izip!(deep_moves, places, deep_scores) {
             if score < min_score {
                 min_score = score;
                 action = moves;
+                p = place;
             }
         }
 
@@ -96,6 +99,9 @@ impl Player for Bot {
 
         println!("{:?}", action);
         println!("{}", min_score);
+        if min_score < -10000.0{
+            println!("{:?}", p);
+        }
 
         action.push(Command::HardDrop);
         action
@@ -203,8 +209,16 @@ impl Bot {
 
                     //set dummy/cloned game
                     for p in &placements {
-                        dummy.set_active_piece(p.clone());
-                        dummy.set_piece();
+                        if dummy.active_piece.piece_type == p.piece_type {
+                            dummy.set_active_piece(p.clone());
+                            dummy.set_piece();
+                        }
+                        // need to hold
+                        else {
+                            dummy.hold();
+                            dummy.set_active_piece(p.clone());
+                            dummy.set_piece();
+                        }
                     }
 
                     let (_, mut add_placements, mut add_scores) =
@@ -442,25 +456,32 @@ impl Bot {
         game.update();
         //TODO: put all the logic in nice places
         if true {
+            let penalty = (100000.0, 100000.0);
+
+            // limits search to 4high PCs
             if game.board.get_max_height() > 4{
-                return (100000.0, 100000.0)
+                return penalty
             }
 
             let parity = game.board.get_parities();
-            let mut pieces_to_pc = 40 - game.board.get_mino_count()/4;
+            let mut max_pieces_to_pc = 10 - game.board.get_mino_count()/4;
 
+            // TODO: use a set or something
             let mut usable_queue = game.piece_queue.get_queue().clone();
-            usable_queue.truncate(pieces_to_pc);
+            usable_queue.truncate(max_pieces_to_pc);
+            usable_queue.push_back(game.active_piece.piece_type);
             if !game.hold_piece.is_none(){
                 usable_queue.push_back(game.hold_piece.unwrap());
             }
 
+            // Checkerboard parity, solvability depends on if there is a playable T
             if parity.0 == false && (!usable_queue.contains(&6) || game.board.get_min_height() >= 2){
-                return (100000.0, 100000.0)
+                return penalty
             }
 
+            // Col Parity, solvability depends on if there is a playable L, J, or T
             if parity.1 == false && !(usable_queue.contains(&1) || usable_queue.contains(&5) || usable_queue.contains(&6) || !game.board.get_min_height() >= 2){
-                return (100000.0, 100000.0)
+                return penalty
             }
         }
 
@@ -488,7 +509,7 @@ impl Bot {
         let mut extra = 0.0;
 
         if pc {
-            extra -= 100000.0;
+            extra -= 1000000.0;
         }
 
         combo_score + b2b + attack + clear + extra
