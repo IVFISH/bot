@@ -99,6 +99,7 @@ impl Player for Bot {
 
         println!("{:?}", action);
         println!("{}", min_score);
+        println!("{}", p[0]);
         if min_score < -10000.0{
             println!("{:?}", p);
         }
@@ -204,7 +205,7 @@ impl Bot {
                 }
 
                 //generating next_mps
-                for (one_move, mut placements, (_, versus)) in izip!(curr_moves.clone(), curr_placements.clone(), curr_scores.clone()) {
+                for (one_move, placements, (_, versus)) in izip!(curr_moves.clone(), curr_placements.clone(), curr_scores.clone()) {
                     let mut dummy = dummy.clone();
 
                     //set dummy/cloned game
@@ -216,12 +217,13 @@ impl Bot {
                         // need to hold
                         else {
                             dummy.hold();
+                            assert_eq!(dummy.active_piece.piece_type, p.piece_type);
                             dummy.set_active_piece(p.clone());
                             dummy.set_piece();
                         }
                     }
 
-                    let (_, mut add_placements, mut add_scores) =
+                    let (_, add_placements, add_scores) =
                         Bot::move_placement_score_1d(&mut dummy, weights);
 
                     for (add_place, (board, add_versus)) in zip(add_placements, add_scores) {
@@ -294,16 +296,6 @@ impl Bot {
             );
             index += 1;
         }
-        // let mut i = 0;
-        // while i < placements.len(){
-        //     if !game.board.piece_grounded(&placements[i]) {
-        //         moves.remove(i);
-        //         placements.remove(i);
-        //         scores.remove(i);
-        //     }
-        //     else { i += 1; }
-        // }
-        // println!("MPS: {:?}, {:?}, {:?}", moves.len(), placements.len(), scores.len());
     }
 
     fn non_trivial_recurse(
@@ -315,32 +307,13 @@ impl Bot {
         scores: &mut ScoreList,
         start: &Piece,
     ) {
-        // println!("{}", zip(COMMANDS, ACTIONS).len());
         for (command, action) in zip(COMMANDS, ACTIONS) {
             game.set_active_piece(start.clone());
-            // let mut c = false;
-            // if game.active_piece.piece_type == 6 && game.active_piece.center.0 < 7 && game.active_piece.center.1 < 3 {
-            //     println!("bababa \n{}", game);
-            //     println!("{}", command);
-            //     println!("{:?}", game.active_piece);
-            //     if command == Command::RotateCCW {
-            //         c = true;
-            //         println!("c IS TRUE");
-            //     }
-            // }
+
             if !action(game) {
-                // if c {
-                //     println!("SAD \n{}", game);
-                //     println!("{}", command);
-                //     println!("{:?}", game.active_piece);
-                // }
                 continue;
             }
-            // if c {
-            //     println!("ababa \n{}", game);
-            //     println!("{}", command);
-            //     println!("{:?}", game.active_piece);
-            // }
+
             let sd = game.active_drop();
             if !Bot::new_placement(&game.get_active_piece(), &placements) {
                 continue;
@@ -350,7 +323,6 @@ impl Bot {
             moves.push(new_move.clone());
             placements.push(game.clone().active_piece);
             scores.push(Bot::score_game(game.clone(), weight, &game.active_piece));
-            // Bot::clone_and_extend(moves, placements, scores, new_move.clone(), game, weight);
             Bot::non_trivial_recurse(
                 game,
                 weight,
@@ -454,32 +426,44 @@ impl Bot {
         game.board.set_piece(piece);
         game.active_piece = piece.clone();
         game.update();
-        //TODO: put all the logic in nice places
-        if true {
-            let penalty = (100000.0, 100000.0);
 
-            // limits search to 4high PCs
-            if game.board.get_max_height() > 4{
+        //TODO: put all the logic in nice places (scorer class?)
+
+        // PC (pseudo) PRUNING
+        if true && (game.board.get_mino_count() % 2 == 0) {
+            // pseudo pruning, gives a large penalty for unsolvable/hard to solve boards
+            let penalty = (100000.0, Bot::score_board(&game.board, weights));
+
+            let target_height = 4 + (game.board.get_mino_count() % 4);
+
+            // limits search to target height
+            if game.board.get_max_height() > target_height{
                 return penalty
             }
 
             let parity = game.board.get_parities();
-            let mut max_pieces_to_pc = 10 - game.board.get_mino_count()/4;
 
-            // TODO: use a set or something
+            // the number of pieces required to fill the board to target height
+            let pieces_to_pc = (10*target_height - game.board.get_mino_count())/4;
+
+            // TODO: use a set or take piece order into account
+
+            // a queue of all the pieces available before the bot reaches target height
             let mut usable_queue = game.piece_queue.get_queue().clone();
-            usable_queue.truncate(max_pieces_to_pc);
+            usable_queue.truncate(pieces_to_pc);
             usable_queue.push_back(game.active_piece.piece_type);
-            if !game.hold_piece.is_none(){
+            if game.hold_piece.is_some(){
                 usable_queue.push_back(game.hold_piece.unwrap());
             }
 
             // Checkerboard parity, solvability depends on if there is a playable T
+            // TODO: Take line clears into account
             if parity.0 == false && (!usable_queue.contains(&6) || game.board.get_min_height() >= 2){
                 return penalty
             }
 
             // Col Parity, solvability depends on if there is a playable L, J, or T
+            // Not affected by line clears
             if parity.1 == false && !(usable_queue.contains(&1) || usable_queue.contains(&5) || usable_queue.contains(&6) || !game.board.get_min_height() >= 2){
                 return penalty
             }

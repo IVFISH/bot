@@ -81,7 +81,7 @@ impl Opener {
             self.bag_progress = 0;
             self.bag += 1;
             println!("{}, {}", self.bag, self.opener_sequence.len());
-            if (self.bag >= self.opener_sequence.len() || !self.solve_bag(queue)) {
+            if self.bag >= self.opener_sequence.len() || !self.solve_bag(queue) {
                 self.status = OpenerStatus::Invalid;
             }
         }
