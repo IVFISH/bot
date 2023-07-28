@@ -89,6 +89,7 @@ impl Game {
 
     // safe piece movements
     pub fn active_left(&mut self) -> bool {
+        self.active_piece.set_kick(999);
         Game::move_piece(&mut self.active_piece, &self.board, PointVector(0, -1))
     }
 
@@ -97,6 +98,7 @@ impl Game {
     }
 
     pub fn active_right(&mut self) -> bool {
+        self.active_piece.set_kick(999);
         Game::move_piece(&mut self.active_piece, &self.board, PointVector(0, 1))
     }
 
@@ -204,6 +206,9 @@ impl Game {
     // versus
     pub fn get_t_spin_type(piece: &Piece, board: &Board) -> TSpinType {
         if piece.get_type() != 6 {
+            return TSpinType::None;
+        } else if piece.get_last_kick() == 999 {
+            println!{"ian would think this is a tspin"};
             return TSpinType::None;
         }
 
@@ -331,7 +336,6 @@ pub mod game_rules_and_data {
             let lines_sent = calc_damage(self, attack, lines_cleared);
             self.lines_sent += lines_sent as u16;
             self.last_sent = lines_sent as u8;
-
             let b2b = BACK_TO_BACK_TYPES.contains(&attack);
             if b2b {
                 self.b2b += 1;

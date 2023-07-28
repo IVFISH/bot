@@ -96,7 +96,6 @@ impl Player for Bot {
         }
 
 
-
         println!("{:?}", action);
         println!("{}", min_score);
         println!("{}", p[0]);
@@ -183,7 +182,7 @@ impl Bot {
             let mut next_scores = ScoreList::new();
 
             //pruning parameters
-            let n = 100;
+            let n = 50;
             let prune_depth = 1;
 
             for curr_depth in 1..depth {
@@ -430,7 +429,7 @@ impl Bot {
         //TODO: put all the logic in nice places (scorer class?)
 
         // PC (pseudo) PRUNING
-        if true && (game.board.get_mino_count() % 2 == 0) {
+        if false && (game.board.get_mino_count() % 2 == 0) {
             // pseudo pruning, gives a large penalty for unsolvable/hard to solve boards
             let penalty = (100000.0, Bot::score_board(&game.board, weights));
 
@@ -489,11 +488,15 @@ impl Bot {
         let attack = weight.damage_weight.eval(game_data.last_sent as f32);
         let clear = weight.clear_weight.eval(game_data.last_cleared as f32);
         let pc = game_data.all_clear;
+        let t_spin = game_data.t_spin;
 
         let mut extra = 0.0;
 
         if pc {
             extra -= 1000000.0;
+        }
+        if t_spin {
+            extra -= 100.0
         }
 
         combo_score + b2b + attack + clear + extra
