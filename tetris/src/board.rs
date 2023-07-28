@@ -442,6 +442,7 @@ mod board_tests {
     #[test]
     fn test_parity() {
         let mut board = Board::new();
+        assert_eq!(board.get_parities(), (true, true));
         // T PIECE
         board.add(0,1);
         board.add(1,1);

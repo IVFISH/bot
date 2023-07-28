@@ -183,7 +183,7 @@ impl Bot {
             let mut next_scores = ScoreList::new();
 
             //pruning parameters
-            let n = 200;
+            let n = 100;
             let prune_depth = 1;
 
             for curr_depth in 1..depth {
@@ -232,7 +232,7 @@ impl Bot {
 
                         next_moves.push(one_move.clone());
                         next_placements.push(placements.clone());
-                        next_scores.push((board, versus + add_versus));
+                        next_scores.push((board, (versus + add_versus) * (1.0-(0.5*curr_depth as f32/depth as f32))));
                     }
                 }
                 curr_moves = mem::take(&mut next_moves);
@@ -434,7 +434,7 @@ impl Bot {
             // pseudo pruning, gives a large penalty for unsolvable/hard to solve boards
             let penalty = (100000.0, Bot::score_board(&game.board, weights));
 
-            let target_height = 4 + (game.board.get_mino_count() % 4);
+            let target_height = 4 + (game.board.get_mino_count() % 4)/2;
 
             // limits search to target height
             if game.board.get_max_height() > target_height{
