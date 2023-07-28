@@ -3,18 +3,11 @@ name = "tetris"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dev-dependencies]
+criterion = "0.3"
 
 [dependencies]
-itertools = "0.10.3"
-rand = "0.8.5"
-tungstenite = "*"
-serde = { version = "1.0.78", features = ["derive"] }
-serde_json = "1.0.78"
-url = "2.2.2"
-polynomial = "0.2.4"
 
-tokio-tungstenite = "0.17.1"
-tokio = { version = "1.19.2", features = ["full"] }
-log = "0.4"
-futures-util = { version = "0.3", features = ["sink", "std"] }
+[[bench]]
+name = "benchmarks"
+harness = false
