@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::board::Board;
 use crate::command::{Command, COMMANDS};
 use crate::constants::board_constants::*;
@@ -7,7 +9,7 @@ use crate::controller::Controller;
 use crate::game::Game;
 use crate::piece::Piece;
 use crate::placement::Placement;
-use itertools::zip;
+use std::iter::zip;
 use std::collections::HashSet;
 
 #[derive(Debug, Default)]
@@ -38,7 +40,7 @@ impl Bot {
                 piece,
                 trivial_base: trivial,
                 nontrivial_extension: nontrivial,
-                nontrivial_index: 0,
+                nontrivial_index: 1, // the first index is for a Null
             });
             for (i, command) in nontrivial.iter().enumerate() {
                 controller.do_command(*command, &mut piece, &self.game.board, false);
@@ -46,7 +48,7 @@ impl Bot {
                     piece,
                     trivial_base: trivial,
                     nontrivial_extension: nontrivial,
-                    nontrivial_index: i + 1,
+                    nontrivial_index: i + 2,
                 });
             }
         }
@@ -129,9 +131,23 @@ impl Bot {
         board: &Board,
     ) -> Vec<Command> {
         let mut dfs_stack = vec![piece];
+        let mut out_stack = vec![Command::Null];
         let mut out = Vec::new();
 
         while let Some(mut p) = dfs_stack.pop() {
+            // push the backtrack commands
+            let mut backtrack_counter = 0;
+            while let Some(Command::Backtrack(c)) = out_stack.last() {
+                backtrack_counter += c;
+            }
+            if backtrack_counter != 0 {
+                out.push(Command::Backtrack(backtrack_counter));
+            }
+
+            // push the current command
+            out.push(*out_stack.last().unwrap());
+            
+            // dfs (add to stack)
             for command in COMMANDS.into_iter() {
                 controller.do_command(command, &mut p, board, false);
                 if seen.contains(&p) {
@@ -139,9 +155,8 @@ impl Bot {
                 }
                 seen.insert(p);
                 dfs_stack.push(p);
-                out.push(command);
+                out_stack.push(command);
             }
-            out.push(Command::Backtrack(1));
         }
 
         out
