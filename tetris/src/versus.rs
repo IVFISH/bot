@@ -16,7 +16,7 @@ fn attack_type_to_index(attack: AttackType) -> usize {
     }
 }
 
-const BACK_TO_BACK_CONVERSION: [f32; 5] = [1.0, 1.25, 1.5, 1.75, 2.0];
+const BACK_TO_BACK_CONVERSION: [f32; 8] = [1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75];
 const WEIRD_DAMAGE_TABLE: [[usize; 20]; 3] = [
     [0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3],
     [1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5],

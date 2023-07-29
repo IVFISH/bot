@@ -64,7 +64,10 @@ async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
                 let parsed_type = parsed["type"].as_str().unwrap();
 
                 match parsed_type {
-                    "rules" => bot = create_bot_from_parsed(&parsed),
+                    "rules" => {
+                        eprintln!("start game");
+                        bot = create_bot_from_parsed(&parsed)
+                    },
                     "play" => {
 
                         // Set bot board to tetrio board
@@ -107,7 +110,7 @@ async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
                         // Calculate and send move
                         ws_sender.send(Message::Text(serde_json::to_string(&json!(bot.make_suggest_move())).unwrap())).await?;
                     },
-                    "stop" => println!("stop game"),
+                    "stop" => eprintln!("stop game"),
                     "start" => {
                         let mut i_hate_osk: usize = 21; // 0+1+2+3+4+5+6 = 21
                         for i in 0..6 {
