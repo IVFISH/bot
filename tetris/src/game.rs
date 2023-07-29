@@ -208,7 +208,7 @@ impl Game {
         if piece.get_type() != 6 {
             return TSpinType::None;
         } else if piece.get_last_kick() == 999 {
-            println!{"ian would think this is a tspin"};
+            // println!{"ian would think this is a tspin"};
             return TSpinType::None;
         }
 
