@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Piece {
     pub r#type: u8,
     pub dir: u8,
@@ -14,7 +14,7 @@ impl Default for Piece {
             r#type: 0,
             dir: 0,
             row: 20,
-            col: 5
+            col: 5,
         }
     }
 }
@@ -35,7 +35,7 @@ impl Piece {
     pub fn abs_locations(&self) -> Option<[[usize; 2]; 4]> {
         unimplemented!()
     }
-    
+
     /// returns the kicks for a piece
     /// when the piece is rotated direction dir
     pub fn get_kicks(&self, dir: u8) -> Vec<[usize; 2]> {
@@ -60,10 +60,10 @@ impl Piece {
     // mutators ---------------------------------
     /// moves a piece in the specified vector direction
     /// if the new position would be in bounds
-    pub fn r#move(&mut self, dir_row: usize, dir_col: usize) {
+    pub fn r#move(&mut self, dir_row: i8, dir_col: i8) {
         unimplemented!()
     }
-    
+
     /// rotates a piece clockwise by the direction
     /// does not do any kicks (see Game's [] method)
     pub fn rotate(&mut self, dir: u8) {
@@ -71,18 +71,13 @@ impl Piece {
     }
 
     // static -----------------------------------
-    /// bounds checking on the row
-    pub fn in_bounds_row(row: usize) -> bool {
-        unimplemented!()
-    }
-
-    /// bounds checking on the col
-    pub fn in_bounds_col(col: usize) -> bool {
-        unimplemented!()
-    }
-
     /// whether a piece can be moved by a vector
-    pub fn can_move(piece: &Self, dir_row: usize, dir_col: usize) -> bool {
+    pub fn can_move(piece: &Self, dir_row: i8, dir_col: i8) -> bool {
+        unimplemented!()
+    }
+
+    /// whether a piece can be rotated by a vector
+    pub fn can_rotate(piece: &Self, dir: u8) -> bool {
         unimplemented!()
     }
 }
