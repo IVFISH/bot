@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::board::Board;
 use crate::command::Command;
 use crate::piece::Piece;
