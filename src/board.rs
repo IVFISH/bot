@@ -52,7 +52,7 @@ impl Board {
     pub fn get(&self, row: usize, col: usize) -> bool {
         (self.arr[col] >> row & 1) > 0
     }
-
+    
     // setters ----------------------------------
     /// sets the cell at the row and col to the specified state
     pub fn set(&mut self, row: usize, col: usize, state: usize) {
@@ -61,6 +61,16 @@ impl Board {
         } else {
             self.add(row, col)
         }
+    }
+
+    pub fn set_row(&mut self, row: usize, data: [bool; BOARD_WIDTH]) {
+        for (col, state) in data.into_iter().enumerate() {
+            self.set(row, col, state as usize);
+        }
+    }
+
+    pub fn remove_row(&mut self, row: usize) {
+        self.set_row(row, [false; BOARD_WIDTH]);
     }
 
     // piece API --------------------------------
@@ -127,4 +137,93 @@ impl Board {
     fn add(&mut self, row: usize, col: usize) {
         self.arr[col] |= !(1 << row);
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn add_list(board: &mut Board, list: Vec<[usize; 2]>) {
+        for [r, c] in list.into_iter() {
+            board.add(r, c);
+        }
+    }
+
+    fn remove_list(board: &mut Board, list: Vec<[usize; 2]>) {
+        for [r, c] in list.into_iter() {
+            board.remove(r, c);
+        }
+    }
+
+    #[test]
+    fn test_heights() {
+        let mut board = Board::new();
+
+        board.add(5, 2);
+        board.add(3, 2);
+        board.add(5, 3);
+        println!("{}", board);
+        println!("{:?}", board.get_heights());
+
+        assert_eq!(board.get_heights(), [0, 0, 6, 6, 0, 0, 0, 0, 0, 0]);
+
+        board.remove(5, 2);
+        println!("{}", board);
+        assert_eq!(board.get_heights()[2], 4);
+        board.remove(5, 3);
+        println!("{}", board);
+        assert_eq!(board.get_heights()[3], 0);
+        assert_eq!(board.get_heights(), [0, 0, 4, 0, 0, 0, 0, 0, 0, 0]);
+
+        let mut board = Board::new();
+
+        add_list(&mut board, vec![[5, 2], [3, 2], [5, 3]]);
+        assert_eq!(board.get_heights(), [0, 0, 6, 6, 0, 0, 0, 0, 0, 0]);
+        remove_list(&mut board, vec![[5, 2], [5, 3]]);
+        assert_eq!(board.get_heights(), [0, 0, 4, 0, 0, 0, 0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn test_clear_lines() {
+        let mut board = Board::new();
+
+        board.set_row(8, [true; BOARD_WIDTH]);
+        add_list(&mut board, vec![[5, 2], [3, 2], [5, 3]]);
+        assert_eq!(board.get_heights(), [9; BOARD_WIDTH]);
+        board.remove_row(8);
+        assert_eq!(board.get_heights(), [0, 0, 6, 6, 0, 0, 0, 0, 0, 0]);
+
+        board.set_row(8, [true; BOARD_WIDTH]);
+        board.add(9, 3);
+        println!("{}", board);
+        board.clear_lines();
+        println!("{}", board);
+        assert_eq!(board.get_heights(), [0, 0, 6, 9, 0, 0, 0, 0, 0, 0]);
+
+        board.set_row(6, [true; BOARD_WIDTH]);
+        board.set_row(7, [true; BOARD_WIDTH]);
+        assert_eq!(board.get_heights(), [8, 8, 8, 9, 8, 8, 8, 8, 8, 8]);
+        board.clear_lines();
+        assert_eq!(board.get_heights(), [0, 0, 6, 7, 0, 0, 0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn test_clear_multiple_lines() {
+        let mut board = Board::new();
+
+        add_list(&mut board, vec![[5, 2], [3, 2], [5, 3], [10, 3]]);
+        board.set_row(8, [true; BOARD_WIDTH]);
+        board.set_row(7, [true; BOARD_WIDTH]);
+        println!("{}", board);
+        board.clear_lines();
+        println!("{}", board);
+        assert_eq!(board.get_heights(), [0, 0, 6, 9, 0, 0, 0, 0, 0, 0]);
+
+        board.set_row(6, [true; BOARD_WIDTH]);
+        board.set_row(7, [true; BOARD_WIDTH]);
+        assert_eq!(board.get_heights(), [8, 8, 8, 9, 8, 8, 8, 8, 8, 8]);
+        board.clear_lines();
+        assert_eq!(board.get_heights(), [0, 0, 6, 7, 0, 0, 0, 0, 0, 0]);
+    }
+
 }

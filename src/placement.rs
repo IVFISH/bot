@@ -9,5 +9,5 @@ pub struct Placement<'a> {
     // references to the source for generating the move
     pub trivial_base: &'a Vec<Command>,
     pub nontrivial_extension: &'a Vec<Command>,
-    pub nontrivial_index: usize,
+    pub nontrivial_index: usize, // this is the exclusive end index
 }

@@ -1,5 +1,8 @@
 #![allow(dead_code)]
 
+use crate::constants::board_constants::*;
+use crate::constants::piece_constants::*;
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Piece {
     pub r#type: u8,
@@ -13,8 +16,8 @@ impl Default for Piece {
         Self {
             r#type: 0,
             dir: 0,
-            row: 20,
-            col: 5,
+            row: SPAWN_ROW,
+            col: SPAWN_COL,
         }
     }
 }
@@ -32,8 +35,20 @@ impl Piece {
     // getters ----------------------------------
     /// returns None if the positions are out of bounds
     /// returns an array of 4 row, col pairs
-    pub fn abs_locations(&self) -> Option<[[usize; 2]; 4]> {
-        unimplemented!()
+    pub fn abs_locations(&self) -> Option<[[usize; 2]; PIECE_SIZE]> {
+        let mut out = [[0; 2]; 4];
+        for (i, &[row, col]) in PIECE_ROTATIONS[self.r#type as usize][self.dir as usize]
+            .iter()
+            .enumerate()
+        {
+            let r = row + self.row as i8;
+            let c = col + self.col as i8;
+            if !Self::in_bounds(r, c) {
+                return None;
+            }
+            out[i] = [r as usize, c as usize];
+        }
+        Some(out)
     }
 
     /// returns the kicks for a piece
@@ -79,5 +94,103 @@ impl Piece {
     /// whether a piece can be rotated by a vector
     pub fn can_rotate(piece: &Self, dir: u8) -> bool {
         unimplemented!()
+    }
+
+    // private helpers --------------------------
+    fn u_in_bounds(row: usize, col: usize) -> bool {
+        Self::u_row_in_bounds(row) && Self::u_col_in_bounds(col)
+    }
+
+    fn u_row_in_bounds(row: usize) -> bool {
+        row < BOARD_WIDTH
+    }
+
+    fn u_col_in_bounds(col: usize) -> bool {
+        col < BOARD_HEIGHT
+    }
+
+    fn in_bounds(row: i8, col: i8) -> bool {
+        Self::row_in_bounds(row) && Self::col_in_bounds(col)
+    }
+
+    fn row_in_bounds(row: i8) -> bool {
+        0 <= row && row < BOARD_WIDTH as i8
+    }
+
+    fn col_in_bounds(col: i8) -> bool {
+        0 <= col && col < BOARD_HEIGHT as i8
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::constants::piece_constants::*;
+    use crate::piece::*;
+
+    fn assert_location_eq(mut locations: Option<[[usize; 2]; 4]>, sols: [[usize; 2]; 4]) {
+        if let Some(mut locs) = locations {
+            locs.sort();
+            assert!(locs == sols)
+        } else {
+            assert!(false)
+        }
+    }
+
+    #[test]
+    fn test_absolute_location_in_bounds() {
+        let mut piece = Piece::new(PIECE_T);
+        piece.row = 5;
+        piece.col = 3;
+        assert_location_eq(piece.abs_locations(), [[4, 3], [5, 3], [5, 4], [6, 3]])
+    }
+
+    #[test]
+    fn test_spawn_location() {
+        let mut piece = Piece::new(PIECE_I);
+        assert_eq!(piece.row, SPAWN_ROW);
+        assert_eq!(piece.col, SPAWN_COL);
+        assert_location_eq(piece.abs_locations(), [[21, 3], [21, 4], [21, 5], [21, 6]])
+    }
+
+    #[test]
+    fn test_rotate_loop() {
+        let mut piece = Piece::new(PIECE_L);
+        piece.row = 2;
+        piece.col = 2;
+        assert_location_eq(piece.abs_locations(), [[1, 1], [1, 2], [1, 3], [2, 3]]);
+        piece.rotate(1);
+        assert_location_eq(piece.abs_locations(), [[0, 2], [0, 3], [1, 2], [2, 2]]);
+        piece.rotate(1);
+        assert_location_eq(piece.abs_locations(), [[0, 1], [1, 1], [1, 2], [1, 3]]);
+        piece.rotate(1);
+        assert_location_eq(piece.abs_locations(), [[0, 2], [1, 2], [2, 1], [2, 2]]);
+        piece.rotate(1);
+        assert_location_eq(piece.abs_locations(), [[1, 1], [1, 2], [1, 3], [2, 3]]);
+    }
+
+    #[test]
+    fn move_out_of_bounds() {
+        let mut piece = Piece::new(PIECE_S);
+        for i in 0..3 {
+            assert!(Piece::can_move(&piece, 0, -1));
+            piece.r#move(0, -1);
+        }
+        assert!(!Piece::can_move(&piece, 0, -1));
+        assert_location_eq(piece.abs_locations(), [[20, 0], [20, 1], [21, 1], [22, 2]]);
+        piece = Piece::new(PIECE_S);
+        for i in 0..4 {
+            assert!(Piece::can_move(&piece, 0, 1));
+            piece.r#move(0, 1);
+        }
+        assert!(!Piece::can_move(&piece, 0, 1));
+        assert_location_eq(piece.abs_locations(), [[20, 7], [20, 8], [21, 8], [22, 9]]);
+    }
+
+    #[test]
+    fn rotate_out_of_bounds() {
+        let mut piece = Piece::new(PIECE_Z);
+        assert!(Piece::can_rotate(&piece, 1));
+        piece.row = 0;
+        assert!(!Piece::can_rotate(&piece, 1));
     }
 }

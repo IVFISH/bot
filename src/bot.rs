@@ -9,8 +9,8 @@ use crate::controller::Controller;
 use crate::game::Game;
 use crate::piece::Piece;
 use crate::placement::Placement;
-use std::iter::zip;
 use std::collections::HashSet;
+use std::iter::zip;
 
 #[derive(Debug, Default)]
 pub struct Bot {
@@ -24,6 +24,18 @@ impl Bot {
     }
 
     // move generation --------------------------
+    /// the API function for generating all current moves
+    /// for the current active piece, as well as after holding
+    pub fn move_gen<'a>(&self) -> Vec<Placement> {
+        let mut controller = Controller::new();
+        let trivials = self.trivial(&mut controller);
+        let nontrivials = self.nontrivial(&trivials, &mut controller);
+        let placements = self.generate_placements(&trivials, &nontrivials, &mut controller);
+
+        // what to do with this?
+        unimplemented!()
+    }
+
     /// takes the vector of command lists and generates the placements and its
     /// score associated with the placement
     fn generate_placements<'a>(
@@ -35,20 +47,13 @@ impl Bot {
         let mut out = Vec::new();
         for (trivial, nontrivial) in zip(trivials, nontrivials) {
             let mut piece = self.game.active;
-            controller.do_commands(trivial, &mut piece, &self.game.board, false);
-            out.push(Placement {
-                piece,
-                trivial_base: trivial,
-                nontrivial_extension: nontrivial,
-                nontrivial_index: 1, // the first index is for a Null
-            });
             for (i, command) in nontrivial.iter().enumerate() {
                 controller.do_command(*command, &mut piece, &self.game.board, false);
                 out.push(Placement {
                     piece,
                     trivial_base: trivial,
                     nontrivial_extension: nontrivial,
-                    nontrivial_index: i + 2,
+                    nontrivial_index: i + 1,
                 });
             }
         }
@@ -107,15 +112,14 @@ impl Bot {
         &self,
         trivials: &Vec<Vec<Command>>,
         controller: &mut Controller,
-        board: &Board,
     ) -> Vec<Vec<Command>> {
         let mut seen = HashSet::new();
         let mut out = Vec::new();
 
         for trivial in trivials.iter() {
             let mut piece = self.game.active;
-            controller.do_commands(trivial, &mut piece, board, false);
-            out.push(self.nontrivial_helper(controller, &mut seen, piece, board));
+            controller.do_commands(trivial, &mut piece, &self.game.board, false);
+            out.push(self.nontrivial_(controller, &mut seen, piece, &self.game.board));
         }
         out
     }
@@ -123,7 +127,7 @@ impl Bot {
     /// helper method for [`bot.nontrivial`]
     /// extends a single trivial placeement by recursing through inputs
     /// precondition: the piece is at the location led to by the trivial
-    fn nontrivial_helper(
+    fn nontrivial_(
         &self,
         controller: &mut Controller,
         seen: &mut HashSet<Piece>,
@@ -146,7 +150,7 @@ impl Bot {
 
             // push the current command
             out.push(*out_stack.last().unwrap());
-            
+
             // dfs (add to stack)
             for command in COMMANDS.into_iter() {
                 controller.do_command(command, &mut p, board, false);

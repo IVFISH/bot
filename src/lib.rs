@@ -1,4 +1,8 @@
-mod board;
-mod constants;
+pub mod board;
+pub mod bot;
+pub mod command;
+pub mod constants;
+pub mod controller;
 pub mod game;
-mod piece;
+pub mod piece;
+pub mod placement;
