@@ -41,8 +41,8 @@ impl Piece {
             .iter()
             .enumerate()
         {
-            let r = row + self.row as i8;
-            let c = col + self.col as i8;
+            let r = row + (self.row as i8);
+            let c = col + (self.col as i8);
             if !Self::in_bounds(r, c) {
                 return None;
             }
@@ -62,38 +62,52 @@ impl Piece {
     /// checks if the row is in bounds
     /// to avoid bounds checking, directly set the row member
     pub fn set_row(&mut self, row: usize) {
-        unimplemented!()
+        if Self::u_row_in_bounds(row) {
+            self.row = row;
+        }
     }
 
     /// sets the col of the piece
     /// checks if the col is in bounds
     /// to avoid bounds checking, directly set the col member
     pub fn set_col(&mut self, col: usize) {
-        unimplemented!()
+        if Self::u_col_in_bounds(col) {
+            self.col = col;
+        }
     }
 
     // mutators ---------------------------------
     /// moves a piece in the specified vector direction
     /// if the new position would be in bounds
     pub fn r#move(&mut self, dir_row: i8, dir_col: i8) {
-        unimplemented!()
+        if Self::can_move(self, dir_row, dir_col) {
+            self.row = (self.row as i8 + dir_row) as usize;
+            self.col = (self.col as i8 + dir_col) as usize;
+        }
     }
 
     /// rotates a piece clockwise by the direction
     /// does not do any kicks (see Game's [] method)
     pub fn rotate(&mut self, dir: u8) {
-        unimplemented!()
+        if Self::can_rotate(self, dir) {
+            self.dir = (self.dir + dir) % 4;
+        }
     }
 
     // static -----------------------------------
     /// whether a piece can be moved by a vector
     pub fn can_move(piece: &Self, dir_row: i8, dir_col: i8) -> bool {
-        unimplemented!()
+        let mut p = *piece; // copy
+        p.row = ((piece.row as i8) + dir_row)  as usize;
+        p.col = ((piece.col as i8) + dir_col)  as usize;
+        p.abs_locations().is_some()
     }
 
     /// whether a piece can be rotated by a vector
     pub fn can_rotate(piece: &Self, dir: u8) -> bool {
-        unimplemented!()
+        let mut p = *piece; // copy
+        p.dir = (p.dir + dir) % 4;
+        p.abs_locations().is_some()
     }
 
     // private helpers --------------------------
@@ -102,11 +116,11 @@ impl Piece {
     }
 
     fn u_row_in_bounds(row: usize) -> bool {
-        row < BOARD_WIDTH
+        row < BOARD_HEIGHT
     }
 
     fn u_col_in_bounds(col: usize) -> bool {
-        col < BOARD_HEIGHT
+        col < BOARD_WIDTH
     }
 
     fn in_bounds(row: i8, col: i8) -> bool {
@@ -114,11 +128,11 @@ impl Piece {
     }
 
     fn row_in_bounds(row: i8) -> bool {
-        0 <= row && row < BOARD_WIDTH as i8
+        0 <= row && row < (BOARD_HEIGHT as i8)
     }
 
     fn col_in_bounds(col: i8) -> bool {
-        0 <= col && col < BOARD_HEIGHT as i8
+        0 <= col && col < (BOARD_WIDTH as i8)
     }
 }
 
@@ -130,7 +144,7 @@ mod tests {
     fn assert_location_eq(mut locations: Option<[[usize; 2]; 4]>, sols: [[usize; 2]; 4]) {
         if let Some(mut locs) = locations {
             locs.sort();
-            assert!(locs == sols)
+            assert_eq!(locs, sols)
         } else {
             assert!(false)
         }
@@ -141,7 +155,7 @@ mod tests {
         let mut piece = Piece::new(PIECE_T);
         piece.row = 5;
         piece.col = 3;
-        assert_location_eq(piece.abs_locations(), [[4, 3], [5, 3], [5, 4], [6, 3]])
+        assert_location_eq(piece.abs_locations(), [[5, 2], [5, 3], [5, 4], [6, 3]])
     }
 
     #[test]
@@ -155,7 +169,7 @@ mod tests {
     #[test]
     fn test_rotate_loop() {
         let mut piece = Piece::new(PIECE_L);
-        piece.row = 2;
+        piece.row = 1;
         piece.col = 2;
         assert_location_eq(piece.abs_locations(), [[1, 1], [1, 2], [1, 3], [2, 3]]);
         piece.rotate(1);
@@ -176,14 +190,14 @@ mod tests {
             piece.r#move(0, -1);
         }
         assert!(!Piece::can_move(&piece, 0, -1));
-        assert_location_eq(piece.abs_locations(), [[20, 0], [20, 1], [21, 1], [22, 2]]);
+        assert_location_eq(piece.abs_locations(), [[21, 0], [21, 1], [22, 1], [22, 2]]);
         piece = Piece::new(PIECE_S);
         for i in 0..4 {
             assert!(Piece::can_move(&piece, 0, 1));
             piece.r#move(0, 1);
         }
         assert!(!Piece::can_move(&piece, 0, 1));
-        assert_location_eq(piece.abs_locations(), [[20, 7], [20, 8], [21, 8], [22, 9]]);
+        assert_location_eq(piece.abs_locations(), [[21, 7], [21, 8], [22, 8], [22, 9]]);
     }
 
     #[test]

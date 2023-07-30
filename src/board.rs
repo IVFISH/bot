@@ -3,6 +3,7 @@
 use crate::constants::board_constants::*;
 use crate::piece::Piece;
 use std::fmt::{Display, Formatter};
+use itertools::Itertools;
 
 #[derive(Debug, Clone, Default, Copy)]
 pub struct Board {
@@ -76,35 +77,71 @@ impl Board {
     // piece API --------------------------------
     /// sets the four minos of the piece
     pub fn set_piece(&mut self, piece: &Piece) {
-        unimplemented!()
+        if let Some(locs) = piece.abs_locations() {
+            for [row, col] in locs {
+                self.add(row, col);
+            }
+        }
     }
 
     /// removes the minos that occupy the piece's location
     pub fn remove_piece(&mut self, piece: &Piece) {
-        unimplemented!()
+        if let Some(locs) = piece.abs_locations() {
+            for [row, col] in locs {
+                self.remove(row, col);
+            }
+        }
     }
 
     /// returns whether the piece minos can be shifted downwards
     pub fn piece_grounded(&self, piece: &Piece) -> bool {
-        unimplemented!()
+        if let Some(locs) = piece.abs_locations() {
+            locs.iter().any(
+                |&[row, col]| row == 0 || self.get(row - 1, col)
+            )
+        } else {
+            false
+        }
     }
 
     /// returns whether the piece has a collision inside the grid
     pub fn piece_collision(&self, piece: &Piece) -> bool {
-        unimplemented!()
+        if let Some(locs) = piece.abs_locations() {
+            locs.iter().any(
+                |&[row, col]| self.get(row, col)
+            )
+        } else {
+            false
+        }
     }
 
     /// returns whether the piece has no collision and is grounded
     pub fn piece_can_set(&self, piece: &Piece) -> bool {
-        unimplemented!()
+        !self.piece_collision(piece) && self.piece_grounded(piece)
     }
 
     // aux methods ------------------------------
-    /// clears all lines on the board
+    /// clears all filled lines on the board and moves down
+    /// the blocks above those lines
     pub fn clear_lines(&mut self) {
-        unimplemented!()
+        let full_rows = self.arr.into_iter().reduce(|x, y| x & y).unwrap();
+        for i in 0..BOARD_WIDTH {
+            let mut rows = full_rows; // copy
+            self.arr[i] &= !rows; // delete the cleared rows
+            while rows != 0 {
+                let c = self.arr[i];
+                let r = rows.trailing_zeros(); 
+                // mask m = (1 >> r) 
+                // c << 1 shifts the column down
+                // c & !(m - 1 >> 1) clears the first r cells
+                // c | (c & m - 1 >> 1) puts back the first r cells
+                let m = 1 << r;
+                self.arr[i] = c >> 1 & !(m-1 >> 1) | (c & (m-1 >> 1));
+                rows = (rows ^ m) << 1;
+            }
+        }
     }
-
+    
     // static -----------------------------------
     /// returns whether the piece minos are within the grid
     pub fn piece_in_bounds(piece: &Piece) -> bool {
@@ -135,7 +172,7 @@ impl Board {
 
     /// sets the state at the row and col to 1
     fn add(&mut self, row: usize, col: usize) {
-        self.arr[col] |= !(1 << row);
+        self.arr[col] |= 1 << row;
     }
 }
 
@@ -156,12 +193,74 @@ mod tests {
     }
 
     #[test]
+    fn test_clear_lines() {
+        let mut board = Board::new();
+
+        board.set_row(8, [true; BOARD_WIDTH]);
+        add_list(&mut board, vec![[5, 2], [3, 2], [5, 3]]);
+        assert_eq!(board.get_heights(), [9; BOARD_WIDTH]);
+        board.remove_row(8);
+        assert_eq!(board.get_heights(), [0, 0, 6, 6, 0, 0, 0, 0, 0, 0]);
+
+        board.set_row(8, [true; BOARD_WIDTH]);
+        board.add(9, 3);
+        println!("{}", board);
+        board.clear_lines();
+        println!("{}", board);
+        assert_eq!(board.get_heights(), [0, 0, 6, 9, 0, 0, 0, 0, 0, 0]);
+
+        board.set_row(7, [true; BOARD_WIDTH]);
+        println!("{}", board);
+        assert_eq!(board.get_heights(), [8, 8, 8, 9, 8, 8, 8, 8, 8, 8]);
+        println!("{}", board);
+        board.clear_lines();
+        println!("{}", board);
+        assert_eq!(board.get_heights(), [0, 0, 6, 8, 0, 0, 0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn test_clear_multiple_lines() {
+        let mut board = Board::new();
+
+        add_list(&mut board, vec![[5, 2], [3, 2], [5, 3], [10, 3]]);
+        board.set_row(8, [true; BOARD_WIDTH]);
+        board.set_row(7, [true; BOARD_WIDTH]);
+        println!("{}", board);
+        board.clear_lines();
+        println!("{}", board);
+        assert_eq!(board.get_heights(), [0, 0, 6, 9, 0, 0, 0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn test_piece_can_set() {
+        let mut board = Board::new();
+        println!("{}", board);
+
+        let mut p = Piece::new(6);
+        p.rotate(2);
+
+        assert!(!board.piece_can_set(&p));
+        board.set_row(4, [true; BOARD_WIDTH]);
+        add_list(&mut board, vec![[5, 3], [5, 5]]);
+        p.set_row(6);
+        assert!(board.piece_can_set(&p));
+        p.set_row(5);
+        assert!(!board.piece_can_set(&p));
+        p.set_row(4);
+        assert!(!board.piece_can_set(&p));
+        p.set_row(3);
+        assert!(!board.piece_can_set(&p));
+        p.set_row(1);
+        assert!(board.piece_can_set(&p));
+        p.set_row(0);
+        assert!(!board.piece_can_set(&p));
+    }
+
+    #[test]
     fn test_heights() {
         let mut board = Board::new();
 
-        board.add(5, 2);
-        board.add(3, 2);
-        board.add(5, 3);
+        add_list(&mut board, vec![[3, 2], [5, 2], [5, 3]]);
         println!("{}", board);
         println!("{:?}", board.get_heights());
 
@@ -182,48 +281,4 @@ mod tests {
         remove_list(&mut board, vec![[5, 2], [5, 3]]);
         assert_eq!(board.get_heights(), [0, 0, 4, 0, 0, 0, 0, 0, 0, 0]);
     }
-
-    #[test]
-    fn test_clear_lines() {
-        let mut board = Board::new();
-
-        board.set_row(8, [true; BOARD_WIDTH]);
-        add_list(&mut board, vec![[5, 2], [3, 2], [5, 3]]);
-        assert_eq!(board.get_heights(), [9; BOARD_WIDTH]);
-        board.remove_row(8);
-        assert_eq!(board.get_heights(), [0, 0, 6, 6, 0, 0, 0, 0, 0, 0]);
-
-        board.set_row(8, [true; BOARD_WIDTH]);
-        board.add(9, 3);
-        println!("{}", board);
-        board.clear_lines();
-        println!("{}", board);
-        assert_eq!(board.get_heights(), [0, 0, 6, 9, 0, 0, 0, 0, 0, 0]);
-
-        board.set_row(6, [true; BOARD_WIDTH]);
-        board.set_row(7, [true; BOARD_WIDTH]);
-        assert_eq!(board.get_heights(), [8, 8, 8, 9, 8, 8, 8, 8, 8, 8]);
-        board.clear_lines();
-        assert_eq!(board.get_heights(), [0, 0, 6, 7, 0, 0, 0, 0, 0, 0]);
-    }
-
-    #[test]
-    fn test_clear_multiple_lines() {
-        let mut board = Board::new();
-
-        add_list(&mut board, vec![[5, 2], [3, 2], [5, 3], [10, 3]]);
-        board.set_row(8, [true; BOARD_WIDTH]);
-        board.set_row(7, [true; BOARD_WIDTH]);
-        println!("{}", board);
-        board.clear_lines();
-        println!("{}", board);
-        assert_eq!(board.get_heights(), [0, 0, 6, 9, 0, 0, 0, 0, 0, 0]);
-
-        board.set_row(6, [true; BOARD_WIDTH]);
-        board.set_row(7, [true; BOARD_WIDTH]);
-        assert_eq!(board.get_heights(), [8, 8, 8, 9, 8, 8, 8, 8, 8, 8]);
-        board.clear_lines();
-        assert_eq!(board.get_heights(), [0, 0, 6, 7, 0, 0, 0, 0, 0, 0]);
-    }
-
 }

@@ -14,7 +14,7 @@ pub enum Command {
 
 pub const COMMANDS: [Command; 6] = [
     Command::MoveHorizontal(1),
-    Command::MoveHorizontal(2),
+    Command::MoveHorizontal(-1),
     Command::Rotate(1),
     Command::Rotate(2),
     Command::Rotate(3),
