@@ -8,7 +8,7 @@ use crate::constants::piece_constants::*;
 use crate::controller::Controller;
 use crate::game::Game;
 use crate::piece::Piece;
-use crate::placement::Placement;
+use crate::placement::{Placement, PlacementList};
 use std::collections::HashSet;
 use std::iter::zip;
 
@@ -26,37 +26,13 @@ impl Bot {
     // move generation --------------------------
     /// the API function for generating all current moves
     /// for the current active piece, as well as after holding
-    pub fn move_gen<'a>(&self) -> Vec<Placement> {
+    pub fn move_gen(&self) -> PlacementList {
         let mut controller = Controller::new();
         let trivials = self.trivial(&mut controller);
         let nontrivials = self.nontrivial(&trivials, &mut controller);
-        let placements = self.generate_placements(&trivials, &nontrivials, &mut controller);
 
-        // what to do with this?
-        unimplemented!()
-    }
-
-    /// takes the vector of command lists and generates the placements and its
-    /// score associated with the placement
-    fn generate_placements<'a>(
-        &'a self,
-        trivials: &'a Vec<Vec<Command>>,
-        nontrivials: &'a Vec<Vec<Command>>,
-        controller: &mut Controller,
-    ) -> Vec<Placement> {
-        let mut out = Vec::new();
-        for (trivial, nontrivial) in zip(trivials, nontrivials) {
-            let mut piece = self.game.active;
-            for (i, command) in nontrivial.iter().enumerate() {
-                controller.do_command(*command, &mut piece, &self.game.board, false);
-                out.push(Placement {
-                    piece,
-                    trivial_base: trivial,
-                    nontrivial_extension: nontrivial,
-                    nontrivial_index: i + 1,
-                });
-            }
-        }
+        let mut out = PlacementList::new(trivials, nontrivials);
+        // out.fill_placements(controller, self.game.active, &self.game.board);
         out
     }
 
