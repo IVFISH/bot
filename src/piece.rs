@@ -98,8 +98,8 @@ impl Piece {
     /// whether a piece can be moved by a vector
     pub fn can_move(piece: &Self, dir_row: i8, dir_col: i8) -> bool {
         let mut p = *piece; // copy
-        p.row = ((piece.row as i8) + dir_row)  as usize;
-        p.col = ((piece.col as i8) + dir_col)  as usize;
+        p.row = ((piece.row as i8) + dir_row) as usize;
+        p.col = ((piece.col as i8) + dir_col) as usize;
         p.abs_locations().is_some()
     }
 

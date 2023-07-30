@@ -2,8 +2,8 @@
 
 use crate::constants::board_constants::*;
 use crate::piece::Piece;
-use std::fmt::{Display, Formatter};
 use itertools::Itertools;
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, Default, Copy)]
 pub struct Board {
@@ -53,7 +53,7 @@ impl Board {
     pub fn get(&self, row: usize, col: usize) -> bool {
         (self.arr[col] >> row & 1) > 0
     }
-    
+
     // setters ----------------------------------
     /// sets the cell at the row and col to the specified state
     pub fn set(&mut self, row: usize, col: usize, state: usize) {
@@ -96,9 +96,8 @@ impl Board {
     /// returns whether the piece minos can be shifted downwards
     pub fn piece_grounded(&self, piece: &Piece) -> bool {
         if let Some(locs) = piece.abs_locations() {
-            locs.iter().any(
-                |&[row, col]| row == 0 || self.get(row - 1, col)
-            )
+            locs.iter()
+                .any(|&[row, col]| row == 0 || self.get(row - 1, col))
         } else {
             false
         }
@@ -107,9 +106,7 @@ impl Board {
     /// returns whether the piece has a collision inside the grid
     pub fn piece_collision(&self, piece: &Piece) -> bool {
         if let Some(locs) = piece.abs_locations() {
-            locs.iter().any(
-                |&[row, col]| self.get(row, col)
-            )
+            locs.iter().any(|&[row, col]| self.get(row, col))
         } else {
             false
         }
@@ -130,18 +127,18 @@ impl Board {
             self.arr[i] &= !rows; // delete the cleared rows
             while rows != 0 {
                 let c = self.arr[i];
-                let r = rows.trailing_zeros(); 
-                // mask m = (1 >> r) 
+                let r = rows.trailing_zeros();
+                // mask m = (1 >> r)
                 // c << 1 shifts the column down
                 // c & !(m - 1 >> 1) clears the first r cells
                 // c | (c & m - 1 >> 1) puts back the first r cells
                 let m = 1 << r;
-                self.arr[i] = c >> 1 & !(m-1 >> 1) | (c & (m-1 >> 1));
+                self.arr[i] = c >> 1 & !(m - 1 >> 1) | (c & (m - 1 >> 1));
                 rows = (rows ^ m) << 1;
             }
         }
     }
-    
+
     // static -----------------------------------
     /// returns whether the piece minos are within the grid
     pub fn piece_in_bounds(piece: &Piece) -> bool {

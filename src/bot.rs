@@ -31,9 +31,13 @@ impl Bot {
         let trivials = self.trivial(&mut controller);
         let nontrivials = self.nontrivial(&trivials, &mut controller);
 
-        let mut out = PlacementList::new(trivials, nontrivials);
-        // out.fill_placements(controller, self.game.active, &self.game.board);
-        out
+        PlacementList::new(
+            trivials,
+            nontrivials,
+            controller,
+            self.game.active,
+            &self.game.board,
+        )
     }
 
     /// return the trivial placements as a vector of vec commands from the starting state

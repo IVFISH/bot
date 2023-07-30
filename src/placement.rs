@@ -1,49 +1,69 @@
 #![allow(dead_code)]
 
-use crate::command::Command;
-use crate::piece::Piece;
-use crate::controller::Controller;
 use crate::board::Board;
+use crate::command::Command;
+use crate::controller::Controller;
+use crate::piece::Piece;
+use std::borrow::Borrow;
 use std::iter::zip;
+use std::rc::Rc;
 
-pub struct Placement<'a> {
+pub struct Placement {
     pub piece: Piece,
 
     // references to the source for generating the move
-    pub trivial_base: &'a Vec<Command>,
-    pub nontrivial_extension: &'a Vec<Command>,
+    pub trivial_base: Rc<Vec<Command>>,
+    pub nontrivial_extension: Rc<Vec<Command>>,
     pub nontrivial_index: usize, // this is the exclusive end index
 
-    // add the score and any other info here
+                                 // add the score and any other info here
 }
 
-pub struct PlacementList<'a> {
-    pub placements: Vec<Placement<'a>>,
-    pub trivials: Vec<Vec<Command>>,
-    pub nontrivials: Vec<Vec<Command>>,
+pub struct PlacementList {
+    pub placements: Vec<Placement>,
+    pub trivials: Vec<Rc<Vec<Command>>>,
+    pub nontrivials: Vec<Rc<Vec<Command>>>,
 }
 
-impl<'a> PlacementList<'a> {
-    pub fn new(trivials: Vec<Vec<Command>>, nontrivials: Vec<Vec<Command>>) -> Self {
+impl PlacementList {
+    pub fn new(
+        trivials: Vec<Vec<Command>>,
+        nontrivials: Vec<Vec<Command>>,
+        mut controller: Controller,
+        mut piece: Piece,
+        board: &Board,
+    ) -> Self {
+        // wrap all the vectors of commands in Rc
+        let trivials: Vec<Rc<Vec<Command>>> = trivials.into_iter().map(|v| Rc::new(v)).collect();
+        let nontrivials: Vec<Rc<Vec<Command>>> =
+            nontrivials.into_iter().map(|v| Rc::new(v)).collect();
+        let placements = Self::get_placements(&trivials, &nontrivials, controller, piece, board);
         Self {
-            placements: Vec::new(),
+            placements,
             trivials,
             nontrivials,
         }
     }
 
-    pub fn fill_placements(&'a mut self, mut controller: Controller, mut piece: Piece, board: &Board) {
-        for (trivial, nontrivial) in zip(self.trivials.iter(), self.nontrivials.iter()) {
-            for (i, command) in nontrivial.iter().enumerate() {
-                controller.do_command(*command, &mut piece, board, false);
-                self.placements.push(Placement {
+    fn get_placements(
+        trivials: &Vec<Rc<Vec<Command>>>,
+        nontrivials: &Vec<Rc<Vec<Command>>>,
+        mut controller: Controller,
+        mut piece: Piece,
+        board: &Board,
+    ) -> Vec<Placement> {
+        let mut placements = Vec::new();
+        for (trivial, nontrivial) in zip(trivials, nontrivials) {
+            for (i, &command) in nontrivial.iter().enumerate() {
+                controller.do_command(command, &mut piece, board, false);
+                placements.push(Placement {
                     piece,
-                    trivial_base: trivial,
-                    nontrivial_extension: nontrivial,
+                    trivial_base: Rc::clone(trivial),
+                    nontrivial_extension: Rc::clone(nontrivial),
                     nontrivial_index: i + 1,
                 });
             }
         }
-
+        placements
     }
 }
