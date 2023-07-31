@@ -168,9 +168,10 @@ mod tests {
     use super::*;
     use crate::constants::piece_constants::*;
 
-    fn assert_location_eq(locations: Option<[[usize; 2]; 4]>, sols: [[usize; 2]; 4]) {
+    fn assert_location_eq(locations: Option<[[usize; 2]; 4]>, mut sols: [[usize; 2]; 4]) {
         if let Some(mut locs) = locations {
             locs.sort();
+            sols.sort();
             assert_eq!(locs, sols)
         } else {
             assert!(false)
