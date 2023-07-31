@@ -43,8 +43,7 @@ impl Controller {
             }
             &Command::Rotate(dir) => {
                 for [dir_row, dir_col] in piece.get_kicks(dir).into_iter() {
-                    if Self::can_rotate_kick_piece(board, piece, dir, [dir_row, dir_col])
-                    {
+                    if Self::can_rotate_kick_piece(board, piece, dir, [dir_row, dir_col]) {
                         piece.rotate_with_kicks(dir, dir_row, dir_col);
                         return true;
                     }
@@ -253,7 +252,7 @@ mod tests {
         controller.do_command(&Command::Rotate(1), &mut piece, &board);
         assert_location_eq(piece.abs_locations(), [[0, 4], [0, 5], [1, 5], [1, 6]]);
     }
-    
+
     #[test]
     fn test_s_spin_2() {
         // s spin 2
@@ -296,7 +295,7 @@ mod tests {
         controller.do_command(&Command::Rotate(1), &mut piece, &board);
         assert_location_eq(piece.abs_locations(), [[0, 4], [1, 4], [1, 5], [1, 6]]);
     }
-    
+
     #[test]
     fn test_l_spin_3() {
         // l spin 3
@@ -453,7 +452,6 @@ mod tests {
         controller.do_command(&Command::Rotate(3), &mut piece, &board);
         assert_location_eq(piece.abs_locations(), [[0, 4], [0, 5], [1, 4], [2, 4]]);
     }
-
 
     #[test]
     fn test_l_spin_5() {

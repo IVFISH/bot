@@ -148,11 +148,18 @@ impl Piece {
         p.abs_locations().is_some()
     }
 
-    /// whether a piece can be kicked after being rotated
+    /// whether a piece is valid after being rotated and kicked
+    /// does not check intermediate states
     pub fn can_rotate_kick(piece: &Self, dir: u8, dir_row: i8, dir_col: i8) -> bool {
         let mut p = *piece;
         p.dir = (p.dir + dir) % 4;
-        Self::can_move(&p, dir_row, dir_col)
+        Self::in_bounds(p.row as i8 + dir_row, p.col as i8 + dir_col)
+            .then(|| {
+                p.row = (p.row as i8 + dir_row) as usize;
+                p.col = (p.col as i8 + dir_col) as usize;
+            })
+            .is_some()
+            && p.abs_locations().is_some()
     }
 
     // private helpers --------------------------
