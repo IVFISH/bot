@@ -164,7 +164,7 @@ impl Controller {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
     use crate::constants::piece_constants::*;
 
@@ -482,6 +482,18 @@ mod tests {
     }
 
     #[test]
+    fn test_tst() {
+        let mut piece = Piece::new(PIECE_T);
+        let board = tst_board();
+        let controller = Controller::new();
+        controller.do_command(&Command::MoveHorizontal(-3), &mut piece, &board);
+        controller.do_command(&Command::MoveDrop, &mut piece, &board);
+        controller.do_command(&Command::MoveHorizontal(1), &mut piece, &board);
+        controller.do_command(&Command::Rotate(3), &mut piece, &board);
+        assert_location_eq(piece.abs_locations(), [[0, 3], [1, 2], [1, 3], [2, 3]]);
+    }
+
+    #[test]
     fn test_undo() {
         assert!(false);
     }
@@ -492,7 +504,7 @@ mod tests {
         }
     }
 
-    fn z_spin_board_1() -> Board {
+    pub fn z_spin_board_1() -> Board {
         let mut board = Board::new();
         add_list(
             &mut board,
@@ -1116,7 +1128,7 @@ mod tests {
         board
     }
 
-    fn l_spin_board_5() -> Board {
+    pub fn l_spin_board_5() -> Board {
         let mut board = Board::new();
         add_list(
             &mut board,
@@ -1224,6 +1236,48 @@ mod tests {
                 [10, 9],
                 [11, 9],
                 [12, 9],
+            ],
+        );
+        board
+    }
+
+    pub fn tst_board() -> Board {
+        let mut board = Board::new();
+        add_list(
+            &mut board,
+            vec![
+                [1, 0],
+                [0, 0],
+                [0, 1],
+                [0, 2],
+                [2, 1],
+                [2, 0],
+                [1, 1],
+                [2, 2],
+                [0, 4],
+                [2, 4],
+                [1, 4],
+                [3, 4],
+                [4, 4],
+                [4, 3],
+                [4, 5],
+                [3, 5],
+                [1, 5],
+                [1, 5],
+                [2, 5],
+                [0, 5],
+                [2, 6],
+                [1, 6],
+                [0, 6],
+                [2, 7],
+                [1, 7],
+                [0, 7],
+                [2, 8],
+                [1, 8],
+                [0, 8],
+                [2, 9],
+                [1, 9],
+                [0, 9],
             ],
         );
         board
