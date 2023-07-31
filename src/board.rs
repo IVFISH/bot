@@ -126,7 +126,7 @@ impl Board {
             self.arr[i] &= !rows; // delete the cleared rows
             while rows != 0 {
                 let c = self.arr[i];
-                let r = rows.trailing_zeros(); 
+                let r = rows.trailing_zeros();
                 let m = 1 << r;
                 let m1 = m - 1 >> 1;
                 self.arr[i] = c >> 1 & !m1 | (c & m1);

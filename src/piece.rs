@@ -58,7 +58,7 @@ impl Piece {
     pub fn get_kicks(&self, dir: u8) -> Vec<[i8; 2]> {
         let d = self.dir as usize;
         let dir = dir as usize;
-        
+
         let kicks;
         if self.r#type == 4 {
             // I piece is the special child
