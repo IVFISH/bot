@@ -23,27 +23,27 @@ impl Controller {
         *piece = self.pop().unwrap().1;
     }
 
-    /// executes the command on the piece
+    /// tries to execute the command on the piece
     pub fn do_command(&self, command: &Command, piece: &mut Piece, board: &Board) -> bool {
         match command {
             &Command::Null => true, // do nothing
             &Command::MoveHorizontal(mag) => {
                 let [dir_row, dir_col] = [0, mag];
-                Piece::can_move(piece, dir_row, dir_col)
-                    && !board.piece_collision(piece.r#move(dir_row, dir_col))
+                Self::can_move_piece(board, piece, [dir_row, dir_col])
+                    .then(|| piece.r#move(dir_row, dir_col))
+                    .is_some()
             }
             &Command::MoveDrop => {
                 let [dir_row, dir_col] = [-1, 0];
-                let out = Piece::can_move(piece, dir_row, dir_col)
-                    && !board.piece_collision(piece.r#move(dir_row, dir_col));
-                while Piece::can_move(piece, dir_row, dir_col) {
+                let can_drop = Self::can_move_piece(board, piece, [dir_row, dir_col]);
+                while Self::can_move_piece(board, piece, [dir_row, dir_col]) {
                     piece.r#move(dir_row, dir_col);
                 }
-                out
+                can_drop
             }
             &Command::Rotate(dir) => {
                 for [dir_row, dir_col] in piece.get_kicks(dir).into_iter() {
-                    if Piece::can_rotate_kick(piece, dir, dir_row, dir_col) {
+                    if Self::can_rotate_kick_piece(board, piece, dir, [dir_row, dir_col]) {
                         piece.rotate_with_kicks(dir, dir_row, dir_col);
                         return true;
                     }
@@ -51,9 +51,7 @@ impl Controller {
                 false
             }
             &Command::Backtrack(mag) => {
-                let new_length = self.size() - mag;
-                let p = self.pieces[new_length - 1];
-                *piece = p; // revert
+                *piece = self.pieces[self.size() - mag - 1]; // revert piece
                 true
             }
         }
@@ -140,13 +138,28 @@ impl Controller {
     }
 
     /// returns whether the piece can be rotated in a direction
-    /// this just checks if there is a collision between any other board cells
-    /// does not check for any kicks, simply moves the piece around the same center
-    /// see the [] method for a rotation with kicks
+    /// checks for collisions with any board cells
+    /// does not check for any kicks
+    /// see the [`Self::can_rotate_kick_piece] method for a rotation check with kicks
     pub fn can_rotate_piece(board: &Board, piece: &Piece, dir: u8) -> bool {
         let mut cp = *piece;
         cp.rotate(dir);
         Piece::can_rotate(piece, dir) && !board.piece_collision(&cp)
+    }
+
+    /// returns whether the piece can be rotated in a direction with a kick
+    /// checks for collisions with any board cells
+    /// checks for kicks
+    /// see the [`Self::can_rotate_piece`] method for a rotation check without kicks
+    pub fn can_rotate_kick_piece(
+        board: &Board,
+        piece: &Piece,
+        dir: u8,
+        [dir_row, dir_col]: [i8; 2],
+    ) -> bool {
+        let mut cp = *piece;
+        cp.rotate_with_kicks(dir, dir_row, dir_col);
+        Piece::can_rotate_kick(piece, dir, dir_row, dir_col) && !board.piece_collision(&cp)
     }
 }
 
