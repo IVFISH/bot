@@ -20,7 +20,8 @@ impl Controller {
     // bot API ----------------------------------
     /// undos the last command on the stack. panics if the stack is empty
     pub fn undo(&mut self, piece: &mut Piece) {
-        *piece = self.pop().unwrap().1;
+        self.pop();
+        *piece = *self.pieces.last().unwrap();
     }
 
     /// tries to execute the command on the piece
@@ -495,7 +496,16 @@ pub mod tests {
 
     #[test]
     fn test_undo() {
-        assert!(false);
+        let mut piece = Piece::new(PIECE_T);
+        let board = tst_board();
+        let mut controller = Controller::new();
+        controller.do_command_mut(Command::MoveHorizontal(-3), &mut piece, &board);
+        controller.do_command_mut(Command::MoveDrop, &mut piece, &board);
+        controller.do_command_mut(Command::MoveHorizontal(1), &mut piece, &board);
+        let piece_save = piece.clone();
+        controller.do_command_mut(Command::Rotate(3), &mut piece, &board);
+        controller.undo(&mut piece);
+        assert_eq!(piece, piece_save);
     }
 
     fn add_list(board: &mut Board, list: Vec<[usize; 2]>) {
