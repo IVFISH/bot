@@ -119,10 +119,13 @@ impl Piece {
         self
     }
 
+    /// rotates a piece clockwise by the direction
+    /// moves a piece in the specified vector direction
     pub fn rotate_with_kicks(&mut self, dir: u8, dir_row: i8, dir_col: i8) -> &mut Self {
         if Self::can_rotate_kick(self, dir, dir_row, dir_col) {
-            self.r#move(dir_row, dir_col);
-            self.rotate(dir);
+            self.dir = (self.dir + dir) % 4;
+            self.row = (self.row as i8 + dir_row) as usize;
+            self.col = (self.col as i8 + dir_col) as usize;
         };
         self
     }
@@ -130,23 +133,26 @@ impl Piece {
     // static -----------------------------------
     /// whether a piece can be moved by a vector
     pub fn can_move(piece: &Self, dir_row: i8, dir_col: i8) -> bool {
-        let mut p = *piece; // copy
-        p.row = ((piece.row as i8) + dir_row) as usize;
-        p.col = ((piece.col as i8) + dir_col) as usize;
-        p.abs_locations().is_some()
+        match piece.abs_locations() {
+            None => false,
+            Some(locations) => locations
+                .into_iter()
+                .all(|[row, col]| Self::in_bounds(row as i8 + dir_row, col as i8 + dir_col)),
+        }
     }
 
-    /// whether a piece can be rotated by a vector
+    /// whether a piece can be rotated in a direction
     pub fn can_rotate(piece: &Self, dir: u8) -> bool {
         let mut p = *piece; // copy
         p.dir = (p.dir + dir) % 4;
         p.abs_locations().is_some()
     }
 
-    /// whether a piece can be rotated after being kicked
+    /// whether a piece can be kicked after being rotated
     pub fn can_rotate_kick(piece: &Self, dir: u8, dir_row: i8, dir_col: i8) -> bool {
-        let mut cp = *piece;
-        Self::can_move(&cp, dir_row, dir_col) && Self::can_rotate(cp.r#move(dir_row, dir_col), dir)
+        let mut p = *piece;
+        p.dir = (p.dir + dir) % 4;
+        Self::can_move(&p, dir_row, dir_col)
     }
 
     // private helpers --------------------------
