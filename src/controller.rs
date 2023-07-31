@@ -469,7 +469,9 @@ mod tests {
     }
 
     #[test]
-    fn test_undo() {}
+    fn test_undo() {
+        assert!(false);
+    }
 
     fn add_list(board: &mut Board, list: Vec<[usize; 2]>) {
         for [r, c] in list.into_iter() {
