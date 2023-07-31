@@ -2,7 +2,6 @@
 
 use crate::constants::board_constants::*;
 use crate::piece::Piece;
-use itertools::Itertools;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, Default, Copy)]
@@ -127,38 +126,13 @@ impl Board {
             self.arr[i] &= !rows; // delete the cleared rows
             while rows != 0 {
                 let c = self.arr[i];
-                let r = rows.trailing_zeros();
-                // mask m = (1 >> r)
-                // c << 1 shifts the column down
-                // c & !(m - 1 >> 1) clears the first r cells
-                // c | (c & m - 1 >> 1) puts back the first r cells
+                let r = rows.trailing_zeros(); 
                 let m = 1 << r;
-                self.arr[i] = c >> 1 & !(m - 1 >> 1) | (c & (m - 1 >> 1));
+                let m1 = m - 1 >> 1;
+                self.arr[i] = c >> 1 & !m1 | (c & m1);
                 rows = (rows ^ m) << 1;
             }
         }
-    }
-
-    // static -----------------------------------
-    /// returns whether the piece minos are within the grid
-    pub fn piece_in_bounds(piece: &Piece) -> bool {
-        if let Some(locations) = piece.abs_locations() {
-            !locations
-                .iter()
-                .any(|&[row, col]| Self::in_bounds_row(row as i8) && Self::in_bounds_col(col as i8))
-        } else {
-            false
-        }
-    }
-
-    /// bounds checking on the row
-    pub fn in_bounds_row(row: i8) -> bool {
-        (row >= 0) && (row as usize <= BOARD_HEIGHT)
-    }
-
-    /// bounds checking on the col
-    pub fn in_bounds_col(col: i8) -> bool {
-        (col >= 0) && (col as usize <= BOARD_WIDTH)
     }
 
     // private methods --------------------------

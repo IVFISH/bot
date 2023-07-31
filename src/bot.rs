@@ -2,15 +2,12 @@
 
 use crate::board::Board;
 use crate::command::{Command, COMMANDS};
-use crate::constants::board_constants::*;
-use crate::constants::bot_constants::*;
 use crate::constants::piece_constants::*;
 use crate::controller::Controller;
 use crate::game::Game;
 use crate::piece::Piece;
-use crate::placement::{Placement, PlacementList};
+use crate::placement::PlacementList;
 use std::collections::HashSet;
-use std::iter::zip;
 
 #[derive(Debug, Default)]
 pub struct Bot {
@@ -46,18 +43,12 @@ impl Bot {
         let mut piece = self.game.active;
         for rotation in 0..NUM_ROTATE_STATES {
             let mut rep = 0;
-            controller.do_command(
+            controller.do_command_mut(
                 Command::Rotate(rotation as u8),
                 &mut piece,
                 &self.game.board,
-                true,
             );
-            while controller.do_command(
-                Command::MoveHorizontal(1),
-                &mut piece,
-                &self.game.board,
-                false,
-            ) {
+            while controller.do_command(&Command::MoveHorizontal(1), &mut piece, &self.game.board) {
                 out.push(vec![
                     Command::Rotate(rotation as u8),
                     Command::MoveHorizontal(rep),
@@ -67,12 +58,8 @@ impl Bot {
             }
             piece = self.game.active; // reset the piece
             rep = 0; // reset the repetitions counter
-            while controller.do_command(
-                Command::MoveHorizontal(-1),
-                &mut piece,
-                &self.game.board,
-                false,
-            ) {
+            while controller.do_command(&Command::MoveHorizontal(-1), &mut piece, &self.game.board)
+            {
                 out.push(vec![
                     Command::Rotate(rotation as u8),
                     Command::MoveHorizontal(-rep),
@@ -98,7 +85,7 @@ impl Bot {
 
         for trivial in trivials.iter() {
             let mut piece = self.game.active;
-            controller.do_commands(trivial, &mut piece, &self.game.board, false);
+            controller.do_commands(trivial, &mut piece, &self.game.board);
             out.push(self.nontrivial_(controller, &mut seen, piece, &self.game.board));
         }
         out
@@ -133,7 +120,7 @@ impl Bot {
 
             // dfs (add to stack)
             for command in COMMANDS.into_iter() {
-                controller.do_command(command, &mut p, board, false);
+                controller.do_command(&command, &mut p, board);
                 if seen.contains(&p) {
                     continue;
                 }
