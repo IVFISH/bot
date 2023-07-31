@@ -3,7 +3,7 @@
 use crate::constants::board_constants::*;
 use crate::constants::piece_constants::*;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct Piece {
     pub r#type: u8,
     pub dir: u8,

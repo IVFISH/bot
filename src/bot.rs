@@ -133,3 +133,80 @@ impl Bot {
         out
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::controller::tests::*;
+
+    fn add_list(board: &mut Board, list: Vec<[usize; 2]>) {
+        for [r, c] in list.into_iter() {
+            board.set(r, c, 1);
+        }
+    }
+
+    fn assert_placement_contains(placements: &PlacementList, piece: Piece) {
+        assert!(placements.placements.iter().any(|p| p.piece == piece));
+    }
+
+    #[test]
+    fn test_tucks() {
+        let mut bot = Bot::new();
+        let b = &mut bot.game.board;
+        add_list(b, vec![[1, 7], [1, 8], [1, 9], [1, 0], [1, 1], [1, 2]]);
+        bot.game.active = Piece::new(PIECE_O);
+
+        let placements = bot.move_gen();
+        assert_eq!(placements.trivials.len(), 9);
+        assert_eq!(placements.nontrivials.len(), 9);
+        assert_eq!(placements.placements.len(), 21);
+
+        // checking for any duplicate pieces
+        let mut pieces: Vec<_> = placements.placements.into_iter().map(|p| p.piece).collect();
+        pieces.sort_unstable();
+        pieces.dedup();
+        assert_eq!(pieces.len(), 21);
+    }
+
+    #[test]
+    fn test_z_spin() {
+        let mut bot = Bot::new();
+        bot.game.board = z_spin_board_1();
+        let placements = bot.move_gen();
+        let piece = Piece {
+            r#type: PIECE_Z,
+            dir: 2,
+            row: 1,
+            col: 4,
+        };
+        assert_placement_contains(&placements, piece);
+    }
+
+    #[test]
+    fn test_tst_spin() {
+        let mut bot = Bot::new();
+        bot.game.board = tst_board();
+        let placements = bot.move_gen();
+        let piece = Piece {
+            r#type: PIECE_T,
+            dir: 1,
+            row: 1,
+            col: 3,
+        };
+        assert_placement_contains(&placements, piece);
+    }
+
+    #[test]
+    fn test_l_spin() {
+        let mut bot = Bot::new();
+        bot.game.board = l_spin_board_5();
+        let placements = bot.move_gen();
+        let piece = Piece {
+            r#type: PIECE_L,
+            dir: 1,
+            row: 0,
+            col: 1,
+        };
+        assert_placement_contains(&placements, piece);
+    }
+}
