@@ -1,19 +1,21 @@
 #[cfg(test)]
 pub mod functions {
     use crate::board::*;
-    use crate::placement::*;
     use crate::piece::*;
+    use crate::placement::*;
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
 
     pub fn add_list(board: &mut Board, list: Vec<[usize; 2]>) {
         for [r, c] in list.into_iter() {
             board.set(r, c, 1);
         }
     }
-    
+
     pub fn assert_placement_contains(placements: &PlacementList, piece: Piece) {
         assert!(placements.placements.iter().any(|p| p.piece == piece));
     }
-    
+
     pub fn assert_location_eq(locations: Option<[[usize; 2]; 4]>, sols: [[usize; 2]; 4]) {
         if let Some(mut locs) = locations {
             locs.sort();
@@ -23,13 +25,12 @@ pub mod functions {
         }
     }
 
-    
     pub fn remove_list(board: &mut Board, list: Vec<[usize; 2]>) {
         for [r, c] in list.into_iter() {
             board.set(r, c, 0);
         }
     }
-    
+
     pub fn z_spin_board_1() -> Board {
         let mut board = Board::new();
         add_list(
@@ -809,5 +810,9 @@ pub mod functions {
         board
     }
 
-
+    pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
+        let mut s = DefaultHasher::new();
+        t.hash(&mut s);
+        s.finish()
+    }
 }

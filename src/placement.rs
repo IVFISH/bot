@@ -1,6 +1,5 @@
 #![allow(dead_code)]
 
-use crate::board::Board;
 use crate::command::Command;
 use crate::controller::Controller;
 use crate::piece::Piece;
@@ -29,14 +28,12 @@ impl PlacementList {
         trivials: Vec<Vec<Command>>,
         nontrivials: Vec<Vec<Command>>,
         controller: Controller,
-        piece: Piece,
-        board: &Board,
     ) -> Self {
         // wrap all the vectors of commands in Rc
         let trivials: Vec<Rc<Vec<Command>>> = trivials.into_iter().map(|v| Rc::new(v)).collect();
         let nontrivials: Vec<Rc<Vec<Command>>> =
             nontrivials.into_iter().map(|v| Rc::new(v)).collect();
-        let placements = Self::get_placements(&trivials, &nontrivials, controller, piece, board);
+        let placements = Self::get_placements(&trivials, &nontrivials, controller);
         Self {
             placements,
             trivials,
@@ -47,21 +44,26 @@ impl PlacementList {
     fn get_placements(
         trivials: &Vec<Rc<Vec<Command>>>,
         nontrivials: &Vec<Rc<Vec<Command>>>,
-        controller: Controller,
-        mut piece: Piece,
-        board: &Board,
+        mut controller: Controller,
     ) -> Vec<Placement> {
         let mut placements = Vec::new();
         for (trivial, nontrivial) in zip(trivials, nontrivials) {
+            controller.do_commands(trivial);
             for (i, command) in nontrivial.iter().enumerate() {
-                controller.do_command(command, &mut piece, board);
-                placements.push(Placement {
-                    piece,
-                    trivial_base: Rc::clone(trivial),
-                    nontrivial_extension: Rc::clone(nontrivial),
-                    nontrivial_index: i + 1,
-                });
+                controller.do_command_mut(*command);
+                if let &Command::Backtrack(_) = command {
+                    continue
+                }
+                if controller.board.piece_grounded(controller.piece) {
+                    placements.push(Placement {
+                        piece: *controller.piece,
+                        trivial_base: Rc::clone(trivial),
+                        nontrivial_extension: Rc::clone(nontrivial),
+                        nontrivial_index: i + 1,
+                    });
+                }
             }
+            controller.reset();
         }
         placements
     }
