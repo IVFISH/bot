@@ -1,3 +1,4 @@
+mod test_api;
 mod board;
 mod bot;
 mod command;

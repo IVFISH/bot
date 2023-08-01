@@ -150,18 +150,7 @@ impl Board {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn add_list(board: &mut Board, list: Vec<[usize; 2]>) {
-        for [r, c] in list.into_iter() {
-            board.add(r, c);
-        }
-    }
-
-    fn remove_list(board: &mut Board, list: Vec<[usize; 2]>) {
-        for [r, c] in list.into_iter() {
-            board.remove(r, c);
-        }
-    }
+    use crate::test_api::functions::*;
 
     #[test]
     fn test_clear_lines() {

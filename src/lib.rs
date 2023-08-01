@@ -6,3 +6,4 @@ pub mod controller;
 pub mod game;
 pub mod piece;
 pub mod placement;
+pub mod test_api;

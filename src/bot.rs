@@ -137,17 +137,7 @@ impl Bot {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::controller::tests::*;
-
-    fn add_list(board: &mut Board, list: Vec<[usize; 2]>) {
-        for [r, c] in list.into_iter() {
-            board.set(r, c, 1);
-        }
-    }
-
-    fn assert_placement_contains(placements: &PlacementList, piece: Piece) {
-        assert!(placements.placements.iter().any(|p| p.piece == piece));
-    }
+    use crate::test_api::functions::*;
 
     #[test]
     fn test_tucks() {

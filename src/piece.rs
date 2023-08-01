@@ -58,6 +58,9 @@ impl Piece {
     pub fn get_kicks(&self, dir: u8) -> Vec<[i8; 2]> {
         let d = self.dir as usize;
         let dir = dir as usize;
+        if dir == 0 {
+            return vec![[0, 0]];
+        }
 
         let kicks;
         if self.r#type == 4 {
@@ -191,16 +194,8 @@ impl Piece {
 #[cfg(test)]
 mod tests {
     use crate::constants::piece_constants::*;
+    use crate::test_api::functions::*;
     use crate::piece::*;
-
-    fn assert_location_eq(locations: Option<[[usize; 2]; 4]>, sols: [[usize; 2]; 4]) {
-        if let Some(mut locs) = locations {
-            locs.sort();
-            assert_eq!(locs, sols)
-        } else {
-            assert!(false)
-        }
-    }
 
     #[test]
     fn test_absolute_location_in_bounds() {
