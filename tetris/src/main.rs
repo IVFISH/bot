@@ -28,10 +28,11 @@ use crate::piece::Piece;
 use crate::weight::Weights;
 use crate::point_vector::Point;
 use crate::opener::*;
+use colored::Colorize;
 
 fn main() {
-    // bot_play();
-    tetrio_play();
+    bot_play();
+    // tetrio_play();
 
     // more_test();
     // dt_test();
@@ -63,7 +64,7 @@ fn bot_play() {
         thread::sleep(time::Duration::from_millis(0));
         // println!("{}", bot.get_game());
         println!("{}", bot.get_game());
-
+        println!("{} milliseconds to move", format!("{}", now.elapsed().as_micros() / 1000).green())
     }
     println!(
         "Making {} moves took {} microseconds on average",
@@ -71,6 +72,7 @@ fn bot_play() {
         time / (bot.get_game().game_data.pieces_placed as u128)
     );
     println!("{}", bot.get_game());
+    thread::sleep(time::Duration::from_millis(10000));
 }
 
 // fn bot_play() {

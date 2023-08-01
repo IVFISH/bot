@@ -6,11 +6,12 @@ use crate::constants::types::{PieceType, RotationDirection};
 use crate::constants::versus_constants::*;
 use crate::piece::Piece;
 use crate::point_vector::PointVector;
-use crate::queue::{piece_type_to_string, BagType, PieceQueue};
+use crate::queue::{piece_type_to_string, piece_type_to_string_colored, BagType, PieceQueue};
 use crate::versus::*;
 use game_rules_and_data::*;
 use std::fmt::{Display, Formatter};
 use crate::game::game_rules_and_data::SpinBonus::TSpin;
+use colored::*;
 
 #[derive(Default, Clone)]
 pub struct Game {
@@ -27,7 +28,7 @@ impl Display for Game {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "Queue: {}", self.piece_queue)?;
         if let Some(hold) = self.hold_piece {
-            write!(f, "Hold: {}\n", piece_type_to_string(hold))?;
+            write!(f, "Hold: {}\n", piece_type_to_string_colored(hold))?;
         } else {
             write!(f, "Hold: None\n")?;
         }

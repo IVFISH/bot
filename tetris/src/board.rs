@@ -2,9 +2,11 @@
 
 use crate::constants::board_constants::*;
 use crate::constants::types::*;
-use crate::piece::Piece;
+use crate::piece::*;
+use crate::queue::{piece_type_to_string_colored};
 use crate::point_vector::{Point, PointVector};
 use std::fmt::{Display, Formatter};
+use colored::*;
 
 #[derive(Debug, Clone)]
 pub struct Board {
@@ -357,9 +359,9 @@ impl Board {
                 if self.get(row, col) {
                     out.push_str("■ ");
                 } else if locations.contains(&Point(row as i8, col as i8)) {
-                    out.push_str("⬚ ");
+                    out.push_str(&format!("{} ", piece_type_to_string_colored(active_piece.get_type())));
                 } else {
-                    out.push_str("□ ");
+                    out.push_str(&format!("{} ", ("▫".truecolor(40,40,40))));
                 }
             }
             out.push_str("\n");
