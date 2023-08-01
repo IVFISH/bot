@@ -115,6 +115,9 @@ impl Bot {
 
             // dfs (add to stack)
             let p = dfs_stack.pop().unwrap();
+            if p.row == 3 && p.col == 2 {
+                println!("idek");
+            }
             out_stack.push(Command::Backtrack(1));
             for command in COMMANDS.into_iter() {
                 // update the controller to use this new piece
@@ -138,7 +141,7 @@ mod tests {
     use super::*;
     use crate::test_api::functions::*;
 
-    //#[test]
+    #[test]
     fn test_tucks_t() {
         let mut bot = Bot::new();
         let b = &mut bot.game.board;
@@ -158,7 +161,7 @@ mod tests {
         assert!(pieces.iter().all(|piece| b.piece_can_set(piece)));
     }
 
-    //#[test]
+    #[test]
     fn test_tucks_o() {
         let mut bot = Bot::new();
         let b = &mut bot.game.board;
@@ -178,10 +181,11 @@ mod tests {
         assert!(pieces.iter().all(|piece| b.piece_can_set(piece)));
     }
 
-    //#[test]
+    #[test]
     fn test_z_spin() {
         let mut bot = Bot::new();
         bot.game.board = z_spin_board_1();
+        bot.game.active = Piece::new(PIECE_Z);
         let placements = bot.move_gen();
         let piece = Piece {
             r#type: PIECE_Z,
@@ -196,33 +200,33 @@ mod tests {
     fn test_tst_spin() {
         let mut bot = Bot::new();
         bot.game.board = tst_board();
-        println!("{}", bot.game.board);
+        bot.game.active = Piece::new(PIECE_T);
         let placements = bot.move_gen();
         let piece = Piece {
             r#type: PIECE_T,
-            dir: 1,
+            dir: 3,
             row: 1,
             col: 3,
         };
-        let pieces: Vec<_> = placements.placements.iter().map(|x| x.piece).collect();
-        println!("{}", pieces.len());
-        for x in pieces {
-            println!("{:?}", x);
-        }
         assert_placement_contains(&placements, piece);
     }
 
-    //#[test]
+    #[test]
     fn test_l_spin() {
         let mut bot = Bot::new();
         bot.game.board = l_spin_board_5();
+        bot.game.active = Piece::new(PIECE_L);
         let placements = bot.move_gen();
         let piece = Piece {
             r#type: PIECE_L,
             dir: 1,
-            row: 0,
+            row: 1,
             col: 1,
         };
+        let pieces: Vec<_> = placements.placements.iter().map(|x| x.piece).collect();
+        for x in pieces {
+            println!("{:?}", x);
+        }
         assert_placement_contains(&placements, piece);
     }
 }

@@ -238,7 +238,7 @@ mod tests {
     use crate::piece::*;
     use std::collections::HashSet;
 
-    //#[test]
+    #[test]
     fn test_absolute_location_in_bounds() {
         let mut piece = Piece::new(PIECE_T);
         piece.row = 5;
@@ -246,7 +246,7 @@ mod tests {
         assert_location_eq(piece.abs_locations(), [[5, 2], [5, 3], [5, 4], [6, 3]])
     }
 
-    //#[test]
+    #[test]
     fn test_spawn_location() {
         let piece = Piece::new(PIECE_I);
         assert_eq!(piece.row, SPAWN_ROW);
@@ -254,7 +254,7 @@ mod tests {
         assert_location_eq(piece.abs_locations(), [[21, 3], [21, 4], [21, 5], [21, 6]])
     }
 
-    //#[test]
+    #[test]
     fn test_rotate_loop() {
         let mut piece = Piece::new(PIECE_L);
         piece.row = 1;
@@ -270,7 +270,7 @@ mod tests {
         assert_location_eq(piece.abs_locations(), [[1, 1], [1, 2], [1, 3], [2, 3]]);
     }
 
-    //#[test]
+    #[test]
     fn move_out_of_bounds() {
         let mut piece = Piece::new(PIECE_S);
         for _ in 0..3 {
@@ -288,7 +288,7 @@ mod tests {
         assert_location_eq(piece.abs_locations(), [[21, 7], [21, 8], [22, 8], [22, 9]]);
     }
 
-    //#[test]
+    #[test]
     fn rotate_out_of_bounds() {
         let mut piece = Piece::new(PIECE_Z);
         assert!(Piece::can_rotate(&piece, 1));

@@ -29,6 +29,6 @@ fn add_list(board: &mut Board, list: Vec<[usize; 2]>) {
     }
 }
 
-// criterion_group!(benches, movegen_benchmark);
-criterion_group!(benches, clearlines_benchmark);
+criterion_group!(benches, movegen_benchmark);
+// criterion_group!(benches, clearlines_benchmark);
 criterion_main!(benches);

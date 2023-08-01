@@ -192,7 +192,7 @@ mod tests {
     use crate::constants::piece_constants::*;
     use crate::test_api::functions::*;
 
-    //#[test]
+    #[test]
     fn test_wall_kick() {
         let mut piece = Piece::new(PIECE_T);
         let board = Board::new();
@@ -223,7 +223,7 @@ mod tests {
         );
     }
 
-    //#[test]
+    #[test]
     fn test_floor_kick() {
         let mut piece = Piece::new(PIECE_L);
         let board = Board::new();
@@ -239,7 +239,7 @@ mod tests {
         );
     }
 
-    //#[test]
+    #[test]
     fn test_z_spin_1() {
         // z spin 1
         let board = z_spin_board_1();
@@ -256,7 +256,7 @@ mod tests {
         );
     }
 
-    //#[test]
+    #[test]
     fn test_z_spin_2() {
         // z spin 2
         let mut piece = Piece::new(PIECE_Z);
@@ -272,7 +272,7 @@ mod tests {
         );
     }
 
-    //#[test]
+    #[test]
     fn test_s_spin_1() {
         // s spin 1
         let mut piece = Piece::new(PIECE_S);
@@ -288,7 +288,7 @@ mod tests {
         );
     }
 
-    //#[test]
+    #[test]
     fn test_s_spin_2() {
         // s spin 2
         let mut piece = Piece::new(PIECE_S);
@@ -305,7 +305,7 @@ mod tests {
         );
     }
 
-    //#[test]
+    #[test]
     fn test_l_spin_1() {
         // l spin 1
         let mut piece = Piece::new(PIECE_L);
@@ -322,7 +322,7 @@ mod tests {
         );
     }
 
-    //#[test]
+    #[test]
     fn test_l_spin_2() {
         // l spin 2
         let mut piece = Piece::new(PIECE_L);
@@ -340,7 +340,7 @@ mod tests {
         );
     }
 
-    //#[test]
+    #[test]
     fn test_l_spin_3() {
         // l spin 3
         let mut piece = Piece::new(PIECE_L);
@@ -356,7 +356,7 @@ mod tests {
         );
     }
 
-    //#[test]
+    #[test]
     fn test_j_spin_1() {
         // j spin 1
         let mut piece = Piece::new(PIECE_J);
@@ -372,7 +372,7 @@ mod tests {
         );
     }
 
-    //#[test]
+    #[test]
     fn test_j_spin_2() {
         // j spin 2
         let mut piece = Piece::new(PIECE_J);
@@ -388,7 +388,7 @@ mod tests {
         );
     }
 
-    //#[test]
+    #[test]
     fn test_j_spin_3() {
         // j spin 3
         let mut piece = Piece::new(PIECE_J);
@@ -405,7 +405,7 @@ mod tests {
         );
     }
 
-    //#[test]
+    #[test]
     fn test_s_spin_3() {
         // s spin triple 1
         let mut piece = Piece::new(PIECE_S);
@@ -420,7 +420,7 @@ mod tests {
         );
     }
 
-    //#[test]
+    #[test]
     fn test_s_spin_4() {
         // s spin triple 2
         let mut piece = Piece::new(PIECE_S);
@@ -437,7 +437,7 @@ mod tests {
         );
     }
 
-    //#[test]
+    #[test]
     fn test_s_spin_5() {
         // s spin triple 3
         let mut piece = Piece::new(PIECE_S);
@@ -455,7 +455,7 @@ mod tests {
         );
     }
 
-    //#[test]
+    #[test]
     fn test_z_spin_3() {
         // z spin triple 1
         let mut piece = Piece::new(PIECE_Z);
@@ -472,7 +472,7 @@ mod tests {
         );
     }
 
-    //#[test]
+    #[test]
     fn test_j_spin_4() {
         // j spin 1
         let mut piece = Piece::new(PIECE_J);
@@ -491,7 +491,7 @@ mod tests {
         );
     }
 
-    //#[test]
+    #[test]
     fn test_j_spin_5() {
         // j spin triple
         let mut piece = Piece::new(PIECE_J);
@@ -509,7 +509,7 @@ mod tests {
         );
     }
 
-    //#[test]
+    #[test]
     fn test_l_spin_4() {
         // l spin 180 (?)
         let mut piece = Piece::new(PIECE_L);
@@ -531,7 +531,7 @@ mod tests {
         );
     }
 
-    //#[test]
+    #[test]
     fn test_l_spin_5() {
         // l spin fuckery
         let mut piece = Piece::new(PIECE_L);
@@ -561,23 +561,24 @@ mod tests {
         );
     }
 
-    //#[test]
+    #[test]
     fn test_tst() {
         let mut piece = Piece::new(PIECE_T);
         let board = tst_board();
         let mut controller = Controller::new(&mut piece, &board);
-
         controller.do_command(&Command::MoveHorizontal(-3));
         controller.do_command(&Command::MoveDrop);
         controller.do_command(&Command::MoveHorizontal(1));
+        println!("{:?}", *controller.piece);
         controller.do_command(&Command::Rotate(3));
+        println!("{:?}", *controller.piece);
         assert_location_eq(
             controller.piece.abs_locations(),
             [[0, 3], [1, 2], [1, 3], [2, 3]],
         );
     }
 
-    //#[test]
+    #[test]
     fn test_undo() {
         let mut piece = Piece::new(PIECE_T);
         let board = tst_board();

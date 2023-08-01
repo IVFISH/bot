@@ -152,7 +152,7 @@ mod tests {
     use super::*;
     use crate::test_api::functions::*;
 
-    //#[test]
+    #[test]
     fn test_clear_lines() {
         let mut board = Board::new();
 
@@ -178,7 +178,7 @@ mod tests {
         assert_eq!(board.get_heights(), [0, 0, 6, 8, 0, 0, 0, 0, 0, 0]);
     }
 
-    //#[test]
+    #[test]
     fn test_clear_multiple_lines() {
         let mut board = Board::new();
 
@@ -191,7 +191,7 @@ mod tests {
         assert_eq!(board.get_heights(), [0, 0, 6, 9, 0, 0, 0, 0, 0, 0]);
     }
 
-    //#[test]
+    #[test]
     fn test_piece_can_set() {
         let mut board = Board::new();
         println!("{}", board);
@@ -216,7 +216,7 @@ mod tests {
         assert!(!board.piece_can_set(&p));
     }
 
-    //#[test]
+    #[test]
     fn test_heights() {
         let mut board = Board::new();
 
