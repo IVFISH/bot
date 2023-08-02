@@ -162,6 +162,9 @@ pub mod bot_constants {
         Game::active_180,
         // Game::active_drop,
     ];
+
+    pub const MOVEPLACEMENTSCORE: usize = 24;
+    pub const PANICBURST: usize = 1; // test and will likely not be the function used later
 }
 
 pub mod rotation {
@@ -431,4 +434,10 @@ pub mod offset {
             PointVector(-1, -1),
         ],
     ];
+}
+
+pub mod localbotgameplay {
+    pub const LOCALGAMEPLAYFILEPATH: &str = r".\src\localdata.txt";
+    pub const BOTNUM: usize = 0;
+    pub const BOTNUM2: usize = 1;
 }

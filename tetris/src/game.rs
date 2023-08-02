@@ -286,8 +286,7 @@ impl Game {
         let lines_cleared = self.board.clear_lines();
         let attack_type = attack_type(t_spin_type, lines_cleared);
 
-        self.game_data
-            .update(lines_cleared, attack_type, self.board.all_clear());
+        self.game_data.update(lines_cleared, attack_type, self.board.all_clear());
     }
 }
 
@@ -306,7 +305,7 @@ pub mod game_rules_and_data {
         pub pieces_placed: usize,
         pub lines_cleared: usize,
         pub lines_sent: u16,
-        pub last_sent: u8,
+        pub last_sent: u16,
         pub last_cleared: usize,
 
         pub t_spin: bool,
@@ -334,9 +333,10 @@ pub mod game_rules_and_data {
             }
 
             // update lines sent before adding b2b/combo
-            let lines_sent = calc_damage(self, attack, lines_cleared);
+            let mut lines_sent = calc_damage(self, attack, lines_cleared);
+            if all_clear { lines_sent += 10; }
             self.lines_sent += lines_sent as u16;
-            self.last_sent = lines_sent as u8;
+            self.last_sent = lines_sent as u16;
             let b2b = BACK_TO_BACK_TYPES.contains(&attack);
             if b2b {
                 self.b2b += 1;

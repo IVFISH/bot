@@ -103,6 +103,24 @@ impl Board {
         }
     }
 
+    pub fn add_garbage(&mut self, col: usize, amount: usize) {
+        let highest = BOARD_HEIGHT;
+
+        for r in 0..highest-amount+1 {
+            self._set_row(highest-r, self.get_row(highest-r-amount));
+        }
+
+        for n in 0..amount {
+            for w in 0..BOARD_WIDTH {
+                if w == col {
+                    self.arr[w] &= !(1 << n);
+                } else {
+                    self.arr[w] |= 1 << n;
+                }
+            }
+        }
+    }
+
     pub fn remove(&mut self, row: usize, col: usize) {
         self.arr[col] &= !(1 << row);
     }

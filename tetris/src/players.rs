@@ -4,6 +4,10 @@ use crate::communications::Suggestion;
 use crate::constants::bot_constants::*;
 use crate::constants::types::*;
 use crate::game::Game;
+use num::clamp;
+use std::fs;
+use std::string::*;
+use crate::constants::localbotgameplay::*;
 
 pub trait Player {
     fn get_game(&self) -> &Game;
@@ -17,6 +21,15 @@ pub trait Player {
         let action = self.get_next_move();
         // println!("{:?}", action);
         do_move_list(self.get_game_mut(), action);
+
+        // for local gameplay in cmd
+        let mut commsfile = fs::read_to_string(LOCALGAMEPLAYFILEPATH).expect("e");
+        let clamped_lines_sent = clamp(self.get_game().game_data.last_sent + commsfile.chars().nth(BOTNUM2).expect("e").to_string().parse::<u16>().unwrap(), 0, 9);
+        commsfile.replace_range(BOTNUM2..BOTNUM2+1, &clamped_lines_sent.to_string());
+        let _ = fs::write(LOCALGAMEPLAYFILEPATH, commsfile);
+
+        // println!("{}", clamped_lines_sent)
+        // println!("{}", self.get_game().game_data.last_sent);
         true
     }
 

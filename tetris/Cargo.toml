@@ -9,6 +9,7 @@ rand = "0.8.5"
 polynomial = "0.2.4"
 itertools = "0.10.5"
 colored = "2.0.4"
+num = "0.4.1"
 
 tungstenite = "*"
 serde = { version = "1.0.78", features = ["derive"] }

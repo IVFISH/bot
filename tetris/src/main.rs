@@ -23,17 +23,22 @@ use std::collections::VecDeque;
 use crate::board::Board;
 use crate::constants::types::Dependencies;
 use crate::constants::versus_constants::AttackType::T;
+use crate::constants::localbotgameplay::*;
 use crate::game::Game;
 use crate::piece::Piece;
 use crate::weight::Weights;
 use crate::point_vector::Point;
 use crate::opener::*;
 use colored::Colorize;
+use std::fs;
+use std::string::*;
 
 fn main() {
-    bot_play();
+    // bot_play();
+    bot_play_local();
     // tetrio_play();
 
+    // test_cheese();
     // more_test();
     // dt_test();
 }
@@ -75,43 +80,65 @@ fn bot_play() {
     thread::sleep(time::Duration::from_millis(10000));
 }
 
-// fn bot_play() {
-//     let mut bot = Bot::default();
-//     let mut game = bot.get_game_mut();
-//     game.set_active_piece(Piece::new(6));
-//     println!("{}", game);
-//     game.board.add(0,0);
-//     game.board.add(1, 0);
-//     game.board.add(2, 0);
-//     game.board.add(0, 1);
-//     game.board.add(0, 3);
-//     game.board.add(2, 3);
-//     game.board.add(0, 4);
-//     game.board.add(1, 4);
-//     game.board.add(2, 4);
-//     game.board.add(0, 5);
-//     game.board.add(1, 5);
-//     game.board.add(2, 5);
-//     game.board.add(0, 6);
-//     game.board.add(1, 6);
-//     game.board.add(2, 6);
-//     game.board.add(0, 7);
-//     game.board.add(1, 7);
-//     game.board.add(2, 7);
-//     game.board.add(0, 8);
-//     game.board.add(1, 8);
-//     game.board.add(2, 8);
-//     game.board.add(0, 9);
-//     game.board.add(1, 9);
-//     game.board.add(2, 9);
-//     println!("{}", game);
-//     let placements = Bot::move_placement_score_1d(game, &Default::default()).1;
-//     for placement in placements{
-//         game.board.add_list(placement.abs_locations().unwrap());
-//         println!("{}", game);
-//         game.board.remove_list(placement.abs_locations().unwrap());
-//     }
-// }
+fn bot_play_local() {
+    let mut bot = Bot::default();
+    println!("{}", bot.get_game().board.get_arr().len());
+
+    let mut time = 0;
+    while !bot.get_game().get_game_over() && bot.get_game().game_data.pieces_placed < 10000 {
+
+        let now = time::Instant::now();
+        bot.make_move();
+        time += now.elapsed().as_micros();
+        
+        let mut commsfile = fs::read_to_string(LOCALGAMEPLAYFILEPATH).expect("e");
+        let garbage = commsfile.chars().nth(BOTNUM).expect("e").to_string().parse::<usize>().unwrap();
+        bot.addgarbagetest((time % 10).try_into().unwrap(), garbage);
+        commsfile.replace_range(BOTNUM..BOTNUM+1, "0");
+        let _ = fs::write(LOCALGAMEPLAYFILEPATH, commsfile);
+
+        thread::sleep(time::Duration::from_millis(0));
+        // println!("{}", bot.get_game());
+        println!("{}", bot.get_game());
+        println!("{} milliseconds to move", format!("{}", now.elapsed().as_micros() / 1000).green())
+    }
+    println!(
+        "Making {} moves took {} microseconds on average",
+        bot.get_game().game_data.pieces_placed,
+        time / (bot.get_game().game_data.pieces_placed as u128)
+    );
+    println!("{}", bot.get_game());
+    thread::sleep(time::Duration::from_millis(100000));
+}
+
+fn test_cheese() {
+    let mut bot = Bot::default();
+    println!("{}", bot.get_game().board.get_arr().len());
+
+    println!("{}", bot.get_game());
+
+    let mut time = 0;
+    while !bot.get_game().get_game_over() && bot.get_game().game_data.pieces_placed < 10000 {
+
+        let now = time::Instant::now();
+        bot.make_move();
+        time += now.elapsed().as_micros();
+        if bot.get_game().game_data.pieces_placed % 3 == 0 { bot.addgarbagetest((time % 10).try_into().unwrap(), 1); } // cheese timer in zen mode be like
+
+        thread::sleep(time::Duration::from_millis(0));
+        // println!("{}", bot.get_game());
+        println!("{}", bot.get_game());
+        println!("{} milliseconds to move", format!("{}", now.elapsed().as_micros() / 1000).green());
+        println!("{} pieces placed", format!("{}", bot.get_game().game_data.pieces_placed).green())
+    }
+    println!(
+        "Making {} moves took {} microseconds on average",
+        bot.get_game().game_data.pieces_placed,
+        time / (bot.get_game().game_data.pieces_placed as u128)
+    );
+    println!("{}", bot.get_game());
+    thread::sleep(time::Duration::from_millis(10000));
+}
 
 fn dt_test() {
     let mut bot = Bot::default();

@@ -78,7 +78,8 @@ impl Player for Bot {
 
         // thread::sleep(time::Duration::from_millis(250));
 
-        let (deep_moves, places, deep_scores) = self.move_placement_score(11, &self.weight.clone());
+        // println!("{}", self.get_game().board.get_max_height());
+        let (deep_moves, places, deep_scores) = self.move_placement_score(MOVEPLACEMENTSCORE - self.get_game().board.get_max_height()*PANICBURST, &self.weight.clone());
         let deep_scores: Vec<f32> = deep_scores
             .iter()
             .map(|(board, versus)| board + versus)
@@ -96,9 +97,9 @@ impl Player for Bot {
         }
 
 
-        println!("{:?}", action);
-        println!("{}", min_score);
-        println!("{}", p[0]);
+        // println!("{:?}", action);
+        // println!("{}", min_score);
+        // println!("{}", p[0]);
         if min_score < -10000.0{
             println!("{:?}", p);
         }
@@ -535,5 +536,9 @@ impl Bot {
         out += weight.cell_covered_weight.eval(covered as f32);
 
         out
+    }
+
+    pub fn addgarbagetest(&mut self, col: usize, amnt: usize) {
+        self.game.board.add_garbage(col,amnt)
     }
 }
