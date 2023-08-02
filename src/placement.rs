@@ -3,6 +3,7 @@
 use crate::command::Command;
 use crate::controller::Controller;
 use crate::piece::Piece;
+use itertools::chain;
 use std::iter::zip;
 use std::rc::Rc;
 
@@ -15,6 +16,32 @@ pub struct Placement {
     pub nontrivial_index: usize, // this is the exclusive end index
 
                                  // add the score and any other info here
+}
+
+impl Placement {
+    /// gets the command sequence to get to this placement
+    /// starting from the spawn condition
+    pub fn get_command_sequence(&self) -> Vec<Command> {
+        let mut commands = Vec::new();
+        for command in chain(
+            (*self.trivial_base).iter(),
+            &self.nontrivial_extension[0..self.nontrivial_index],
+        ) {
+            Self::add_command(&mut commands, *command);
+        }
+        commands
+    }
+
+    fn add_command(commands: &mut Vec<Command>, command: Command) {
+        match command {
+            Command::Backtrack(n) => commands.truncate(commands.len() - n),
+            Command::Null | Command::MoveHorizontal(0) | Command::Rotate(0) => (),
+            Command::MoveHorizontal(n) => {
+                commands.extend(vec![Command::MoveHorizontal(1); n.abs() as usize])
+            }
+            _ => commands.push(command),
+        }
+    }
 }
 
 pub struct PlacementList {
@@ -52,7 +79,7 @@ impl PlacementList {
             for (i, command) in nontrivial.iter().enumerate() {
                 controller.do_command_mut(*command);
                 if let &Command::Backtrack(_) = command {
-                    continue
+                    continue;
                 }
                 if controller.board.piece_grounded(controller.piece) {
                     placements.push(Placement {
