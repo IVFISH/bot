@@ -41,13 +41,16 @@ impl Bot {
         seen: &mut HashSet<Piece>,
         controller: &mut Controller,
     ) -> (Vec<Vec<Command>>, Vec<Piece>) {
+
         let mut out = Vec::new();
         let mut out_piece = Vec::new();
+
         for rotation in 0..NUM_ROTATE_STATES {
             let mut rep = 1;
             controller.do_command_mut(Command::Rotate(rotation as u8));
             Self::add_dropped_piece(controller, seen, &mut out_piece);
             out.push(vec![Command::Rotate(rotation as u8), Command::MoveDrop]);
+
             while controller.do_command(&Command::MoveHorizontal(1)) {
                 Self::add_dropped_piece(controller, seen, &mut out_piece);
                 out.push(vec![
@@ -57,8 +60,10 @@ impl Bot {
                 ]);
                 rep += 1;
             }
+
             *controller.piece = controller.peek().unwrap().1; // reset the piece
             rep = 1; // reset the repetitions counter
+
             while controller.do_command(&Command::MoveHorizontal(-1)) {
                 Self::add_dropped_piece(controller, seen, &mut out_piece);
                 out.push(vec![
@@ -68,6 +73,7 @@ impl Bot {
                 ]);
                 rep += 1;
             }
+
             controller.undo();
 
             if controller.piece.r#type == PIECE_O {
@@ -105,6 +111,7 @@ impl Bot {
             controller.update_piece(piece);
             out.push(self.nontrivial_(controller, seen));
         }
+        controller.reset();
         out
     }
 
