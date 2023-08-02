@@ -51,11 +51,14 @@ impl Game {
     }
 
     pub fn from_rules(seed: Option<usize>, game_rules: GameRules) -> Self {
-        Self {
+        let mut out = Self {
             piece_queue: PieceQueue::new(seed),
             game_rules,
             ..Default::default()
-        }
+        };
+
+        out.active_piece = out.piece_queue.next();
+        out
     }
     // piece getters and setters
     pub fn get_active_piece(&self) -> &Piece {
