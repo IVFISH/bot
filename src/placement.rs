@@ -44,6 +44,7 @@ impl Placement {
     }
 }
 
+#[derive(Default)]
 pub struct PlacementList {
     pub placements: Vec<Placement>,
     pub trivials: Vec<Rc<Vec<Command>>>,

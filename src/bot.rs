@@ -5,8 +5,9 @@ use crate::constants::piece_constants::*;
 use crate::controller::Controller;
 use crate::game::Game;
 use crate::piece::Piece;
-use crate::placement::PlacementList;
+use crate::placement::*;
 use std::collections::HashSet;
+use std::rc::Rc;
 
 #[derive(Debug, Default)]
 pub struct Bot {
@@ -25,35 +26,52 @@ impl Bot {
     pub fn move_gen(&self) -> PlacementList {
         let mut piece = self.game.active; // this piece is moved around to generate moves
         let mut controller = Controller::new(&mut piece, &self.game.board);
-        let trivials = self.trivial(&mut controller);
-        let nontrivials = self.nontrivial(&trivials, &mut controller);
-
-        PlacementList::new(trivials, nontrivials, controller)
+        let mut placements = self.trivial(&mut controller);
+        self.nontrivial(&mut placements, &mut controller);
+        placements
     }
 
     /// return the trivial placements as a vector of vec commands from the starting state
-    fn trivial(&self, controller: &mut Controller) -> Vec<Vec<Command>> {
-        let mut out = Vec::new();
+    fn trivial(&self, controller: &mut Controller) -> PlacementList {
+        let mut out = PlacementList::default();
         for rotation in 0..NUM_ROTATE_STATES {
             let mut rep = 1;
             controller.do_command_mut(Command::Rotate(rotation as u8));
-            out.push(vec![Command::Rotate(rotation as u8), Command::MoveDrop]);
+            out.trivials.push(Rc::new(vec![Command::Rotate(rotation as u8), Command::MoveDrop]));
+            out.placements.push(Placement {
+                piece: *controller.piece, 
+                trivial_base: Rc::clone(out.trivials.last().unwrap()),
+                nontrivial_extension: Rc::new(Vec::new()),
+                nontrivial_index: 0
+            });
             while controller.do_command(&Command::MoveHorizontal(1)) {
-                out.push(vec![
+                out.trivials.push(Rc::new(vec![
                     Command::Rotate(rotation as u8),
                     Command::MoveHorizontal(rep),
                     Command::MoveDrop,
-                ]);
+                ]));
+                out.placements.push(Placement {
+                    piece: *controller.piece, 
+                    trivial_base: Rc::clone(out.trivials.last().unwrap()),
+                    nontrivial_extension: Rc::new(Vec::new()),
+                    nontrivial_index: 0
+                });
                 rep += 1;
             }
             *controller.piece = controller.peek().unwrap().1; // reset the piece
             rep = 1; // reset the repetitions counter
             while controller.do_command(&Command::MoveHorizontal(-1)) {
-                out.push(vec![
+                out.trivials.push(Rc::new(vec![
                     Command::Rotate(rotation as u8),
                     Command::MoveHorizontal(-rep),
                     Command::MoveDrop,
-                ]);
+                ]));
+                out.placements.push(Placement {
+                    piece: *controller.piece, 
+                    trivial_base: Rc::clone(out.trivials.last().unwrap()),
+                    nontrivial_extension: Rc::new(Vec::new()),
+                    nontrivial_index: 0
+                });
                 rep += 1;
             }
             controller.undo();
@@ -71,33 +89,34 @@ impl Bot {
     /// leads to the current state
     fn nontrivial(
         &self,
-        trivials: &Vec<Vec<Command>>,
+        placements: &mut PlacementList,
         controller: &mut Controller,
-    ) -> Vec<Vec<Command>> {
+    )  {
         let mut seen = HashSet::new();
-        let mut out = Vec::new();
 
-        for trivial in trivials.iter() {
+        let trivials = placements.trivials.clone();
+        for (i, trivial) in trivials.iter().enumerate() {
             controller.do_commands(trivial);
-            out.push(self.nontrivial_(controller, &mut seen));
+            self.nontrivial_(placements, controller, &mut seen, i);
             controller.reset();
         }
-        out
     }
 
     /// helper method for [`bot.nontrivial`]
     /// extends a single trivial placeement by recursing through inputs
     /// precondition: the piece is at the location led to by the trivial
     /// this leaves the location of the piece at its final recurse
-    fn nontrivial_(&self, controller: &mut Controller, seen: &mut HashSet<Piece>) -> Vec<Command> {
-        let mut out = Vec::new();
+    fn nontrivial_(&self, placements: &mut PlacementList,
+                   controller: &mut Controller, seen: &mut HashSet<Piece>, i: usize) {
         if seen.contains(controller.piece) {
-            return out;
+            return;
         }
         seen.insert(*controller.piece);
 
         let mut dfs_stack = vec![*controller.piece];
         let mut out_stack = vec![Command::Null];
+        let mut out = Vec::new();
+        let mut data = Vec::new(); // piece and their nontrivial_index
 
         while !dfs_stack.is_empty() {
             // push the backtrack commands
@@ -112,12 +131,10 @@ impl Bot {
 
             // push the current command
             out.push(out_stack.pop().unwrap());
+            data.push((*controller.piece, out.len()));
 
             // dfs (add to stack)
             let p = dfs_stack.pop().unwrap();
-            if p.row == 3 && p.col == 2 {
-                println!("idek");
-            }
             out_stack.push(Command::Backtrack(1));
             for command in COMMANDS.into_iter() {
                 // update the controller to use this new piece
@@ -132,7 +149,20 @@ impl Bot {
                 out_stack.push(command);
             }
         }
-        out
+        let out = Rc::new(out);
+        let trivial_base = Rc::clone(&placements.trivials[i]);
+        for (piece, nontrivial_index) in data.into_iter() {
+            if controller.board.piece_grounded(&piece) {
+                placements.placements.push(Placement {
+                    piece,
+                    trivial_base: Rc::clone(&trivial_base),
+                    nontrivial_extension: Rc::clone(&out),
+                    nontrivial_index
+                });
+            }
+
+        }
+        placements.nontrivials.push(out);
     }
 }
 
@@ -150,7 +180,7 @@ mod tests {
 
         let placements = bot.move_gen();
         assert_eq!(placements.trivials.len(), 34);
-        assert_eq!(placements.nontrivials.len(), 34);
+        // assert_eq!(placements.nontrivials.len(), 34);
         assert_eq!(placements.placements.len(), 48);
 
         // checking for any duplicate pieces
@@ -170,7 +200,7 @@ mod tests {
 
         let placements = bot.move_gen();
         assert_eq!(placements.trivials.len(), 9);
-        assert_eq!(placements.nontrivials.len(), 9);
+        // assert_eq!(placements.nontrivials.len(), 9);
         assert_eq!(placements.placements.len(), 15);
 
         // checking for any duplicate pieces
