@@ -88,6 +88,8 @@ impl PlacementList {
                         nontrivial_extension: Rc::clone(nontrivial),
                         nontrivial_index: i + 1,
                     });
+                } else {
+                    // println!("{:?}", controller.piece);
                 }
             }
             controller.reset();

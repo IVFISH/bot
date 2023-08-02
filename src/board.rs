@@ -45,7 +45,11 @@ impl Board {
 
     /// returns the index of the first empty row in column col
     pub fn get_height(&self, col: usize) -> usize {
-        (usize::BITS - self.arr[col].leading_zeros()) as usize
+        (u64::BITS - self.arr[col].leading_zeros()) as usize
+    }
+    /// returns the index of the first empty row in a column col below the specified row
+    pub fn get_height_below(&self, col: usize, row: usize) -> usize {
+        (u64::BITS - (self.arr[col] & !(u64::MAX << row)).leading_zeros()) as usize
     }
 
     /// returns the state (0 or 1) at the grid's row and col
@@ -111,6 +115,17 @@ impl Board {
         }
     }
 
+    pub fn piece_max_down(&self, piece: &Piece) -> i8 {
+        if let Some(locs) = piece.abs_locations() {
+            locs.into_iter()
+                .map(|[row, col]| (row - (self.get_height_below(col, row))) as i8)
+                .min()
+                .unwrap() // assumes locs is not empty
+        } else {
+            0
+        }
+    }
+
     /// returns whether the piece has no collision and is grounded
     pub fn piece_can_set(&self, piece: &Piece) -> bool {
         !self.piece_collision(piece) && self.piece_grounded(piece)
@@ -150,6 +165,7 @@ impl Board {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::constants::piece_constants::{PIECE_T, PIECE_Z};
     use crate::test_api::functions::*;
 
     #[test]
@@ -240,5 +256,17 @@ mod tests {
         assert_eq!(board.get_heights(), [0, 0, 6, 6, 0, 0, 0, 0, 0, 0]);
         remove_list(&mut board, vec![[5, 2], [5, 3]]);
         assert_eq!(board.get_heights(), [0, 0, 4, 0, 0, 0, 0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn test_piece_max_down() {
+        let mut piece = Piece::new(PIECE_T);
+        piece.rotate(2);
+        piece.set_row(7);
+        piece.set_col(2);
+
+        let mut board = Board::new();
+        add_list(&mut board, vec![[9, 0], [1, 0]]);
+        assert_eq!(board.piece_max_down(&piece), 6);
     }
 }

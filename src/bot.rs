@@ -29,11 +29,18 @@ impl Bot {
         let (trivials, trivial_pieces) = self.trivial(&mut seen, &mut controller);
         let nontrivials = self.nontrivial(&mut controller, &mut seen, trivial_pieces);
 
+        // println!("{:?}", trivials);
+        // println!("{:?}", nontrivials);
+
         PlacementList::new(trivials, nontrivials, controller)
     }
 
     /// return the trivial placements as a vector of vec commands from the starting state
-    fn trivial(&self, seen: &mut HashSet<Piece>, controller: &mut Controller) -> (Vec<Vec<Command>>, Vec<Piece>) {
+    fn trivial(
+        &self,
+        seen: &mut HashSet<Piece>,
+        controller: &mut Controller,
+    ) -> (Vec<Vec<Command>>, Vec<Piece>) {
         let mut out = Vec::new();
         let mut out_piece = Vec::new();
         for rotation in 0..NUM_ROTATE_STATES {
@@ -71,12 +78,16 @@ impl Bot {
         (out, out_piece)
     }
 
-    fn add_dropped_piece(controller: &mut Controller, seen: &mut HashSet<Piece>, pieces: &mut Vec<Piece>) {
-        let cp = *controller.piece;
+    fn add_dropped_piece(
+        controller: &mut Controller,
+        seen: &mut HashSet<Piece>,
+        pieces: &mut Vec<Piece>,
+    ) {
+        let start_row = controller.piece.row;
         controller.do_command(&Command::MoveDrop);
         seen.insert(*controller.piece);
         pieces.push(*controller.piece);
-        controller.update_piece(cp);
+        controller.piece.set_row(start_row)
     }
 
     /// extend the trivial placements by recursing through inputs that bring
@@ -86,7 +97,7 @@ impl Bot {
         &self,
         controller: &mut Controller,
         seen: &mut HashSet<Piece>,
-        pieces: Vec<Piece>
+        pieces: Vec<Piece>,
     ) -> Vec<Vec<Command>> {
         let mut out = Vec::new();
 
@@ -177,6 +188,7 @@ mod tests {
         assert_eq!(placements.trivials.len(), 9);
         assert_eq!(placements.nontrivials.len(), 9);
         assert_eq!(placements.placements.len(), 15);
+        // println!("{:?}", placements.placements.iter().map(|p| p.piece).collect::<Vec<Piece>>());
 
         // checking for any duplicate pieces
         let pieces: HashSet<_> = placements.placements.into_iter().map(|p| p.piece).collect();
