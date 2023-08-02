@@ -19,10 +19,10 @@ impl PartialEq for Piece {
         if self.r#type == other.r#type && self.r#type == PIECE_O {
             self.sorted_abs_locations() == other.sorted_abs_locations()
         } else {
-            self.r#type == other.r#type && 
-                self.dir == other.dir &&
-                self.col == other.col &&
-                self.row == other.row
+            self.r#type == other.r#type
+                && self.dir == other.dir
+                && self.col == other.col
+                && self.row == other.row
         }
     }
 }
@@ -32,10 +32,10 @@ impl Hash for Piece {
         match self.r#type {
             PIECE_O => self.sorted_abs_locations().hash(state),
             _ => {
-                 self.r#type.hash(state);
-                 self.dir.hash(state);
-                 self.row.hash(state);
-                 self.col.hash(state);
+                self.r#type.hash(state);
+                self.dir.hash(state);
+                self.row.hash(state);
+                self.col.hash(state);
             }
         }
     }
@@ -234,8 +234,8 @@ impl Piece {
 #[cfg(test)]
 mod tests {
     use crate::constants::piece_constants::*;
-    use crate::test_api::functions::*;
     use crate::piece::*;
+    use crate::test_api::functions::*;
     use std::collections::HashSet;
 
     #[test]
@@ -302,18 +302,17 @@ mod tests {
         let mut piece_2 = Piece::new(PIECE_O);
         let [dir_row, dir_col] = piece_2.get_kicks(1)[0];
         piece_2.rotate_with_kicks(1, dir_row, dir_col);
-        
+
         assert_eq!(piece_1, piece_2);
         assert_eq!(calculate_hash(&piece_1), calculate_hash(&piece_2));
-        
+
         let mut set = HashSet::new();
         set.insert(piece_1);
         assert!(set.contains(&piece_2));
-        
+
         piece_2.r#move(-2, 0);
         assert_ne!(piece_1, piece_2);
         assert_ne!(calculate_hash(&piece_1), calculate_hash(&piece_2));
         assert!(!set.contains(&piece_2));
-
     }
 }

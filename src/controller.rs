@@ -31,7 +31,7 @@ impl<'a> Controller<'a> {
         self.pop(); // returns an option, doesn't panic
         self.update_piece(*self.pieces.last().expect("Undoing empty stack"));
     }
-    
+
     /// resets the piece and clears its stack
     /// back to the state it had when it was new
     pub fn reset(&mut self) {

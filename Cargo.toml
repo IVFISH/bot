@@ -10,3 +10,6 @@ criterion = "0.3"
 name = "benchmarks"
 harness = false
 
+[dependencies]
+itertools = "0.11.0"
+
