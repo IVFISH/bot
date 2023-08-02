@@ -2,12 +2,19 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use tetris::board::*;
 use tetris::bot::*;
 use tetris::constants::board_constants::*;
+use tetris::test_api::functions::l_spin_board_5;
 
 pub fn movegen_benchmark(c: &mut Criterion) {
     let bot = Bot::new();
     c.bench_function("movegen empty board", |b| {
         b.iter(|| black_box(bot.move_gen()))
     });
+    let mut bot = Bot::new();
+    bot.game.board = l_spin_board_5();
+    c.bench_function("movegen l spin fuckery board", |b| {
+        b.iter(|| black_box(bot.move_gen()))
+    });
+
 }
 
 pub fn clearlines_benchmark(c: &mut Criterion) {

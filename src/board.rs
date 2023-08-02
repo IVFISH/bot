@@ -165,7 +165,7 @@ impl Board {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::constants::piece_constants::{PIECE_T, PIECE_Z};
+    use crate::constants::piece_constants::{PIECE_T};
     use crate::test_api::functions::*;
 
     #[test]

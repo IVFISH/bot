@@ -566,9 +566,7 @@ mod tests {
         controller.do_command(&Command::MoveHorizontal(-3));
         controller.do_command(&Command::MoveDrop);
         controller.do_command(&Command::MoveHorizontal(1));
-        println!("{:?}", *controller.piece);
         controller.do_command(&Command::Rotate(3));
-        println!("{:?}", *controller.piece);
         assert_location_eq(
             controller.piece.abs_locations(),
             [[0, 3], [1, 2], [1, 3], [2, 3]],
