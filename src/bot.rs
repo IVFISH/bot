@@ -29,9 +29,6 @@ impl Bot {
         let (trivials, trivial_pieces) = self.trivial(&mut seen, &mut controller);
         let nontrivials = self.nontrivial(&mut controller, &mut seen, trivial_pieces);
 
-        // println!("{:?}", trivials);
-        // println!("{:?}", nontrivials);
-
         PlacementList::new(trivials, nontrivials, controller)
     }
 
@@ -195,7 +192,6 @@ mod tests {
         assert_eq!(placements.trivials.len(), 9);
         assert_eq!(placements.nontrivials.len(), 9);
         assert_eq!(placements.placements.len(), 15);
-        // println!("{:?}", placements.placements.iter().map(|p| p.piece).collect::<Vec<Piece>>());
 
         // checking for any duplicate pieces
         let pieces: HashSet<_> = placements.placements.into_iter().map(|p| p.piece).collect();
