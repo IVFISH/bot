@@ -8,7 +8,7 @@ use crate::piece::Piece;
 pub struct Controller<'a> {
     pub piece: &'a mut Piece,
     pub board: &'a Board,
-    commands: Vec<Command>,
+    pub commands: Vec<Command>,
     pieces: Vec<Piece>,
 }
 

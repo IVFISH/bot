@@ -28,35 +28,43 @@ impl Bot {
         let trivials = self.trivial(&mut controller);
         let nontrivials = self.nontrivial(&trivials, &mut controller);
 
-        PlacementList::new(trivials, nontrivials, controller)
+        PlacementList::new(trivials.iter().map(|(commands, _)| commands.clone()).collect(), nontrivials, controller)
     }
 
     /// return the trivial placements as a vector of vec commands from the starting state
-    fn trivial(&self, controller: &mut Controller) -> Vec<Vec<Command>> {
+    fn trivial(&self, controller: &mut Controller) -> Vec<(Vec<Command>, Piece)> {
         let mut out = Vec::new();
         for rotation in 0..NUM_ROTATE_STATES {
             let mut rep = 1;
             controller.do_command_mut(Command::Rotate(rotation as u8));
-            out.push(vec![Command::Rotate(rotation as u8), Command::MoveDrop]);
-            while controller.do_command(&Command::MoveHorizontal(1)) {
-                out.push(vec![
+            controller.do_command_mut(Command::MoveDrop); //undone
+            out.push((vec![Command::Rotate(rotation as u8), Command::MoveDrop], controller.piece.clone()));
+            controller.undo();
+            while controller.do_command_mut(Command::MoveHorizontal(1)) {
+                controller.do_command_mut(Command::MoveDrop);
+                out.push((vec![
                     Command::Rotate(rotation as u8),
                     Command::MoveHorizontal(rep),
                     Command::MoveDrop,
-                ]);
+                ], controller.piece.clone()));
+                controller.undo();
                 rep += 1;
             }
-            *controller.piece = controller.peek().unwrap().1; // reset the piece
+            controller.reset();
+            controller.do_command_mut(Command::Rotate(rotation as u8));
+            // *controller.piece = controller.peek().unwrap().1; // reset the piece
             rep = 1; // reset the repetitions counter
-            while controller.do_command(&Command::MoveHorizontal(-1)) {
-                out.push(vec![
+            while controller.do_command_mut(Command::MoveHorizontal(-1)) {
+                controller.do_command_mut(Command::MoveDrop);
+                out.push((vec![
                     Command::Rotate(rotation as u8),
                     Command::MoveHorizontal(-rep),
                     Command::MoveDrop,
-                ]);
+                ], controller.piece.clone()));
+                controller.undo();
                 rep += 1;
             }
-            controller.undo();
+            controller.reset();
 
             if controller.piece.r#type == PIECE_O {
                 // don't generate new trivials for O
@@ -71,14 +79,17 @@ impl Bot {
     /// leads to the current state
     fn nontrivial(
         &self,
-        trivials: &Vec<Vec<Command>>,
+        trivials: &Vec<(Vec<Command>, Piece)>,
         controller: &mut Controller,
     ) -> Vec<Vec<Command>> {
-        let mut seen = HashSet::new();
+        let trivial_pieces = trivials.iter().map(|(_, piece)| *piece);
+        let mut seen = HashSet::from_iter(trivial_pieces);
+        // println!("{:?}", seen);
+        // let mut seen = HashSet::new();
         let mut out = Vec::new();
 
-        for trivial in trivials.iter() {
-            controller.do_commands(trivial);
+        for (trivial_command, piece) in trivials.iter() {
+            controller.do_commands(trivial_command);
             out.push(self.nontrivial_(controller, &mut seen));
             controller.reset();
         }
@@ -91,16 +102,14 @@ impl Bot {
     /// this leaves the location of the piece at its final recurse
     fn nontrivial_(&self, controller: &mut Controller, seen: &mut HashSet<Piece>) -> Vec<Command> {
         let mut out = Vec::new();
-        if seen.contains(controller.piece) {
-            return out;
-        }
+
         seen.insert(*controller.piece);
 
         let mut dfs_stack = vec![*controller.piece];
         let mut out_stack = vec![Command::Null];
 
         while !dfs_stack.is_empty() {
-            // push the backtrack commands
+            // condense and push the backtrack commands
             let mut backtrack_counter = 0;
             while let Some(Command::Backtrack(c)) = out_stack.last() {
                 backtrack_counter += c;
@@ -110,20 +119,19 @@ impl Bot {
                 out.push(Command::Backtrack(backtrack_counter));
             }
 
-            // push the current command
             out.push(out_stack.pop().unwrap());
 
-            // dfs (add to stack)
+            // backtracking dfs step
             let p = dfs_stack.pop().unwrap();
-            if p.row == 3 && p.col == 2 {
-                println!("idek");
-            }
             out_stack.push(Command::Backtrack(1));
+
+            // try commands and check for new placements
             for command in COMMANDS.into_iter() {
                 // update the controller to use this new piece
                 controller.update_piece(p);
                 controller.do_command(&command);
                 let p = *controller.piece;
+                // if seen, try a different command
                 if seen.contains(&p) {
                     continue;
                 }
@@ -151,6 +159,7 @@ mod tests {
         let placements = bot.move_gen();
         assert_eq!(placements.trivials.len(), 34);
         assert_eq!(placements.nontrivials.len(), 34);
+        println!("{:?}", placements.placements.iter().map(|placement| placement.piece).collect::<Vec<Piece>>());
         assert_eq!(placements.placements.len(), 48);
 
         // checking for any duplicate pieces
