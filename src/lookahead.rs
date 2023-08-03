@@ -17,7 +17,9 @@ pub fn many_lookahead(start_game: Game, depth: u8) -> Vec<Game> {
     // base call of movegen on start_game, THIS WILL GENERATE BASE PLACEMENTS
     let mut b = Bot { game: start_game };
     let placements = move_gen_hold(b); // WILL HAVE TO EXTRACT BASE COMMANDS
-    let base_games = games_from_placements(placements, &start_game);
+
+    let mut base_games = Vec::new();
+    place_and_push(placements, &start_game, &mut base_games);
 
     // repeatedly call lookahead, using the output as the input for the next iteration
     let mut new_games = base_games;
@@ -37,7 +39,7 @@ fn lookahead(games: Vec<Game>) -> Vec<Game> {
     let mut out = Vec::new();
     for game in games {
         let mut bot: Bot = Bot { game };
-        out.extend(games_from_placements(move_gen_hold(bot), &game));
+        place_and_push(move_gen_hold(bot), &game, &mut out);
     }
     out
 }
@@ -65,16 +67,14 @@ fn move_gen_hold(mut bot: Bot) -> Vec<Placement> {
     placements
 }
 
-fn games_from_placements(placements: Vec<Placement>, base_game: &Game) -> Vec<Game> {
-    let mut out = Vec::new();
+fn place_and_push(placements: Vec<Placement>, base_game: &Game, push_to: &mut Vec<Game>) {
     for placement in placements {
         let mut out_game = *base_game; // copy
         out_game.board.set_piece(&placement.piece);
         // update out_game (line clears, garbage(?), stats)
         // scoring?
-        out.push(out_game);
+        push_to.push(out_game);
     }
-    out
 }
 
 #[cfg(test)]
