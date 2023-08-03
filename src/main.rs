@@ -3,18 +3,18 @@ mod bot;
 mod command;
 mod constants;
 mod controller;
-mod piece;
 mod game;
+mod lookahead;
+mod piece;
 mod placement;
 mod test_api;
-mod lookahead;
 
-use crate::bot::*;
-use crate::game::Game;
 use crate::board::Board;
+use crate::bot::*;
 use crate::constants::piece_constants::*;
-use crate::piece::*;
+use crate::game::Game;
 use crate::lookahead::many_lookahead;
+use crate::piece::*;
 use std::time::{Instant, SystemTime};
 
 fn bench() {
@@ -33,10 +33,10 @@ fn main() {
     bot.game.active = Piece::new(PIECE_T);
     println!("{:?}", bot);
     let now = Instant::now();
-    let final_games = many_lookahead(bot.game, 2);
-    for game in &final_games {
-        println!("{}", game.board);
-    }
-    println!("{}", now.elapsed().as_secs());
+    let final_games = many_lookahead(bot.game, 3);
+    // for game in &final_games {
+    //     println!("{}", game.board);
+    // }
+    println!("{}", now.elapsed().as_millis());
     println!("{}", final_games.len());
 }
