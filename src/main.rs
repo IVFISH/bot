@@ -7,6 +7,7 @@ mod game;
 mod piece;
 mod placement;
 mod test_api;
+mod piece_queue;
 
 use crate::bot::*;
 use crate::constants::piece_constants::*;
@@ -27,10 +28,16 @@ fn bench() {
 
 fn main() {
     let mut bot = Bot::new();
-    bot.game.active = Piece::new(PIECE_T);
-    let placements = bot.move_gen(1);
-
-    let placement = &placements.placements[15];
+    // bot.game.active = Piece::new(PIECE_T);
+    let placements = bot.move_gen(2);
+    
+    println!("{}", placements.placements.len());
+    let placement = &placements.placements[1];
+    println!("{:?}", placement.pieces);
+    println!("{:?}", placement.piece);
+    println!("{:?}", placement.get_command_sequence());
+    let placement = &placements.placements[100];
+    println!("{:?}", placement.pieces);
     println!("{:?}", placement.piece);
     println!("{:?}", placement.get_command_sequence());
 }

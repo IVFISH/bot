@@ -18,7 +18,9 @@ pub struct Bot {
 impl Bot {
     // constructors -----------------------------
     pub fn new() -> Self {
-        Default::default()
+        Self {
+            game: Game::random()
+        }
     }
 
     // move generation --------------------------
@@ -77,10 +79,14 @@ impl Bot {
     /// given a starting placement (of depth i), returns a new list of placements
     /// of depth i+1
     fn extend_placement(placement: &Placement) -> Vec<Placement> {
+        // get the starting position to extend placements from
         let mut game = *placement.game; // copy
-                                        // get the starting position to extend placements from
-        for piece in placement.pieces.iter() {
-            // set here
+        let mut pieces = (*placement.pieces).clone();
+        pieces.push(placement.piece);
+        for piece in pieces.iter() {
+            game.update_active(*piece);
+            assert!(game.active == *piece); // just a sanity check <3
+            game.place_active();
         }
 
         let mut piece = game.active; // copy
@@ -93,8 +99,6 @@ impl Bot {
 
         // generate the new placements here
         let mut out = Vec::new();
-        let mut pieces = (*placement.pieces).clone();
-        pieces.push(placement.piece);
         let pieces = Rc::new(pieces);
         for piece in seen.into_iter() {
             out.push(Placement {
