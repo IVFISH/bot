@@ -2,15 +2,21 @@
 
 use crate::command::Command;
 use crate::controller::Controller;
+use crate::game::Game;
 use crate::piece::Piece;
 use itertools::chain;
 use std::iter::zip;
 use std::rc::Rc;
 
 pub struct Placement {
+    // the last piece in the move sequence
     pub piece: Piece,
 
     // references to the source for generating the move
+    pub game: Rc<Game>,         // the starting game (depth=0)
+    pub pieces: Rc<Vec<Piece>>, // all the prior pieces in lookahead
+
+    // regenerating the first move in the sequence
     pub trivial_base: Rc<Vec<Command>>,
     pub nontrivial_extension: Rc<Vec<Command>>,
     pub nontrivial_index: usize, // this is the exclusive end index
@@ -24,7 +30,7 @@ impl Placement {
     pub fn get_command_sequence(&self) -> Vec<Command> {
         let mut commands = Vec::new();
         for command in chain(
-            (*self.trivial_base).iter(),
+            self.trivial_base.iter(),
             &self.nontrivial_extension[0..self.nontrivial_index],
         ) {
             Self::add_command(&mut commands, *command);
@@ -44,6 +50,7 @@ impl Placement {
     }
 }
 
+#[derive(Default)]
 pub struct PlacementList {
     pub placements: Vec<Placement>,
     pub trivials: Vec<Rc<Vec<Command>>>,
@@ -51,28 +58,15 @@ pub struct PlacementList {
 }
 
 impl PlacementList {
-    pub fn new(
-        trivials: Vec<Vec<Command>>,
-        nontrivials: Vec<Vec<Command>>,
-        controller: Controller,
-    ) -> Self {
-        // wrap all the vectors of commands in Rc
-        let trivials: Vec<Rc<Vec<Command>>> = trivials.into_iter().map(|v| Rc::new(v)).collect();
-        let nontrivials: Vec<Rc<Vec<Command>>> =
-            nontrivials.into_iter().map(|v| Rc::new(v)).collect();
-        let placements = Self::get_placements(&trivials, &nontrivials, controller);
-        Self {
-            placements,
-            trivials,
-            nontrivials,
-        }
-    }
-
-    fn get_placements(
+    pub fn get_placements(
         trivials: &Vec<Rc<Vec<Command>>>,
         nontrivials: &Vec<Rc<Vec<Command>>>,
-        mut controller: Controller,
+        game: Rc<Game>,
+        pieces: Rc<Vec<Piece>>,
     ) -> Vec<Placement> {
+        let mut piece = game.active;
+        let mut controller = Controller::new(&mut piece, &game.board);
+
         let mut placements = Vec::new();
         for (trivial, nontrivial) in zip(trivials, nontrivials) {
             controller.do_commands(trivial);
@@ -87,6 +81,8 @@ impl PlacementList {
                         trivial_base: Rc::clone(trivial),
                         nontrivial_extension: Rc::clone(nontrivial),
                         nontrivial_index: i + 1,
+                        game: Rc::clone(&game),
+                        pieces: Rc::clone(&pieces),
                     });
                 }
             }

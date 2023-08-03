@@ -13,13 +13,14 @@ use crate::constants::piece_constants::*;
 use crate::piece::*;
 use std::time::Instant;
 
+#[allow(unused)]
 fn bench() {
     let bot = Bot::new();
     let n = 500_000;
 
     let now = Instant::now();
     for _ in 0..n {
-        bot.move_gen();
+        bot.move_gen(1);
     }
     println!("Averaged {} microseconds", now.elapsed().as_micros() / n);
 }
@@ -27,7 +28,7 @@ fn bench() {
 fn main() {
     let mut bot = Bot::new();
     bot.game.active = Piece::new(PIECE_T);
-    let placements = bot.move_gen();
+    let placements = bot.move_gen(1);
 
     let placement = &placements.placements[15];
     println!("{:?}", placement.piece);

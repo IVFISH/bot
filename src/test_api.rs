@@ -1,4 +1,5 @@
-#[cfg(test)]
+#[allow(dead_code)]
+
 pub mod functions {
     use crate::board::*;
     use crate::piece::*;
