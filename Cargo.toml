@@ -1,5 +1,5 @@
 [package]
-name = "tetris"
+name = "bot"
 version = "0.1.0"
 edition = "2021"
 
@@ -12,4 +12,3 @@ harness = false
 
 [dependencies]
 itertools = "0.11.0"
-
