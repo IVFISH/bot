@@ -26,7 +26,7 @@ impl<'a> Controller<'a> {
     }
 
     // bot API ----------------------------------
-    /// undos the last command on the stack. panics if the stack is empty
+    /// undoes the last command on the stack. panics if the stack is empty
     pub fn undo(&mut self) {
         self.pop(); // returns an option, doesn't panic
         self.update_piece(*self.pieces.last().expect("Undoing empty stack"));
@@ -43,7 +43,7 @@ impl<'a> Controller<'a> {
         *self.piece = new_piece;
     }
 
-    /// tries to execute the command on the piece
+    /// tries a command
     pub fn do_command(&mut self, command: &Command) -> bool {
         match command {
             &Command::Null => true, // do nothing
@@ -75,7 +75,7 @@ impl<'a> Controller<'a> {
         }
     }
 
-    /// does the action specified by a command. adds to the stack
+    /// tries a command, adds to the stack if successful
     pub fn do_command_mut(&mut self, command: Command) -> bool {
         if self.do_command(&command) {
             if let &Command::Backtrack(mag) = &command {
@@ -92,13 +92,13 @@ impl<'a> Controller<'a> {
         }
     }
 
-    /// executes a list of commands onto a piece
+    /// tries a list of commands
     pub fn do_commands(&mut self, commands: &Vec<Command>) -> bool {
-        commands.iter().all(|command| self.do_command(&command))
+        commands.iter().all(|command| self.do_command(command))
     }
 
-    /// does the actions specified by vector of commands
-    /// adds to the stack
+    /// tries a list of commands
+    /// adds the successful ones to the stack
     pub fn do_commands_mut(&mut self, commands: Vec<Command>) -> bool {
         commands
             .into_iter()

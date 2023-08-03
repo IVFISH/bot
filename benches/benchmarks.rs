@@ -14,7 +14,6 @@ pub fn movegen_benchmark(c: &mut Criterion) {
     c.bench_function("movegen l spin fuckery board", |b| {
         b.iter(|| black_box(bot.move_gen()))
     });
-
 }
 
 pub fn clearlines_benchmark(c: &mut Criterion) {

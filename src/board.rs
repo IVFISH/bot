@@ -67,12 +67,19 @@ impl Board {
         }
     }
 
+    // sets all cells in a row according to the array passed in
     pub fn set_row(&mut self, row: usize, data: [bool; BOARD_WIDTH]) {
         for (col, state) in data.into_iter().enumerate() {
             self.set(row, col, state as usize);
         }
     }
 
+    // sets all cells in a row to 1
+    pub fn fill_row(&mut self, row: usize) {
+        self.set_row(row, [true; BOARD_WIDTH]);
+    }
+
+    // sets all cells in a row 0
     pub fn remove_row(&mut self, row: usize) {
         self.set_row(row, [false; BOARD_WIDTH]);
     }
@@ -115,6 +122,7 @@ impl Board {
         }
     }
 
+    /// returns the maximum number of rows a piece may safely move down
     pub fn piece_max_down(&self, piece: &Piece) -> i8 {
         if let Some(locs) = piece.abs_locations() {
             locs.into_iter()
@@ -134,7 +142,7 @@ impl Board {
     // aux methods ------------------------------
     /// clears all filled lines on the board and moves down
     /// the blocks above those lines
-    pub fn clear_lines(&mut self) {
+    pub fn clear_lines(&mut self) -> u32 {
         let full_rows = self.arr.into_iter().reduce(|x, y| x & y).unwrap();
         for i in 0..BOARD_WIDTH {
             let mut rows = full_rows; // copy
@@ -148,6 +156,7 @@ impl Board {
                 rows = (rows ^ m) << 1;
             }
         }
+        full_rows.count_ones()
     }
 
     // private methods --------------------------
@@ -165,7 +174,7 @@ impl Board {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::constants::piece_constants::{PIECE_T};
+    use crate::constants::piece_constants::PIECE_T;
     use crate::test_api::functions::*;
 
     #[test]

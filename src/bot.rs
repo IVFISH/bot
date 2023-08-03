@@ -37,7 +37,6 @@ impl Bot {
         seen: &mut HashSet<Piece>,
         controller: &mut Controller,
     ) -> (Vec<Vec<Command>>, Vec<Piece>) {
-
         let mut out = Vec::new();
         let mut out_piece = Vec::new();
 
@@ -80,6 +79,8 @@ impl Bot {
         (out, out_piece)
     }
 
+    /// adds the dropped location of a piece to a HashSet
+    /// resets the piece to where it started
     fn add_dropped_piece(
         controller: &mut Controller,
         seen: &mut HashSet<Piece>,
