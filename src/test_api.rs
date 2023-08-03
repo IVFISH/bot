@@ -1,4 +1,4 @@
-#[cfg(test)]
+// #[cfg(test)]
 pub mod functions {
     use crate::board::*;
     use crate::piece::*;

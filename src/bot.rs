@@ -26,15 +26,14 @@ impl Bot {
         let mut piece = self.game.active; // this piece is moved around to generate moves
         let mut controller = Controller::new(&mut piece, &self.game.board);
         let mut seen = HashSet::new();
-        let (trivials, trivial_pieces) = self.trivial(&mut seen, &mut controller);
-        let nontrivials = self.nontrivial(&mut controller, &mut seen, trivial_pieces);
+        let (trivials, trivial_pieces) = Self::trivial(&mut seen, &mut controller);
+        let nontrivials = Self::nontrivial(&mut controller, &mut seen, trivial_pieces);
 
         PlacementList::new(trivials, nontrivials, controller)
     }
 
     /// return the trivial placements as a vector of vec commands from the starting state
     fn trivial(
-        &self,
         seen: &mut HashSet<Piece>,
         controller: &mut Controller,
     ) -> (Vec<Vec<Command>>, Vec<Piece>) {
@@ -97,7 +96,6 @@ impl Bot {
     /// pieces to unseen states. this returns the list of new inputs that
     /// leads to the current state
     fn nontrivial(
-        &self,
         controller: &mut Controller,
         seen: &mut HashSet<Piece>,
         pieces: Vec<Piece>,
@@ -106,7 +104,7 @@ impl Bot {
 
         for piece in pieces.into_iter() {
             controller.update_piece(piece);
-            out.push(self.nontrivial_(controller, seen));
+            out.push(Self::nontrivial_(controller, seen));
         }
         controller.reset();
         out
@@ -116,7 +114,7 @@ impl Bot {
     /// extends a single trivial placeement by recursing through inputs
     /// precondition: the piece is at the location led to by the trivial
     /// this leaves the location of the piece at its final recurse
-    fn nontrivial_(&self, controller: &mut Controller, seen: &mut HashSet<Piece>) -> Vec<Command> {
+    fn nontrivial_(controller: &mut Controller, seen: &mut HashSet<Piece>) -> Vec<Command> {
         let mut out = Vec::new();
 
         let mut dfs_stack = vec![*controller.piece];
