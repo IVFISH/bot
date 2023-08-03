@@ -159,7 +159,7 @@ mod tests {
     use super::*;
     use crate::test_api::functions::*;
 
-    // #[test]
+    #[test]
     fn test_tucks_t() {
         let mut bot = Bot::new();
         let b = &mut bot.game.board;
