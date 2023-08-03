@@ -10,8 +10,6 @@ mod test_api;
 mod piece_queue;
 
 use crate::bot::*;
-use crate::constants::piece_constants::*;
-use crate::piece::*;
 use std::time::Instant;
 
 #[allow(unused)]
@@ -27,8 +25,7 @@ fn bench() {
 }
 
 fn main() {
-    let mut bot = Bot::new();
-    // bot.game.active = Piece::new(PIECE_T);
+    let bot = Bot::new();
     let placements = bot.move_gen(2);
     
     println!("{}", placements.placements.len());

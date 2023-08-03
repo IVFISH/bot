@@ -36,6 +36,7 @@ impl Game {
     /// (this does not check for validity of placement)
     pub fn place_active(&mut self) {
         self.board.set_piece(&self.active);
+        self.board.clear_lines();
         self.active = self.queue.next();
     }
 

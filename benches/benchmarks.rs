@@ -6,14 +6,22 @@ use tetris::test_api::functions::*;
 
 pub fn movegen_benchmark(c: &mut Criterion) {
     let bot = Bot::new();
-    c.bench_function("movegen empty board", |b| {
+    c.bench_function("movegen empty board depth=1", |b| {
         b.iter(|| black_box(bot.move_gen(1)))
     });
+    c.bench_function("movegen empty board depth=3", |b| {
+        b.iter(|| black_box(bot.move_gen(3)))
+    });
+    
     let mut bot = Bot::new();
     bot.game.board = l_spin_board_5();
-    c.bench_function("movegen l-spin-fuckery board", |b| {
+    c.bench_function("movegen l-spin-fuckery board depth=1", |b| {
         b.iter(|| black_box(bot.move_gen(1)))
     });
+    c.bench_function("movegen l-spin-fuckery board depth=3", |b| {
+        b.iter(|| black_box(bot.move_gen(3)))
+    });
+    
 }
 
 pub fn clearlines_benchmark(c: &mut Criterion) {

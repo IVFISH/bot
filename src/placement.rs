@@ -48,6 +48,12 @@ impl Placement {
             _ => commands.push(command),
         }
     }
+
+    /// returns the fumen string that represents the
+    /// series of pieces that the placement stores
+    pub fn get_fumen(&self) -> &str {
+        unimplemented!()
+    }
 }
 
 #[derive(Default)]
@@ -58,6 +64,9 @@ pub struct PlacementList {
 }
 
 impl PlacementList {
+    /// creates a vector of placements
+    /// from the trivials and non-trivials
+    /// with piece validity checking
     pub fn get_placements(
         trivials: &Vec<Rc<Vec<Command>>>,
         nontrivials: &Vec<Rc<Vec<Command>>>,
@@ -90,4 +99,23 @@ impl PlacementList {
         }
         placements
     }
+    
+    /// debugging tool to write all the fumens to a json file 
+    pub fn write_fumens(&self, filename: &str) {
+        unimplemented!()
+    }
+    
+    // plan to make a visualizer for the fumens:
+    // options: 
+    // - play sequential [final=false] (plays all the gifs in order, only show final)
+    // - play manual (opens keyboard listener to iterate frames based on left/right keys)
+    // - play n (plays the nth fumen on repeat)
+    // - filter n [k=1] (only keep the fumens that start with the first k pieces of nth fumen
+    // - jump n (jumps to the nth fumen (in filtered list), continues playing if playing)
+    // - restore (remove all filters)
+    // - stop (stops playing)
+    // display:
+    // - how many fumens were generated
+    // - which fumen index currently on
+    // - the current game
 }
