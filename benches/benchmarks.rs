@@ -3,16 +3,29 @@ use tetris::board::*;
 use tetris::bot::*;
 use tetris::constants::board_constants::*;
 use tetris::test_api::functions::l_spin_board_5;
+use tetris::lookahead::many_lookahead;
 
 pub fn movegen_benchmark(c: &mut Criterion) {
-    let bot = Bot::new();
-    c.bench_function("movegen empty board", |b| {
-        b.iter(|| black_box(bot.move_gen()))
+    let mut bot = Bot::new();
+    c.bench_function("movegen empty board d=1", |b| {
+        b.iter(|| black_box(many_lookahead(bot.game, 1)))
     });
+
+    let mut bot = Bot::new();
+    c.bench_function("movegen empty board d=3", |b| {
+        b.iter(|| black_box(many_lookahead(bot.game, 2)))
+    });
+
     let mut bot = Bot::new();
     bot.game.board = l_spin_board_5();
-    c.bench_function("movegen l spin fuckery board", |b| {
-        b.iter(|| black_box(bot.move_gen()))
+    c.bench_function("movegen l spin fuckery board d=1", |b| {
+        b.iter(|| black_box(many_lookahead(bot.game, 2)))
+    });
+
+    let mut bot = Bot::new();
+    bot.game.board = l_spin_board_5();
+    c.bench_function("movegen l spin fuckery board d=3", |b| {
+        b.iter(|| black_box(many_lookahead(bot.game, 3)))
     });
 }
 
