@@ -4,6 +4,7 @@ use crate::board::Board;
 use crate::constants::piece_constants::{NUM_ROTATE_STATES, RELATIVE_CORNERS};
 use crate::constants::types::{PieceType, RotationDirection};
 use crate::constants::versus_constants::*;
+use crate::constants::queue_constants::*;
 use crate::piece::Piece;
 use crate::point_vector::PointVector;
 use crate::queue::{piece_type_to_string, piece_type_to_string_colored, BagType, PieceQueue};
@@ -26,11 +27,13 @@ pub struct Game {
 
 impl Display for Game {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Queue: {}", self.piece_queue)?;
-        if let Some(hold) = self.hold_piece {
-            write!(f, "Hold: {}\n", piece_type_to_string_colored(hold))?;
-        } else {
-            write!(f, "Hold: None\n")?;
+        if CONSOLE_DISPLAY_QUEUE {
+            write!(f, "Queue: {}", self.piece_queue)?;
+            if let Some(hold) = self.hold_piece {
+                write!(f, "Hold: {}\n", piece_type_to_string_colored(hold))?;
+            } else {
+                write!(f, "Hold: None\n")?;
+            }
         }
 
         write!(f, "{}", self.board.display_with_active(&self.active_piece))?;
@@ -52,11 +55,14 @@ impl Game {
     }
 
     pub fn from_rules(seed: Option<usize>, game_rules: GameRules) -> Self {
-        Self {
+        let mut out = Self {
             piece_queue: PieceQueue::new(seed),
             game_rules,
             ..Default::default()
-        }
+        };
+
+        out.active_piece = out.piece_queue.next();
+        out
     }
     // piece getters and setters
     pub fn get_active_piece(&self) -> &Piece {

@@ -86,21 +86,24 @@ fn bot_play_local() {
 
     let mut time = 0;
     while !bot.get_game().get_game_over() && bot.get_game().game_data.pieces_placed < 10000 {
-
         let now = time::Instant::now();
         bot.make_move();
         time += now.elapsed().as_micros();
         
-        let mut commsfile = fs::read_to_string(LOCALGAMEPLAYFILEPATH).expect("e");
-        let garbage = commsfile.chars().nth(BOTNUM).expect("e").to_string().parse::<usize>().unwrap();
-        bot.addgarbagetest((time % 10).try_into().unwrap(), garbage);
-        commsfile.replace_range(BOTNUM..BOTNUM+1, "0");
-        let _ = fs::write(LOCALGAMEPLAYFILEPATH, commsfile);
+        if ALLOWLOCALGAMEPLAY && bot.get_game().game_data.combo == 0 {
+            let mut commsfile = fs::read_to_string(LOCALGAMEPLAYFILEPATH).expect("e");
+            let garbage = commsfile.chars().nth(BOTNUM).expect("e").to_string().parse::<usize>().unwrap();
+            bot.addgarbage((time % 10).try_into().unwrap(), garbage);
+            commsfile.replace_range(BOTNUM..BOTNUM+1, "0");
+            let _ = fs::write(LOCALGAMEPLAYFILEPATH, commsfile);
+        }
 
         thread::sleep(time::Duration::from_millis(0));
         // println!("{}", bot.get_game());
         println!("{}", bot.get_game());
-        println!("{} milliseconds to move", format!("{}", now.elapsed().as_micros() / 1000).green())
+        println!("{} milliseconds to move", format!("{}", now.elapsed().as_micros() / 1000).green());
+        println!("{} lines sent / {} pieces placed = {} app", format!("{}", bot.get_game().game_data.lines_sent).green(), format!("{}", bot.get_game().game_data.pieces_placed).green(), format!("{}", (bot.get_game().game_data.lines_sent as f64) / (bot.get_game().game_data.pieces_placed as f64)).green());
+        println!("{} b2b, {} combo", format!("{}", bot.get_game().game_data.b2b).green(), format!("{}", bot.get_game().game_data.combo).green())
     }
     println!(
         "Making {} moves took {} microseconds on average",
@@ -123,7 +126,7 @@ fn test_cheese() {
         let now = time::Instant::now();
         bot.make_move();
         time += now.elapsed().as_micros();
-        if bot.get_game().game_data.pieces_placed % 3 == 0 { bot.addgarbagetest((time % 10).try_into().unwrap(), 1); } // cheese timer in zen mode be like
+        if bot.get_game().game_data.pieces_placed % 3 == 0 { bot.addgarbage((time % 10).try_into().unwrap(), 1); } // cheese timer in zen mode be like
 
         thread::sleep(time::Duration::from_millis(0));
         // println!("{}", bot.get_game());

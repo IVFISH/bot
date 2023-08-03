@@ -7,6 +7,7 @@ use crate::queue::{piece_type_to_string_colored};
 use crate::point_vector::{Point, PointVector};
 use std::fmt::{Display, Formatter};
 use colored::*;
+use num::clamp;
 
 #[derive(Debug, Clone)]
 pub struct Board {
@@ -379,7 +380,7 @@ impl Board {
                 } else if locations.contains(&Point(row as i8, col as i8)) {
                     out.push_str(&format!("{} ", piece_type_to_string_colored(active_piece.get_type())));
                 } else {
-                    out.push_str(&format!("{} ", ("▫".truecolor(40,40,40))));
+                    out.push_str(&format!("{} ", ("▫".truecolor(clamp(8*row,0,255).try_into().unwrap(),clamp(100-4*row,0,255).try_into().unwrap(),clamp(40,0,255).try_into().unwrap()))));
                 }
             }
             out.push_str("\n");

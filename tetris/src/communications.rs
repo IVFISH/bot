@@ -112,11 +112,6 @@ async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
                     },
                     "stop" => eprintln!("stop game"),
                     "start" => {
-                        let mut i_hate_osk: usize = 21; // 0+1+2+3+4+5+6 = 21
-                        for i in 0..6 {
-                            i_hate_osk -= bot.get_game().piece_queue.peek_index(i)
-                        }
-                        bot.get_game_mut().set_active_piece(Piece::new(i_hate_osk));
                         ws_sender.send(Message::Text(serde_json::to_string(&json!(bot.make_suggest_move())).unwrap())).await?
                     },
                     other => eprintln!("unexpected packet of type {}", other),

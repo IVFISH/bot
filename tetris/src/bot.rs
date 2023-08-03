@@ -183,7 +183,7 @@ impl Bot {
             let mut next_scores = ScoreList::new();
 
             //pruning parameters
-            let n = 50;
+            let n = 100;
             let prune_depth = 1;
 
             for curr_depth in 1..depth {
@@ -232,7 +232,7 @@ impl Bot {
 
                         next_moves.push(one_move.clone());
                         next_placements.push(placements.clone());
-                        next_scores.push((board, (versus + add_versus) * (1.0-(0.5*curr_depth as f32/depth as f32))));
+                        next_scores.push((board, (versus + add_versus) * (1.0-(0.25*curr_depth as f32/depth as f32))));
                     }
                 }
                 curr_moves = mem::take(&mut next_moves);
@@ -494,7 +494,7 @@ impl Bot {
         let mut extra = 0.0;
 
         if pc {
-            extra -= 1000000.0;
+            extra -= 100.0;
         }
         if t_spin {
             extra -= 100.0
@@ -538,7 +538,7 @@ impl Bot {
         out
     }
 
-    pub fn addgarbagetest(&mut self, col: usize, amnt: usize) {
+    pub fn addgarbage(&mut self, col: usize, amnt: usize) {
         self.game.board.add_garbage(col,amnt)
     }
 }

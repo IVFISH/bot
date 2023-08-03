@@ -98,6 +98,7 @@ pub mod queue_constants {
     pub const MULTIPLIER: usize = 16807;
     pub const MODULUS: usize = 2147483647;
 
+    pub const CONSOLE_DISPLAY_QUEUE: bool = true;
 }
 
 pub mod bot_constants {
@@ -437,6 +438,7 @@ pub mod offset {
 }
 
 pub mod localbotgameplay {
+    pub const ALLOWLOCALGAMEPLAY: bool = true;
     pub const LOCALGAMEPLAYFILEPATH: &str = r".\src\localdata.txt";
     pub const BOTNUM: usize = 0;
     pub const BOTNUM2: usize = 1;

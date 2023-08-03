@@ -23,10 +23,18 @@ pub trait Player {
         do_move_list(self.get_game_mut(), action);
 
         // for local gameplay in cmd
-        let mut commsfile = fs::read_to_string(LOCALGAMEPLAYFILEPATH).expect("e");
-        let clamped_lines_sent = clamp(self.get_game().game_data.last_sent + commsfile.chars().nth(BOTNUM2).expect("e").to_string().parse::<u16>().unwrap(), 0, 9);
-        commsfile.replace_range(BOTNUM2..BOTNUM2+1, &clamped_lines_sent.to_string());
-        let _ = fs::write(LOCALGAMEPLAYFILEPATH, commsfile);
+        if ALLOWLOCALGAMEPLAY {
+            let mut commsfile = fs::read_to_string(LOCALGAMEPLAYFILEPATH).expect("e");
+            let mut garbage = commsfile.chars().nth(BOTNUM).expect("e").to_string().parse::<i16>().unwrap();
+            let clamped_lines_sent = clamp(clamp(self.get_game().game_data.last_sent as i16 - garbage, 0, 9) + commsfile.chars().nth(BOTNUM2).expect("e").to_string().parse::<i16>().unwrap(), 0, 9);
+            garbage = clamp(garbage - self.get_game().game_data.last_sent as i16, 0, 9);
+            commsfile.replace_range(BOTNUM..BOTNUM+1, &garbage.to_string());
+            commsfile.replace_range(BOTNUM2..BOTNUM2+1, &clamped_lines_sent.to_string());
+            let _ = fs::write(LOCALGAMEPLAYFILEPATH, commsfile);
+
+            println!("{}", &garbage.to_string());
+            println!("{}", &clamped_lines_sent.to_string());
+        }
 
         // println!("{}", clamped_lines_sent)
         // println!("{}", self.get_game().game_data.last_sent);
