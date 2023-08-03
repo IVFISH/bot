@@ -79,7 +79,7 @@ impl Player for Bot {
         // thread::sleep(time::Duration::from_millis(250));
 
         // println!("{}", self.get_game().board.get_max_height());
-        let (deep_moves, places, deep_scores) = self.move_placement_score(MOVEPLACEMENTSCORE - self.get_game().board.get_max_height()*PANICBURST, &self.weight.clone());
+        let (deep_moves, places, deep_scores) = self.move_placement_score(11, &self.weight.clone());
         let deep_scores: Vec<f32> = deep_scores
             .iter()
             .map(|(board, versus)| board + versus)
@@ -183,7 +183,7 @@ impl Bot {
             let mut next_scores = ScoreList::new();
 
             //pruning parameters
-            let n = 100;
+            let n = 100000 / (400 + 40*self.get_game().board.get_max_height());
             let prune_depth = 1;
 
             for curr_depth in 1..depth {
