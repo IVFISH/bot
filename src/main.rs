@@ -28,6 +28,8 @@ fn main() {
     let bot = Bot::new();
     let placements = bot.move_gen(2);
 
+    placements.write_fumens("fumens.txt");
+
     println!("{}", placements.placements.len());
     let placement = &placements.placements[1];
     println!("{:?}", placement.pieces);
