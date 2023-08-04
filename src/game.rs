@@ -4,7 +4,7 @@ use crate::board::Board;
 use crate::piece::Piece;
 use crate::piece_queue::PieceQueue;
 
-#[derive(Default, Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct Game {
     pub board: Board,
     pub active: Piece,
@@ -20,13 +20,14 @@ impl Game {
         Self {
             active: queue.next(),
             queue,
-            ..Default::default()
+            hold: None,
+            board: Board::default(),
         }
     }
 
     /// returns a game with a random seed
     pub fn random() -> Self {
-        let random_seed = 0;
+        let random_seed = 1;
         Self::new(random_seed)
     }
 
@@ -43,7 +44,7 @@ impl Game {
     /// updates the active piece to a new piece if possible
     /// this swaps the hold and active if the piece is the hold piece
     pub fn update_active(&mut self, piece: Piece) {
-        if piece.r#type == self.active.r#type  {
+        if piece.r#type == self.active.r#type {
             self.active = piece;
         } else if self.hold.is_some() && self.hold.unwrap() == piece.r#type {
             self.hold = Some(self.active.r#type);

@@ -99,14 +99,14 @@ impl PlacementList {
         }
         placements
     }
-    
-    /// debugging tool to write all the fumens to a json file 
+
+    /// debugging tool to write all the fumens to a json file
     pub fn write_fumens(&self, filename: &str) {
         unimplemented!()
     }
-    
+
     // plan to make a visualizer for the fumens:
-    // options: 
+    // options:
     // - play sequential [final=false] (plays all the gifs in order, only show final)
     // - play manual (opens keyboard listener to iterate frames based on left/right keys)
     // - play n (plays the nth fumen on repeat)

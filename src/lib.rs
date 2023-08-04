@@ -5,6 +5,6 @@ pub mod constants;
 pub mod controller;
 pub mod game;
 pub mod piece;
+pub mod piece_queue;
 pub mod placement;
 pub mod test_api;
-pub mod piece_queue;

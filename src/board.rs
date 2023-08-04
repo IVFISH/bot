@@ -45,7 +45,12 @@ impl Board {
 
     /// returns the index of the first empty row in column col
     pub fn get_height(&self, col: usize) -> usize {
-        (usize::BITS - self.arr[col].leading_zeros()) as usize
+        (u64::BITS - self.arr[col].leading_zeros()) as usize
+    }
+
+    /// returns the index of the first empty row in a column col below the specified row
+    pub fn get_height_below(&self, col: usize, row: usize) -> usize {
+        (u64::BITS - (self.arr[col] & !(u64::MAX << row)).leading_zeros()) as usize
     }
 
     /// returns the state (0 or 1) at the grid's row and col
@@ -114,6 +119,18 @@ impl Board {
     /// returns whether the piece has no collision and is grounded
     pub fn piece_can_set(&self, piece: &Piece) -> bool {
         !self.piece_collision(piece) && self.piece_grounded(piece)
+    }
+
+    /// retuns the amount of rows that a piece can move down
+    pub fn piece_max_down(&self, piece: &Piece) -> i8 {
+        if let Some(locs) = piece.abs_locations() {
+            locs.into_iter()
+                .map(|[row, col]| (row - self.get_height_below(col, row)) as i8)
+                .min()
+                .unwrap()
+        } else {
+            0
+        }
     }
 
     // aux methods ------------------------------

@@ -54,12 +54,10 @@ impl<'a> Controller<'a> {
                     .is_some()
             }
             &Command::MoveDrop => {
-                let [dir_row, dir_col] = [-1, 0];
-                let can_drop = Self::can_move_piece(self.board, self.piece, [dir_row, dir_col]);
-                while Self::can_move_piece(self.board, self.piece, [dir_row, dir_col]) {
-                    self.piece.r#move(dir_row, dir_col);
-                }
-                can_drop
+                let max_down = self.board.piece_max_down(self.piece);
+                (max_down > 0)
+                    .then(|| self.piece.r#move(-max_down, 0))
+                    .is_some()
             }
             &Command::Rotate(dir) => {
                 for [dir_row, dir_col] in self.piece.get_kicks(dir).into_iter() {

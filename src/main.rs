@@ -5,9 +5,9 @@ mod constants;
 mod controller;
 mod game;
 mod piece;
+mod piece_queue;
 mod placement;
 mod test_api;
-mod piece_queue;
 
 use crate::bot::*;
 use std::time::Instant;
@@ -27,7 +27,7 @@ fn bench() {
 fn main() {
     let bot = Bot::new();
     let placements = bot.move_gen(2);
-    
+
     println!("{}", placements.placements.len());
     let placement = &placements.placements[1];
     println!("{:?}", placement.pieces);

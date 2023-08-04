@@ -3,3 +3,4 @@ target*
 *.pyc
 .DS_Store
 weights*
+Cargo.lock

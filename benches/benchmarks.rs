@@ -5,15 +5,15 @@ use tetris::constants::board_constants::*;
 use tetris::test_api::functions::*;
 
 pub fn movegen_benchmark(c: &mut Criterion) {
-    let bot = Bot::new();
+    let bot = Bot::with_seed(4);
     c.bench_function("movegen empty board depth=1", |b| {
         b.iter(|| black_box(bot.move_gen(1)))
     });
     c.bench_function("movegen empty board depth=3", |b| {
         b.iter(|| black_box(bot.move_gen(3)))
     });
-    
-    let mut bot = Bot::new();
+
+    let mut bot = Bot::with_seed(4);
     bot.game.board = l_spin_board_5();
     c.bench_function("movegen l-spin-fuckery board depth=1", |b| {
         b.iter(|| black_box(bot.move_gen(1)))
@@ -21,7 +21,6 @@ pub fn movegen_benchmark(c: &mut Criterion) {
     c.bench_function("movegen l-spin-fuckery board depth=3", |b| {
         b.iter(|| black_box(bot.move_gen(3)))
     });
-    
 }
 
 pub fn clearlines_benchmark(c: &mut Criterion) {

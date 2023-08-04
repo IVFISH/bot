@@ -10,7 +10,7 @@ use itertools::concat;
 use std::collections::HashSet;
 use std::rc::Rc;
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Bot {
     pub game: Game,
 }
@@ -19,7 +19,13 @@ impl Bot {
     // constructors -----------------------------
     pub fn new() -> Self {
         Self {
-            game: Game::random()
+            game: Game::random(),
+        }
+    }
+
+    pub fn with_seed(seed: usize) -> Self {
+        Self {
+            game: Game::new(seed),
         }
     }
 

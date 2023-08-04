@@ -143,3 +143,10 @@ pub mod piece_constants {
         [[0, -1], [1, -1], [1, 0]],
     ];
 }
+
+pub mod queue_constants {
+    pub const MULTIPLIER: usize = 16807;
+    pub const MODULUS: usize = 2147483647;
+    /// amount of bits occupied per piece
+    pub const PIECE_BITS: usize = 3;
+}
