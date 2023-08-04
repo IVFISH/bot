@@ -41,14 +41,10 @@ impl Game {
         self.active = self.queue.next();
     }
 
-    /// updates the active piece to a new piece if possible
-    /// this swaps the hold and active if the piece is the hold piece
-    pub fn update_active(&mut self, piece: Piece) {
-        if piece.r#type == self.active.r#type {
-            self.active = piece;
-        } else if self.hold.is_some() && self.hold.unwrap() == piece.r#type {
-            self.hold = Some(self.active.r#type);
-            self.active = piece;
-        }
+    // swaps the hold and active piece (or gets hold from queue)
+    pub fn hold(&mut self) {
+        let h = self.hold;
+        self.hold = Some(self.active.r#type);
+        self.active = Piece::new(h.unwrap_or_else(|| self.queue.next_piece_type());
     }
 }

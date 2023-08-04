@@ -90,8 +90,7 @@ impl Bot {
         let mut pieces = (*placement.pieces).clone();
         pieces.push(placement.piece);
         for piece in pieces.iter() {
-            game.update_active(*piece);
-            assert!(game.active == *piece); // just a sanity check <3
+            game.active = *piece;
             game.place_active();
         }
 

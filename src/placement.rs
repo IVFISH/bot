@@ -11,6 +11,7 @@ use std::rc::Rc;
 pub struct Placement {
     // the last piece in the move sequence
     pub piece: Piece,
+    pub held: bool,
 
     // references to the source for generating the move
     pub game: Rc<Game>,         // the starting game (depth=0)
@@ -72,6 +73,7 @@ impl PlacementList {
         nontrivials: &Vec<Rc<Vec<Command>>>,
         game: Rc<Game>,
         pieces: Rc<Vec<Piece>>,
+        held: bool,
     ) -> Vec<Placement> {
         let mut piece = game.active;
         let mut controller = Controller::new(&mut piece, &game.board);
@@ -90,6 +92,7 @@ impl PlacementList {
                         trivial_base: Rc::clone(trivial),
                         nontrivial_extension: Rc::clone(nontrivial),
                         nontrivial_index: i + 1,
+                        held,
                         game: Rc::clone(&game),
                         pieces: Rc::clone(&pieces),
                     });
