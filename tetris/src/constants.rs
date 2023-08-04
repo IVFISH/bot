@@ -83,7 +83,7 @@ pub mod versus_constants {
         TT,
     }
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Copy, Clone, Debug, PartialEq)]
     pub enum TSpinType {
         None,
         Full,
@@ -92,7 +92,7 @@ pub mod versus_constants {
 }
 
 pub mod queue_constants {
-    pub const MIN_QUEUE_LENGTH: usize = 6;
+    pub const MIN_QUEUE_LENGTH: usize = 10;
 
     // lehmer RNG (MINSTD)
     pub const MULTIPLIER: usize = 16807;
@@ -164,8 +164,8 @@ pub mod bot_constants {
         // Game::active_drop,
     ];
 
-    pub const MOVEPLACEMENTSCORE: usize = 24;
-    pub const PANICBURST: usize = 1; // test and will likely not be the function used later
+    pub const MOVEPLACEMENTSCORE: usize = 14;
+    pub const PANICBURST: usize = 0; // test and will likely not be the function used later
 }
 
 pub mod rotation {

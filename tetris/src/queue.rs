@@ -119,6 +119,15 @@ impl PieceQueue {
         }
         arr
     }
+
+    pub fn nearest_tpiece(&self) -> usize {
+        for piece in 0..MIN_QUEUE_LENGTH {
+            if self.queue[piece] == 6 {
+                return piece;
+            }
+        }
+        return MIN_QUEUE_LENGTH;
+    }
 }
 
 pub fn piece_type_to_string(piece: PieceType) -> String {

@@ -18,7 +18,10 @@ use crate::communications::Suggestion;
 use crate::{Dependency, Opener, OpenerStatus, Point};
 use crate::book::openers;
 use crate::constants::board_constants::BOARD_WIDTH;
+use crate::constants::queue_constants::MIN_QUEUE_LENGTH;
 use crate::point_vector::PointVector;
+use num::clamp;
+use num::traits::Pow;
 
 
 pub struct Bot {
@@ -183,7 +186,7 @@ impl Bot {
             let mut next_scores = ScoreList::new();
 
             //pruning parameters
-            let n = 100;
+            let n = 400;
             let prune_depth = 1;
 
             for curr_depth in 1..depth {
@@ -201,7 +204,7 @@ impl Bot {
                             .unzip();
 
                     curr_scores.sort_by(|(v1, b1), (v2, b2)| (v1 + b1).partial_cmp(&(v2 + b2)).unwrap());
-                    curr_scores.truncate(n);
+                    curr_scores.truncate(1 + n - n * curr_depth / depth);
                 }
 
                 //generating next_mps
@@ -432,7 +435,7 @@ impl Bot {
         // PC (pseudo) PRUNING
         if false && (game.board.get_mino_count() % 2 == 0) {
             // pseudo pruning, gives a large penalty for unsolvable/hard to solve boards
-            let penalty = (100000.0, Bot::score_board(&game.board, weights));
+            let penalty = (100.0, Bot::score_board(&game, &game.board, weights));
 
             let target_height = 4 + (game.board.get_mino_count() % 4)/2;
 
@@ -470,16 +473,16 @@ impl Bot {
         }
 
         return (
-            Bot::score_board(&game.board, weights),
+            Bot::score_board(&game, &game.board, weights),
             Bot::score_versus(&game.game_data, weights),
         )
     }
 
-    fn score_board(board: &Board, weights: &Weights) -> Score {
+    fn score_board(game: &Game, board: &Board, weights: &Weights) -> Score {
         Bot::get_holes_and_cell_covered_score(board, weights)
             + Bot::get_height_score(board, weights)
             + Bot::get_height_differences_score(board, weights)
-            + Bot::get_t_slot_score(board, weights)
+            + Bot::get_t_slot_score(game, board, weights)
     }
 
     fn score_versus(game_data: &GameData, weight: &Weights) -> Score {
@@ -494,12 +497,20 @@ impl Bot {
         let mut extra = 0.0;
 
         if pc {
-            extra -= 100.0;
+            extra -= 10000.0;
         }
         if t_spin {
-            extra -= 100.0
+            extra -= weight.tspin_reward*weight.tspin_reward_expo.pow(game_data.last_cleared as f32);
         }
-
+        if game_data.last_placed_piece.get_type() == 6 {
+            match game_data.t_spin_type {
+                0 => extra += weight.waste_t_weight,
+                1 => extra += weight.waste_t_weight * clamp(2 - game_data.last_cleared, 0, 1) as f32, // doubles and triples should not be punished
+                2 => extra += weight.waste_t_weight * 0.8 * clamp(2 - game_data.last_cleared, 0, 1) as f32, // minis should be punished less but not by much
+                _ => extra += weight.waste_t_weight, // idk
+            }
+        }
+        
         combo_score + b2b + attack + clear + extra
     }
 
@@ -517,8 +528,9 @@ impl Bot {
         adjacent_score + total_score
     }
 
-    pub(crate) fn get_t_slot_score(board: &Board, weight: &Weights) -> f32 {
-        weight.t_slot_weight.eval(board.t_slot() as f32)
+    pub(crate) fn get_t_slot_score(game: &Game, board: &Board, weight: &Weights) -> f32 {
+        weight.t_slot_weight.eval(board.t_slot() as f32) * (1.0 - (game.nearest_tpiece() as f32 / MIN_QUEUE_LENGTH as f32))
+        // + weight.t_slot_special_weight.eval(board.special_t_slot() as f32)
     }
 
     fn get_height_score(board: &Board, weight: &Weights) -> f32 {
@@ -534,11 +546,20 @@ impl Bot {
         out += weight.num_hole_total_weight.eval(holes_t as f32);
         out += weight.num_hole_weighted_weight.eval(holes_w as f32);
         out += weight.cell_covered_weight.eval(covered as f32);
+        out += board.horizontal_holes_weighted(weight);
 
         out
     }
 
     pub fn addgarbage(&mut self, col: usize, amnt: usize) {
         self.game.board.add_garbage(col,amnt)
+    }
+
+    pub fn addtoboard(&mut self, row: usize, col: usize) {
+        self.game.board.add(row, col)
+    }
+
+    pub fn removefromboard(&mut self, row: usize, col: usize) {
+        self.game.board.remove(row, col)
     }
 }

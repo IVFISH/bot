@@ -119,6 +119,7 @@ impl Game {
 
     pub fn active_drop(&mut self) -> bool {
         let out = self.active_down();
+        if out { self.active_piece.set_kick(999)}
         while out && self.active_down() {}
         out
     }
@@ -282,9 +283,17 @@ impl Game {
 
         self.board.set_piece(&self.active_piece);
         self.update();
+        self.game_data.last_placed_piece = self.active_piece;
         self.active_piece = self.piece_queue.next();
 
         true
+    }
+
+    pub fn nearest_tpiece(&self) -> usize {
+        if self.hold_piece == Some(6) || self.active_piece.get_type() == 6 {
+            return 0;
+        }
+        self.piece_queue.nearest_tpiece()
     }
 
     pub fn update(&mut self) {
@@ -292,7 +301,7 @@ impl Game {
         let lines_cleared = self.board.clear_lines();
         let attack_type = attack_type(t_spin_type, lines_cleared);
 
-        self.game_data.update(lines_cleared, attack_type, self.board.all_clear());
+        self.game_data.update(lines_cleared, attack_type, t_spin_type, self.board.all_clear());
     }
 }
 
@@ -313,28 +322,32 @@ pub mod game_rules_and_data {
         pub lines_sent: u16,
         pub last_sent: u16,
         pub last_cleared: usize,
+        pub last_placed_piece: Piece,
 
         pub t_spin: bool,
+        pub t_spin_type: u16,
 
         pub game_over: bool,
     }
 
     impl GameData {
-        pub fn update(&mut self, lines_cleared: usize, attack: AttackType, all_clear: bool) {
+        pub fn update(&mut self, lines_cleared: usize, attack: AttackType, t_spin_type: TSpinType, all_clear: bool) {
             self.pieces_placed += 1;
+            self.t_spin_type = t_spin_type as u16;
 
             if lines_cleared == 0 {
                 self.combo = 0;
                 self.all_clear = false;
                 self.last_cleared = 0;
                 self.last_sent = 0;
+                self.t_spin = false;
                 return;
             }
 
             self.lines_cleared += lines_cleared;
             self.last_cleared = lines_cleared;
 
-            if attack == TD{
+            if self.t_spin_type > 0 {
                 self.t_spin = true;
             }
 

@@ -32,8 +32,8 @@ pub trait Player {
             commsfile.replace_range(BOTNUM2..BOTNUM2+1, &clamped_lines_sent.to_string());
             let _ = fs::write(LOCALGAMEPLAYFILEPATH, commsfile);
 
-            println!("{}", &garbage.to_string());
-            println!("{}", &clamped_lines_sent.to_string());
+            // println!("{}", &garbage.to_string());
+            // println!("{}", &clamped_lines_sent.to_string());
         }
 
         // println!("{}", clamped_lines_sent)
