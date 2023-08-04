@@ -13,13 +13,13 @@ pub fn movegen_benchmark(c: &mut Criterion) {
 
     let mut bot = Bot::new();
     c.bench_function("movegen empty board d=3", |b| {
-        b.iter(|| black_box(many_lookahead(bot.game, 2)))
+        b.iter(|| black_box(many_lookahead(bot.game, 3)))
     });
 
     let mut bot = Bot::new();
     bot.game.board = l_spin_board_5();
     c.bench_function("movegen l spin fuckery board d=1", |b| {
-        b.iter(|| black_box(many_lookahead(bot.game, 2)))
+        b.iter(|| black_box(many_lookahead(bot.game, 1)))
     });
 
     let mut bot = Bot::new();

@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use crate::bot::Bot;
 use crate::constants::piece_constants::PIECE_L;
 use crate::game::Game;
@@ -46,33 +47,23 @@ fn lookahead(games: Vec<Game>) -> Vec<Game> {
 
 // helper methods---------------------------------------------
 
-fn move_gen_hold(mut bot: Bot) -> Vec<Placement> {
-    let mut placements = bot.move_gen().placements;
-
-    // make sure hold is not redundant
+fn move_gen_hold(mut bot: Bot) -> HashSet<Piece> {
+    let mut placements = bot.move_gen();
     if bot.game.hold == Some(bot.game.active.r#type) {
-        return placements;
+        return placements
     }
 
-    // JUST HOLD
-    if let Some(hold_piece) = bot.game.hold {
-        bot.game.active = Piece::new(hold_piece);
-        bot.game.hold = Some(hold_piece);
-    } else {
-        bot.game.hold = Some(bot.game.active.r#type);
-        bot.game.active = Piece::new(PIECE_L); // sample next piece in queue lmfao
-    }
+    bot.game.hold();
 
-    placements.extend(bot.move_gen().placements);
+    placements.extend(bot.move_gen());
     placements
 }
 
-fn place_and_push(placements: Vec<Placement>, base_game: &Game, push_to: &mut Vec<Game>) {
+fn place_and_push(placements: HashSet<Piece>, base_game: &Game, push_to: &mut Vec<Game>) {
     for placement in placements {
         let mut out_game = *base_game; // copy
-        out_game.board.set_piece(&placement.piece);
-        // update out_game (line clears, garbage(?), stats)
-        // scoring?
+        out_game.active = placement;
+        out_game.place_active();
         push_to.push(out_game);
     }
 }

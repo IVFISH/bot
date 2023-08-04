@@ -22,7 +22,7 @@ impl Bot {
     // move generation --------------------------
     /// the API function for generating all current moves
     /// for the current active piece, as well as after holding
-    pub fn move_gen(&self) -> PlacementList {
+    pub fn move_gen_1d(&self) -> PlacementList {
         let mut piece = self.game.active; // this piece is moved around to generate moves
         let mut controller = Controller::new(&mut piece, &self.game.board);
         let mut seen = HashSet::new();
@@ -30,6 +30,57 @@ impl Bot {
         let nontrivials = Self::nontrivial(&mut controller, &mut seen, trivial_pieces);
 
         PlacementList::new(trivials, nontrivials, controller)
+    }
+
+    pub fn move_gen(&self) -> HashSet<Piece> {
+        let mut piece = self.game.active; // this piece is moved around to generate moves
+        let mut controller = Controller::new(&mut piece, &self.game.board);
+        let mut seen = HashSet::new();
+        Self::add_trivials(&mut seen, &mut controller);
+        Self::add_nontrivials(&mut seen, &mut controller);
+
+        seen
+    }
+
+    /// extends the seen hashset by the trivials
+    fn add_trivials(seen: &mut HashSet<Piece>, controller: &mut Controller) {
+        for rotation in 0..NUM_ROTATE_STATES {
+            controller.do_command_mut(Command::Rotate(rotation as u8));
+            Self::insert_dropped_piece(controller, seen);
+            while controller.do_command(&Command::MoveHorizontal(1)) {
+                Self::insert_dropped_piece(controller, seen);
+            }
+            *controller.piece = controller.peek().unwrap().1; // reset the piece
+            while controller.do_command(&Command::MoveHorizontal(-1)) {
+                Self::insert_dropped_piece(controller, seen);
+            }
+            controller.undo();
+
+            if controller.piece.r#type == PIECE_O {
+                // don't generate new trivials for O
+                break;
+            }
+        }
+    }
+
+    /// extends the seen hashset by the grounded nontrivials
+    fn add_nontrivials(seen: &mut HashSet<Piece>, controller: &mut Controller) {
+        let mut dfs_stack: Vec<_> = seen.clone().into_iter().collect();
+        let mut seen_all = seen.clone(); // includes the not-grounded ones
+        while let Some(p) = dfs_stack.pop() {
+            for command in COMMANDS.into_iter() {
+                controller.update_piece(p);
+                controller.do_command(&command);
+                if seen_all.contains(controller.piece) {
+                    continue;
+                }
+                seen_all.insert(*controller.piece);
+                dfs_stack.push(*controller.piece);
+                if controller.board.piece_grounded(controller.piece) {
+                    seen.insert(*controller.piece);
+                }
+            }
+        }
     }
 
     /// return the trivial placements as a vector of vec commands from the starting state
@@ -90,7 +141,17 @@ impl Bot {
         controller.do_command(&Command::MoveDrop);
         seen.insert(*controller.piece);
         pieces.push(*controller.piece);
-        controller.piece.set_row(start_row)
+        controller.piece.set_row(start_row);
+    }
+
+    fn insert_dropped_piece(
+        controller: &mut Controller,
+        seen: &mut HashSet<Piece>,
+    ) {
+        let start_row = controller.piece.row;
+        controller.do_command(&Command::MoveDrop);
+        seen.insert(*controller.piece);
+        controller.piece.set_row(start_row);
     }
 
     /// extend the trivial placements by recursing through inputs that bring
@@ -167,7 +228,7 @@ mod tests {
         add_list(b, vec![[2, 7], [2, 8], [2, 9], [2, 0], [2, 1], [2, 2]]);
         bot.game.active = Piece::new(PIECE_T);
 
-        let placements = bot.move_gen();
+        let placements = bot.move_gen_1d();
         assert_eq!(placements.trivials.len(), 34);
         assert_eq!(placements.nontrivials.len(), 34);
         assert_eq!(placements.placements.len(), 48);
@@ -187,7 +248,7 @@ mod tests {
         add_list(b, vec![[2, 7], [2, 8], [2, 9], [2, 0], [2, 1], [2, 2]]);
         bot.game.active = Piece::new(PIECE_O);
 
-        let placements = bot.move_gen();
+        let placements = bot.move_gen_1d();
         assert_eq!(placements.trivials.len(), 9);
         assert_eq!(placements.nontrivials.len(), 9);
         assert_eq!(placements.placements.len(), 15);
@@ -205,7 +266,7 @@ mod tests {
         let mut bot = Bot::new();
         bot.game.board = z_spin_board_1();
         bot.game.active = Piece::new(PIECE_Z);
-        let placements = bot.move_gen();
+        let placements = bot.move_gen_1d();
         let piece = Piece {
             r#type: PIECE_Z,
             dir: 2,
@@ -220,7 +281,7 @@ mod tests {
         let mut bot = Bot::new();
         bot.game.board = tst_board();
         bot.game.active = Piece::new(PIECE_T);
-        let placements = bot.move_gen();
+        let placements = bot.move_gen_1d();
         let piece = Piece {
             r#type: PIECE_T,
             dir: 3,
@@ -235,7 +296,7 @@ mod tests {
         let mut bot = Bot::new();
         bot.game.board = l_spin_board_5();
         bot.game.active = Piece::new(PIECE_L);
-        let placements = bot.move_gen();
+        let placements = bot.move_gen_1d();
         let piece = Piece {
             r#type: PIECE_L,
             dir: 1,
