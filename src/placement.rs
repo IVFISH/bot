@@ -11,7 +11,6 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::iter::zip;
 use std::path::Path;
-use std::rc::Rc;
 
 pub struct Placement {
     // the last piece in the move sequence
@@ -21,8 +20,8 @@ pub struct Placement {
     // add the score and any other info here
 
     // games
-    pub game_before: Rc<Game>, // game at depth = n-1
-    pub game_after: Rc<Game>,  // game at depth = n
+    pub game_before: Game, // game at depth = n-1
+    pub game_after: Game,  // game at depth = n
 }
 
 impl Placement {

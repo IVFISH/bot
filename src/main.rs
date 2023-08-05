@@ -25,16 +25,18 @@ fn bench() {
 }
 
 fn main() {
-    let bot = Bot::new();
-    let placements = bot.move_gen(2);
+    let now = Instant::now();
+    let bot = Bot::with_seed(3);
+    let placements = bot.move_gen(3);
+    println!("Took {} seconds", now.elapsed().as_secs());
 
     // placements.write_fumens("fumens.txt");
 
     println!("{}", placements.placements.len());
     let placement = &placements.placements[200];
-    println!("{}", *placement.game_after);
+    println!("{}", placement.game_after);
     let placement = &placements.placements[1000];
-    println!("{}", *placement.game_after);
+    println!("{}", placement.game_after);
     // println!("{:?}", placement.pieces);
     // println!("{:?}", placement.piece);
     // println!("{:?}", placement.get_command_sequence());
