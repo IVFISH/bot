@@ -86,7 +86,7 @@ impl PlacementList {
                         piece: *controller.piece,
                         trivial_base: Rc::clone(trivial),
                         nontrivial_extension: Rc::clone(nontrivial),
-                        nontrivial_index: i+1,
+                        nontrivial_index: i + 1,
                     });
                 }
             }

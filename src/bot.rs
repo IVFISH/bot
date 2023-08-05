@@ -28,7 +28,14 @@ impl Bot {
         let trivials = self.trivial(&mut controller);
         let nontrivials = self.nontrivial(&trivials, &mut controller);
 
-        PlacementList::new(trivials.iter().map(|(commands, _)| commands.clone()).collect(), nontrivials, controller)
+        PlacementList::new(
+            trivials
+                .iter()
+                .map(|(commands, _)| commands.clone())
+                .collect(),
+            nontrivials,
+            controller,
+        )
     }
 
     /// return the trivial placements as a vector of vec commands from the starting state
@@ -38,15 +45,21 @@ impl Bot {
             let mut rep = 1;
             controller.do_command_mut(Command::Rotate(rotation as u8));
             controller.do_command_mut(Command::MoveDrop); //undone
-            out.push((vec![Command::Rotate(rotation as u8), Command::MoveDrop], controller.piece.clone()));
+            out.push((
+                vec![Command::Rotate(rotation as u8), Command::MoveDrop],
+                controller.piece.clone(),
+            ));
             controller.undo();
             while controller.do_command_mut(Command::MoveHorizontal(1)) {
                 controller.do_command_mut(Command::MoveDrop);
-                out.push((vec![
-                    Command::Rotate(rotation as u8),
-                    Command::MoveHorizontal(rep),
-                    Command::MoveDrop,
-                ], controller.piece.clone()));
+                out.push((
+                    vec![
+                        Command::Rotate(rotation as u8),
+                        Command::MoveHorizontal(rep),
+                        Command::MoveDrop,
+                    ],
+                    controller.piece.clone(),
+                ));
                 controller.undo();
                 rep += 1;
             }
@@ -56,11 +69,14 @@ impl Bot {
             rep = 1; // reset the repetitions counter
             while controller.do_command_mut(Command::MoveHorizontal(-1)) {
                 controller.do_command_mut(Command::MoveDrop);
-                out.push((vec![
-                    Command::Rotate(rotation as u8),
-                    Command::MoveHorizontal(-rep),
-                    Command::MoveDrop,
-                ], controller.piece.clone()));
+                out.push((
+                    vec![
+                        Command::Rotate(rotation as u8),
+                        Command::MoveHorizontal(-rep),
+                        Command::MoveDrop,
+                    ],
+                    controller.piece.clone(),
+                ));
                 controller.undo();
                 rep += 1;
             }
@@ -88,7 +104,7 @@ impl Bot {
         // let mut seen = HashSet::new();
         let mut out = Vec::new();
 
-        for (trivial_command, piece) in trivials.iter() {
+        for (trivial_command, _) in trivials.iter() {
             controller.do_commands(trivial_command);
             out.push(self.nontrivial_(controller, &mut seen));
             controller.reset();
@@ -159,7 +175,14 @@ mod tests {
         let placements = bot.move_gen();
         assert_eq!(placements.trivials.len(), 34);
         assert_eq!(placements.nontrivials.len(), 34);
-        println!("{:?}", placements.placements.iter().map(|placement| placement.piece).collect::<Vec<Piece>>());
+        println!(
+            "{:?}",
+            placements
+                .placements
+                .iter()
+                .map(|placement| placement.piece)
+                .collect::<Vec<Piece>>()
+        );
         assert_eq!(placements.placements.len(), 48);
 
         // checking for any duplicate pieces
