@@ -153,6 +153,13 @@ impl PlacementList {
         placements
     }
 
+    /// extends each vector field within the placement list
+    pub fn extend(&mut self, other: PlacementList) {
+        self.placements.extend(other.placements);
+        self.trivials.extend(other.trivials);
+        self.nontrivials.extend(other.nontrivials);
+    }
+
     /// debugging tool to write all the fumens to a json file
     pub fn write_fumens(&self, filename: &str) {
         let fumens = self.placements.iter().map(|p| p.get_fumen()).collect::<Vec<_>>().join("\n");
@@ -160,18 +167,4 @@ impl PlacementList {
         let mut file = File::create(&path).unwrap();
         let _ = file.write_all(fumens.as_bytes());
     }
-
-    // plan to make a visualizer for the fumens:
-    // options:
-    // - play sequential [final=false] (plays all the gifs in order, only show final)
-    // - play manual (opens keyboard listener to iterate frames based on left/right keys)
-    // - play n (plays the nth fumen on repeat)
-    // - filter n [k=1] (only keep the fumens that start with the first k pieces of nth fumen
-    // - jump n (jumps to the nth fumen (in filtered list), continues playing if playing)
-    // - restore (remove all filters)
-    // - stop (stops playing)
-    // display:
-    // - how many fumens were generated
-    // - which fumen index currently on
-    // - the current game
 }

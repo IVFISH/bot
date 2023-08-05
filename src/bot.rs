@@ -17,6 +17,7 @@ pub struct Bot {
 
 impl Bot {
     // constructors -----------------------------
+
     pub fn new() -> Self {
         Self {
             game: Game::random(),
@@ -55,7 +56,7 @@ impl Bot {
         let pieces = Rc::new(Vec::new());
         let trivials = trivials.into_iter().map(|p| Rc::new(p)).collect();
         let nontrivials = nontrivials.into_iter().map(|p| Rc::new(p)).collect();
-        let placements = PlacementList::get_placements(&trivials, &nontrivials, game, pieces);
+        let placements = PlacementList::get_placements(&trivials, &nontrivials, game, pieces, false);
         PlacementList {
             placements,
             trivials,
@@ -113,6 +114,7 @@ impl Bot {
                 trivial_base: Rc::clone(&placement.trivial_base),
                 nontrivial_extension: Rc::clone(&placement.nontrivial_extension),
                 nontrivial_index: placement.nontrivial_index,
+                held: false
             });
         }
         out

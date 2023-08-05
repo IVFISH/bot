@@ -1,13 +1,3 @@
-// hi whoever is reading this <3
-// piece_queue should just be an array of 14 pieces
-// with a pointer (index) at the current piece
-// every time index hits 7, generate
-// the next 7 pieces and reset index to 0
-// (but im too lazy to implement and i dont have wifi so cope)
-// (uh if we get bored we can optimize this to be a single u64)
-// (3 bits for each piece, x14 pieces = 42 bits)
-// thinking about it more the bit is quite nice lmao
-
 use crate::constants::queue_constants::*;
 use crate::piece::Piece;
 use itertools::chain;
@@ -45,12 +35,17 @@ impl PieceQueue {
 
     /// returns the next piece in queue and shifts the queue
     pub fn next(&mut self) -> Piece {
-        let out = Piece::new((self.data >> (self.index as usize * PIECE_BITS) & 0b111) as u8);
+        Piece::new(self.next_piece_type())
+    }
+
+    /// returns the type of the next piece
+    pub fn next_piece_type(&mut self) -> u8 {
+        let out = self.data >> (self.index as usize * PIECE_BITS) & 0b111;
         self.index += 1;
         if self.index >= 7 {
             self.next_bag();
         }
-        out
+        out as u8
     }
 
     /// removes the first 7 pieces stored in data and then

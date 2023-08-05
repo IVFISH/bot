@@ -41,10 +41,10 @@ impl Game {
         self.active = self.queue.next();
     }
 
-    // swaps the hold and active piece (or gets hold from queue)
+    /// swaps the hold and active piece (or gets hold from queue)
     pub fn hold(&mut self) {
         let h = self.hold;
         self.hold = Some(self.active.r#type);
-        self.active = Piece::new(h.unwrap_or_else(|| self.queue.next_piece_type());
+        self.active = Piece::new(h.unwrap_or_else(|| self.queue.next_piece_type()));
     }
 }
