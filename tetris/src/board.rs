@@ -300,11 +300,11 @@ impl Board {
         }
 
         let mut out = 0;
-        for row in l..(h-3) {
-            let mask = 0b111 << row;
+        for row in l..=(h-3) {
+            let mask = 0b111;
             for columns in self.arr.windows(3) {
                 // create a 3x3 grid
-                let columns: Vec<usize> = columns.iter().map(|x| x & mask).collect();
+                let columns: Vec<usize> = columns.iter().map(|x| x >> row & mask).collect();
 
                 // checks if it is a t slot
                 out += Board::check_hor_t(columns) as usize;
@@ -483,5 +483,32 @@ mod board_tests {
         board.remove_row(0);
         board.remove_row(1);
         board.remove_row(2);
+    }
+
+    #[test]
+    fn test_t_slot() {
+        let mut board = Board::new();
+        board.arr[0] = 0b001;
+        board.arr[1] = 0b000;
+        board.arr[2] = 0b101;
+        println!("{}", board);
+        assert_eq!(board.t_slot(), 1);
+
+        board.arr[0] <<= 10;
+        board.arr[1] <<= 10;
+        board.arr[2] <<= 10;
+        println!("{}", board);
+        assert_eq!(board.t_slot(), 1);
+        
+        board.arr[6] = 0b001;
+        board.arr[5] = 0b000;
+        board.arr[4] = 0b101;
+        println!("{}", board);
+        assert_eq!(board.t_slot(), 2);
+
+        board.arr[2] = 0;
+        println!("{}", board);
+        assert_eq!(board.t_slot(), 1);
+
     }
 }
