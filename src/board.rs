@@ -131,7 +131,7 @@ impl Board {
     /// present in the current board
     pub fn t_slot(&self) -> usize {
         const SIZE: usize = 3;
-        (self.get_min_height()..(self.get_max_height() - SIZE))
+        (self.get_min_height()..=(self.get_max_height() - SIZE))
             .map(|row| {
                 self.arr
                     .windows(SIZE)
@@ -227,9 +227,9 @@ impl Board {
     /// 1 0 1  |  1 0 1
     fn check_hor_t(arr: &[u64], row: usize) -> bool {
         const MASK: u64 = 0b111;
-        let c1 = arr[0] << row & MASK;
-        let c2 = arr[1] << row & MASK;
-        let c3 = arr[2] << row & MASK;
+        let c1 = arr[0] >> row & MASK;
+        let c2 = arr[1] >> row & MASK;
+        let c3 = arr[2] >> row & MASK;
         [c1, c2, c3] == [0b101, 0b000, 0b001] || [c1, c2, c3] == [0b001, 0b000, 0b101]
     }
 
@@ -373,5 +373,26 @@ mod tests {
     }
 
     #[test]
-    fn test_t_slot() {}
+    fn test_t_slot() {
+        let mut board = Board::new();
+        board.arr[0] = 0b001;
+        board.arr[1] = 0b000;
+        board.arr[2] = 0b101;
+        assert_eq!(board.t_slot(), 1);
+
+        board.arr[0] <<= 10;
+        board.arr[1] <<= 10;
+        board.arr[2] <<= 10;
+        println!("{}", board);
+        assert_eq!(board.t_slot(), 1);
+        
+        board.arr[6] = 0b001;
+        board.arr[5] = 0b000;
+        board.arr[4] = 0b101;
+        assert_eq!(board.t_slot(), 2);
+
+        board.arr[2] = 0;
+        assert_eq!(board.t_slot(), 1);
+
+    }
 }
