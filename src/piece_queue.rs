@@ -38,14 +38,19 @@ impl PieceQueue {
         Piece::new(self.next_piece_type())
     }
 
-    /// returns the type of the next piece
+    /// returns the type of the next piece and updates the index
     pub fn next_piece_type(&mut self) -> u8 {
-        let out = self.data >> (self.index as usize * PIECE_BITS) & 0b111;
+        let out = self.peek();
         self.index += 1;
         if self.index >= 7 {
             self.next_bag();
         }
-        out as u8
+        out
+    }
+
+    /// returns the type of the next piece without mutating self
+    pub fn peek(&self) -> u8 {
+        (self.data >> (self.index as usize * PIECE_BITS) & 0b111) as u8
     }
 
     /// removes the first 7 pieces stored in data and then

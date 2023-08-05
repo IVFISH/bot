@@ -28,15 +28,18 @@ fn main() {
     let bot = Bot::new();
     let placements = bot.move_gen(2);
 
-    placements.write_fumens("fumens.txt");
+    // placements.write_fumens("fumens.txt");
 
     println!("{}", placements.placements.len());
-    let placement = &placements.placements[1];
-    println!("{:?}", placement.pieces);
-    println!("{:?}", placement.piece);
-    println!("{:?}", placement.get_command_sequence());
-    let placement = &placements.placements[100];
-    println!("{:?}", placement.pieces);
-    println!("{:?}", placement.piece);
-    println!("{:?}", placement.get_command_sequence());
+    let placement = &placements.placements[200];
+    println!("{}", *placement.game_after);
+    let placement = &placements.placements[1000];
+    println!("{}", *placement.game_after);
+    // println!("{:?}", placement.pieces);
+    // println!("{:?}", placement.piece);
+    // println!("{:?}", placement.get_command_sequence());
+    // let placement = &placements.placements[100];
+    // println!("{:?}", placement.pieces);
+    // println!("{:?}", placement.piece);
+    // println!("{:?}", placement.get_command_sequence());
 }

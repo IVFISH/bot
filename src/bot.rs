@@ -10,7 +10,7 @@ use itertools::concat;
 use std::collections::HashSet;
 use std::rc::Rc;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Bot {
     pub game: Game,
 }
@@ -34,7 +34,17 @@ impl Bot {
     /// the API function for generating all current moves
     /// for the current active piece, as well as after holding
     pub fn move_gen(&self, depth: usize) -> PlacementList {
-        let mut placements = self.move_gen_one_depth();
+        // no hold
+        let game = Rc::new(self.game);
+        let mut piece = game.active; 
+        let controller = Controller::new(&mut piece, &self.game.board);
+        let mut placements = self.move_gen_one_depth(controller, false, game);
+        
+        // hold
+        let game = Rc::new(*self.game.clone().hold());
+        let controller = Controller::new(&mut piece, &self.game.board);
+        placements.extend(self.move_gen_one_depth(controller, true, game));
+
         for _ in 1..depth {
             placements = Self::iterate_move_gen(placements);
         }
@@ -42,81 +52,85 @@ impl Bot {
     }
 
     /// the one-depth version of move-gen
-    fn move_gen_one_depth(&self) -> PlacementList {
-        let mut piece = self.game.active; // copy
-        let mut controller = Controller::new(&mut piece, &self.game.board);
-
-        // find all the command sequences
-        let mut seen = HashSet::new();
-        let (trivials, pieces) = self.trivial(&mut controller, &mut seen);
-        let nontrivials = self.nontrivial(&mut controller, &mut seen, pieces);
-
-        // generates the placement list
-        let game = Rc::new(self.game);
-        let pieces = Rc::new(Vec::new());
-        let trivials = trivials.into_iter().map(|p| Rc::new(p)).collect();
-        let nontrivials = nontrivials.into_iter().map(|p| Rc::new(p)).collect();
-        let placements = PlacementList::get_placements(&trivials, &nontrivials, game, pieces, false);
-        PlacementList {
-            placements,
-            trivials,
-            nontrivials,
-        }
-    }
-
-    /// helper method for move gen that takes in a placementlist
-    /// of generated placements (depth i) and returns a new
-    /// placement list of depth i+1
-    fn iterate_move_gen(placements: PlacementList) -> PlacementList {
-        let new_placements = concat(
-            placements
-                .placements
-                .iter()
-                .map(|p| Self::extend_placement(p)),
-        );
-
-        PlacementList {
-            placements: new_placements,
-            trivials: placements.trivials,       // move
-            nontrivials: placements.nontrivials, // move
-        }
-    }
-
-    /// helper method 2 for movegen
-    /// given a starting placement (of depth i), returns a new list of placements
-    /// of depth i+1
-    fn extend_placement(placement: &Placement) -> Vec<Placement> {
-        // get the starting position to extend placements from
-        let mut game = *placement.game; // copy
-        let mut pieces = (*placement.pieces).clone();
-        pieces.push(placement.piece);
-        for piece in pieces.iter() {
-            game.active = *piece;
-            game.place_active();
-        }
-
-        let mut piece = game.active; // copy
-        let mut controller = Controller::new(&mut piece, &game.board);
-
+    fn move_gen_one_depth(&self, mut controller: Controller, held: bool, game_before: Rc<Game>) -> PlacementList {
         // find all the new pieces
         let mut seen = HashSet::new();
         Self::add_trivials(&mut seen, &mut controller);
         Self::add_nontrivials(&mut seen, &mut controller);
 
         // generate the new placements here
-        let mut out = Vec::new();
-        let pieces = Rc::new(pieces);
-        for piece in seen.into_iter() {
-            out.push(Placement {
+        PlacementList {
+            placements: seen.into_iter()
+            .map(|piece|
+                Placement {
                 piece,
-                game: Rc::clone(&placement.game),
-                pieces: Rc::clone(&pieces),
-                trivial_base: Rc::clone(&placement.trivial_base),
-                nontrivial_extension: Rc::clone(&placement.nontrivial_extension),
-                nontrivial_index: placement.nontrivial_index,
-                held: false
-            });
+                held,
+                game_before: Rc::clone(&game_before),
+                game_after: Rc::new(*(*game_before).clone().set_active(piece, held).place_active())
+                }
+            ).collect()
         }
+    }
+
+    /// helper method for move gen that takes in a placementlist
+    /// of generated placements (depth i) and returns a new
+    /// placement list of depth i+1 (with and without hold)
+    fn iterate_move_gen(placements: PlacementList) -> PlacementList {
+        PlacementList {
+            placements: concat(
+            placements
+                .placements
+                .iter()
+                .map(|p| Self::extend_placement(p)),
+        )
+        }
+    }
+
+    /// helper method 2 for movegen
+    /// given a starting placement (of depth i), returns a new list of placements
+    /// of depth i+1 (with and without hold)
+    fn extend_placement(placement: &Placement) -> Vec<Placement> {
+        // get the starting position to extend placements from
+        let game = *placement.game_after; // copy
+        let mut piece = game.active; // copy
+        let mut controller = Controller::new(&mut piece, &game.board);
+        // find all the new pieces
+        let mut seen = HashSet::new();
+        Self::add_trivials(&mut seen, &mut controller);
+        Self::add_nontrivials(&mut seen, &mut controller);
+
+        // generate the new placements here
+        let game_before = Rc::new(game);
+        let mut out: Vec<_> = seen.into_iter()
+            .map(|piece|
+                Placement {
+                piece,
+                held: false,
+                game_before: Rc::clone(&game_before),
+                game_after: Rc::new(*(*game_before).clone().set_active(piece, false).place_active())
+                }
+            ).collect();
+        
+        // get the starting position to extend placements from
+        let game = *(*placement.game_after).clone().hold();
+        let mut piece = game.active; // copy
+        let mut controller = Controller::new(&mut piece, &game.board);
+        // find all the new pieces
+        let mut seen = HashSet::new();
+        Self::add_trivials(&mut seen, &mut controller);
+        Self::add_nontrivials(&mut seen, &mut controller);
+
+        // generate the new placements here
+        let game_before = Rc::new(game);
+        out.extend(seen.into_iter()
+            .map(|piece|
+                Placement {
+                piece,
+                held: true,
+                game_before: Rc::clone(&game_before),
+                game_after: Rc::new(*(*game_before).clone().set_active(piece, true).place_active())
+                }
+            ).collect::<Vec<_>>());
         out
     }
 

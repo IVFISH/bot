@@ -3,6 +3,7 @@
 use crate::board::Board;
 use crate::piece::Piece;
 use crate::piece_queue::PieceQueue;
+use std::fmt::{Display, Formatter};
 
 #[derive(Copy, Clone, Debug)]
 pub struct Game {
@@ -10,6 +11,14 @@ pub struct Game {
     pub active: Piece,
     pub hold: Option<u8>,
     pub queue: PieceQueue,
+}
+
+impl Display for Game {
+    /// returns a string representation of the board
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.board)?;
+        Ok(())
+    }
 }
 
 impl Game {
@@ -35,16 +44,32 @@ impl Game {
     /// places the current active piece onto the board
     /// this also updates the queue and the new active
     /// (this does not check for validity of placement)
-    pub fn place_active(&mut self) {
+    pub fn place_active(&mut self) -> &mut Self {
         self.board.set_piece(&self.active);
         self.board.clear_lines();
         self.active = self.queue.next();
+        self
+    }
+
+    /// sets the active piece to the new piece
+    pub fn set_active(&mut self, piece: Piece, held: bool) -> &mut Self {
+        if held {
+            self.hold();
+        }
+        self.active = piece;
+        self
     }
 
     /// swaps the hold and active piece (or gets hold from queue)
-    pub fn hold(&mut self) {
+    pub fn hold(&mut self) -> &mut Self {
         let h = self.hold;
         self.hold = Some(self.active.r#type);
         self.active = Piece::new(h.unwrap_or_else(|| self.queue.next_piece_type()));
+        self
+    }
+
+    /// returns the piece that would be given from hold
+    pub fn get_hold_piece(&self) -> Piece {
+        Piece::new(self.hold.unwrap_or_else(|| self.queue.peek()))
     }
 }
