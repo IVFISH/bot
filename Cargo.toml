@@ -14,4 +14,5 @@ harness = false
 fumen = "0.1.2"
 itertools = "0.11.0"
 rand = "0.8.5"
+rayon = "1.7.0"
 

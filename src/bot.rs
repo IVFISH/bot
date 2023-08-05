@@ -45,10 +45,10 @@ impl Bot {
         placements.extend(self.move_gen_one_depth(controller, true, game));
 
         for d in 1..depth {
-            println!("Finished with depth {}.", d);
+            // println!("Finished with depth {}.", d);
             placements = Self::iterate_move_gen(placements);
         }
-        println!("Finished with depth {}.", depth);
+        // println!("Finished with depth {}.", depth);
         placements
     }
 
@@ -87,14 +87,15 @@ impl Bot {
     /// of generated placements (depth i) and returns a new
     /// placement list of depth i+1 (with and without hold)
     fn iterate_move_gen(placements: PlacementList) -> PlacementList {
+        const SIZE: usize = 100;
         PlacementList {
             placements: 
                 placements
                     .placements
-                    .par_iter()
-                    .map(|p| Self::extend_placement(p))
-                    .flatten()
-                    .collect(),
+                    .par_chunks(SIZE)
+                    .flat_map_iter(|ps| 
+                        concat(ps.iter().map(|p| Self::extend_placement(p)))
+                    ).collect(),
         }
     }
 

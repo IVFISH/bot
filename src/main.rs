@@ -10,6 +10,7 @@ mod placement;
 mod test_api;
 
 use crate::bot::*;
+use crate::test_api::functions::*;
 use std::time::Instant;
 
 #[allow(unused)]
@@ -26,8 +27,9 @@ fn bench() {
 
 fn main() {
     let now = Instant::now();
-    let bot = Bot::with_seed(3);
-    let placements = bot.move_gen(3);
+    let mut bot = Bot::with_seed(3);
+    bot.game.board = l_spin_board_5();
+    let placements = bot.move_gen(4);
     println!("Took {} seconds", now.elapsed().as_secs());
 
     // placements.write_fumens("fumens.txt");
