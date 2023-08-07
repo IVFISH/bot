@@ -2,7 +2,7 @@ use crate::constants::queue_constants::*;
 use crate::piece::Piece;
 use itertools::chain;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct PieceQueue {
     data: u64,
     seed: usize,

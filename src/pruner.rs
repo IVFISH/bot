@@ -3,6 +3,7 @@ use crate::constants::board_constants::*;
 use crate::constants::piece_constants::*;
 use crate::game::*;
 use crate::placement::*;
+use std::collections::HashSet;
 
 pub trait Pruner {
     /// constructor method
@@ -16,7 +17,7 @@ pub trait Pruner {
     /// pruning method that prunes based on the condition
     /// should not generally be overridden
     /// returns the filtered list
-    fn prune(&self, placements: Vec<Placement>) -> Vec<Placement> {
+    fn prune(&self, placements: HashSet<Placement>) -> HashSet<Placement> {
         placements
             .into_iter()
             .filter(|p| self.condition(&p))
@@ -29,6 +30,11 @@ pub struct AllClearPruner {
 }
 
 impl AllClearPruner {
+    /// returns whether the placement contains a PC
+    fn is_pc(&self, placement: &Placement) -> bool {
+        placement.game_after.board.all_clear()
+    }
+
     /// the sum of the # of odd line clears and t-pieces must be even
     /// https://docs.google.com/document/d/1udtq235q2SdoFYwMZNu-GRYR-4dCYMkp0E8_Hw1XTyg/edit
     fn checkerboard_rule(&self, board: &[u64], game: &Game, height: usize) -> bool {
@@ -112,6 +118,18 @@ impl Pruner for AllClearPruner {
         Self::default()
     }
 
+    fn prune(&self, placements: HashSet<Placement>) -> HashSet<Placement> {
+        let (pc, no_pc): (HashSet<_>, HashSet<_>) = placements
+            .into_iter()
+            .filter(|p| self.condition(&p))
+            .partition(|p| self.is_pc(&p));
+        if pc.is_empty() {
+            no_pc
+        } else {
+            pc
+        }
+    }
+
     fn condition(&self, placement: &Placement) -> bool {
         let game = placement.game_after;
         let height = match Board::cell_count(&game.board.arr) & 0b11 {
@@ -120,10 +138,11 @@ impl Pruner for AllClearPruner {
             _ => 0,
         };
 
-        
-            height == 0 ||
-                self.all_rules(&game.board.arr, &game, height)
-                && game.board.partition(height)
+        height == 0
+            || self.all_rules(&game.board.arr, &game, height)
+                && game
+                    .board
+                    .partition(height)
                     .into_iter()
                     .all(|b| self.partition_rules(b, &game, height))
     }
@@ -140,7 +159,7 @@ impl Pruner for NoPruner {
         false
     }
 
-    fn prune(&self, placements: Vec<Placement>) -> Vec<Placement> {
+    fn prune(&self, placements: HashSet<Placement>) -> HashSet<Placement> {
         placements
     }
 }
@@ -166,10 +185,12 @@ mod tests {
         placement2.game_after.board = tst_board();
         assert!(!pruner.condition(&placement2));
 
-        let mut placements = (0..10).map(|_| placement1.clone()).collect::<Vec<_>>();
-        placements[3] = placement2.clone();
+        let mut placements = (0..10).map(|_| placement1.clone()).collect::<HashSet<_>>();
+        placements.insert(placement2.clone());
         let placements = pruner.prune(placements);
         assert_eq!(placements.len(), 9);
-        assert!(placements.into_iter().all(|p| p.game_after.board == placement1.game_after.board));
+        assert!(placements
+            .into_iter()
+            .all(|p| p.game_after.board == placement1.game_after.board));
     }
 }

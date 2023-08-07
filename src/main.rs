@@ -11,10 +11,10 @@ mod placement_list;
 mod pruner;
 mod test_api;
 
-use crate::bot::*;
 use crate::board::*;
-use crate::piece::*;
+use crate::bot::*;
 use crate::game::*;
+use crate::piece::*;
 use crate::pruner::*;
 use crate::test_api::functions::*;
 use std::time::Instant;
@@ -39,12 +39,15 @@ fn main() {
     // bot.game.board = l_spin_board_5();
     let mut bot = Bot::<AllClearPruner>::with_seed(4);
     bot.game.board = pco_board_1();
-    let placements = bot.move_gen(6);
+    let placements = bot.move_gen(5);
     println!("Took {} seconds", now.elapsed().as_secs());
     println!("{}", placements.placements.len());
 
     // filter the placements
-    let pc_placements = placements.placements.clone().into_iter()
+    let pc_placements = placements
+        .placements
+        .clone()
+        .into_iter()
         .filter(|p| Board::get_max_height(&p.game_after.board.arr) == 0)
         .collect::<Vec<_>>();
     println!("{}", pc_placements.len());

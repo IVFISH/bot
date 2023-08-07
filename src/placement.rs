@@ -7,6 +7,7 @@ use crate::game::Game;
 use crate::piece::Piece;
 use fumen;
 use itertools::chain;
+use std::hash::{Hash, Hasher};
 
 #[derive(Clone, Debug, Copy)]
 pub struct Placement {
@@ -20,6 +21,20 @@ pub struct Placement {
     pub game_before: Game, // game at depth = n-1
     pub game_after: Game,  // game at depth = n
 }
+
+impl Hash for Placement {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.game_after.hash(state);
+    }
+}
+
+impl PartialEq for Placement {
+    fn eq(&self, other: &Self) -> bool {
+        self.game_after == other.game_after
+    }
+}
+
+impl Eq for Placement {}
 
 impl Placement {
     /// returns the fumen string that represents the

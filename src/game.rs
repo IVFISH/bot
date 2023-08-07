@@ -5,7 +5,7 @@ use crate::piece::Piece;
 use crate::piece_queue::PieceQueue;
 use std::fmt::{Display, Formatter};
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Game {
     pub board: Board,
     pub active: Piece,
@@ -95,6 +95,5 @@ impl Game {
         games.push(prev);
         games.reverse();
         games
-
     }
 }

@@ -47,7 +47,12 @@ impl<P: Pruner> Bot<P> {
         // hold
         let game = *self.game.clone().hold();
         let controller = Controller::new(&mut piece, &self.game.board);
-        placements.extend(Self::move_gen_one_depth(controller, true, game, &self.pruner));
+        placements.extend(Self::move_gen_one_depth(
+            controller,
+            true,
+            game,
+            &self.pruner,
+        ));
 
         for d in 1..depth {
             // println!("Finished with depth {}.", d);
@@ -62,7 +67,7 @@ impl<P: Pruner> Bot<P> {
         mut controller: Controller,
         held: bool,
         game_before: Game,
-        pruner: &P
+        pruner: &P,
     ) -> PlacementList {
         // find all the new pieces
         let mut seen = HashSet::new();
@@ -95,7 +100,7 @@ impl<P: Pruner> Bot<P> {
     /// helper method 2 for movegen
     /// given a starting placement (of depth i), returns a new list of placements
     /// of depth i+1 (with and without hold)
-    fn extend_placement(placement: &Placement) -> Vec<Placement> {
+    fn extend_placement(placement: &Placement) -> HashSet<Placement> {
         // get the starting position to extend placements from
         let game_before = placement.game_after; // copy
         let mut piece = game_before.active; // copy
@@ -106,7 +111,7 @@ impl<P: Pruner> Bot<P> {
         Self::add_nontrivials(&mut seen, &mut controller);
 
         // generate the new placements here
-        let mut out: Vec<_> = seen
+        let mut out: HashSet<_> = seen
             .into_iter()
             .map(|piece| Self::make_placement(piece, false, game_before))
             .collect();
@@ -123,8 +128,7 @@ impl<P: Pruner> Bot<P> {
         // generate the new placements here
         out.extend(
             seen.into_iter()
-                .map(|piece| Self::make_placement(piece, true, game_before))
-                .collect::<Vec<_>>(),
+                .map(|piece| Self::make_placement(piece, true, game_before)),
         );
         out
     }

@@ -136,14 +136,14 @@ impl Piece {
             | ((held as u16) << 14)
             | ((t_spin as u16) << 15)
     }
-    
+
     /// decodes the encoding of the piece
     pub fn decode(data: u16) -> Self {
         Self {
             r#type: (data & 0b111) as u8,
             dir: (data >> 3 & 0b11) as u8,
             row: (data >> 5 & 0b11111) as usize,
-            col: (data >> 10 & 0b1111) as usize
+            col: (data >> 10 & 0b1111) as usize,
         }
     }
 

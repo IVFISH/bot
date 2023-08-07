@@ -35,13 +35,25 @@ pub mod functions {
 
     pub fn pco_board() -> Board {
         let mut board = Board::new();
-        board.arr = [0b1111, 0b1111, 0b0111, 0b0010, 0b0, 0b0, 0b1111, 0b1111, 0b1111, 0b1111];
+        board.arr = [
+            0b1111, 0b1111, 0b0111, 0b0010, 0b0, 0b0, 0b1111, 0b1111, 0b1111, 0b1111,
+        ];
         board
     }
 
     pub fn pco_board_1() -> Board {
         let mut board = Board::new();
-        board.arr = [0b1111, 0b1111, 0b0111, 0b0010, 0b0, 0b0, 0b0, 0b0, 0b0, 0b1111];
+        board.arr = [
+            0b1111, 0b1111, 0b0111, 0b0010, 0b0, 0b0, 0b0, 0b0, 0b1111, 0b1111,
+        ];
+        board
+    }
+
+    pub fn pco_board_2() -> Board {
+        let mut board = Board::new();
+        board.arr = [
+            0b1111, 0b1111, 0b0111, 0b0010, 0b0, 0b0, 0b0, 0b0, 0b0, 0b1111,
+        ];
         board
     }
 

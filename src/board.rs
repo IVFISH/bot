@@ -4,7 +4,7 @@ use crate::constants::board_constants::*;
 use crate::piece::Piece;
 use std::fmt::{Display, Formatter};
 
-#[derive(Debug, Clone, Default, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Default, Copy, Eq, PartialEq, Hash)]
 pub struct Board {
     pub arr: [u64; BOARD_WIDTH],
 }
