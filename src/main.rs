@@ -38,8 +38,8 @@ fn main() {
     // let mut bot = Bot::<NoPruner>::with_seed(3);
     // bot.game.board = l_spin_board_5();
     let mut bot = Bot::<AllClearPruner>::with_seed(4);
-    bot.game.board = pco_board();
-    let placements = bot.move_gen(7);
+    bot.game.board = pco_board_1();
+    let placements = bot.move_gen(6);
     println!("Took {} seconds", now.elapsed().as_secs());
     println!("{}", placements.placements.len());
 
@@ -47,6 +47,7 @@ fn main() {
     let pc_placements = placements.placements.clone().into_iter()
         .filter(|p| Board::get_max_height(&p.game_after.board.arr) == 0)
         .collect::<Vec<_>>();
+    println!("{}", pc_placements.len());
 
     // placements.write_fumens("fumens.txt");
 

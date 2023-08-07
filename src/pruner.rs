@@ -114,12 +114,18 @@ impl Pruner for AllClearPruner {
 
     fn condition(&self, placement: &Placement) -> bool {
         let game = placement.game_after;
-        (0..=self.height).any(|height| {
-            self.all_rules(&game.board.arr, &game, height)
+        let height = match Board::cell_count(&game.board.arr) & 0b11 {
+            2 => 3,
+            0 => 4,
+            _ => 0,
+        };
+
+        
+            height == 0 ||
+                self.all_rules(&game.board.arr, &game, height)
                 && game.board.partition(height)
                     .into_iter()
                     .all(|b| self.partition_rules(b, &game, height))
-        })
     }
 }
 
