@@ -125,16 +125,26 @@ impl Piece {
 
     /// encodes the piece into a u16
     /// the encoding is as follows:
-    /// 3 bits for type, 2 bits for rot, 
-    /// 5 bits for row, 4 bits for col, 
+    /// 3 bits for type, 2 bits for rot,
+    /// 5 bits for row, 4 bits for col,
     /// 1 bit for held, 1 bit for t-spin
     pub fn encode(&self, held: bool, t_spin: bool) -> u16 {
         ((self.r#type) as u16)
             | ((self.dir as u16) << 3)
             | ((self.row as u16) << 5)
-            | ((self.col as u16) << 10) 
+            | ((self.col as u16) << 10)
             | ((held as u16) << 14)
             | ((t_spin as u16) << 15)
+    }
+    
+    /// decodes the encoding of the piece
+    pub fn decode(data: u16) -> Self {
+        Self {
+            r#type: (data & 0b111) as u8,
+            dir: (data >> 3 & 0b11) as u8,
+            row: (data >> 5 & 0b11111) as usize,
+            col: (data >> 10 & 0b1111) as usize
+        }
     }
 
     // setters ----------------------------------

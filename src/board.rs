@@ -4,7 +4,7 @@ use crate::constants::board_constants::*;
 use crate::piece::Piece;
 use std::fmt::{Display, Formatter};
 
-#[derive(Debug, Clone, Default, Copy)]
+#[derive(Debug, Clone, Default, Copy, Eq, PartialEq)]
 pub struct Board {
     pub arr: [u64; BOARD_WIDTH],
 }
@@ -151,8 +151,7 @@ impl Board {
         const SIZE: usize = 3;
         (Self::get_min_height(arr)..=(Self::get_max_height(arr) - SIZE))
             .map(|row| {
-                arr
-                    .windows(SIZE)
+                arr.windows(SIZE)
                     .map(|cols| Self::check_hor_t(cols, row) as usize)
                     .sum::<usize>()
             })
@@ -162,8 +161,7 @@ impl Board {
     /// returns a vector of size=9 of the adjacent
     /// differences between column heights
     pub fn get_adjacent_height_differences(arr: &[u64]) -> Vec<usize> {
-        arr
-            .windows(2)
+        arr.windows(2)
             .map(|w| Self::height(w[0]).abs_diff(Self::height(w[1])))
             .collect()
     }
@@ -173,8 +171,7 @@ impl Board {
     /// for an explanation of parity and PC theory
     pub fn checkerboard_parity(arr: &[u64]) -> i8 {
         const MASK: u64 = 0xAAAAAAAAAA; // 1010..
-        arr
-            .chunks(2)
+        arr.chunks(2)
             .map(|cols| {
                 (cols[0] & MASK).count_ones() as i8 - (cols[0] & (MASK >> 1)).count_ones() as i8
                     + (cols[1] & (MASK >> 1)).count_ones() as i8
@@ -187,8 +184,7 @@ impl Board {
     /// see https://docs.google.com/document/d/1udtq235q2SdoFYwMZNu-GRYR-4dCYMkp0E8_Hw1XTyg/edit
     /// for an explanation of parity and PC theory
     pub fn columnar_parity(arr: &[u64]) -> i8 {
-        arr
-            .chunks(2)
+        arr.chunks(2)
             .map(|cols| ((cols[0]).count_ones() as i8) - (cols[1].count_ones() as i8))
             .sum()
     }
@@ -201,22 +197,22 @@ impl Board {
     /// partitions the board into sections that are split by columns of height row
     /// the full columns are not included in the partition
     /// includes the range of the included columns by
-    pub fn partition(&self, row: usize) -> Vec<(&[u64], usize, usize)> {
+    pub fn partition(&self, row: usize) -> Vec<&[u64]> {
         let mut out = Vec::new();
         let mut prev = 0;
         let iter = self
             .arr
             .iter()
             .enumerate()
-            .filter(|(_, c)| Self::height(**c) == row);
+            .filter(|(_, c)| Self::height(**c) == row + 1);
         for (split, _) in iter {
-            if prev - split > 0 {
-                out.push((&self.arr[prev..split], prev, split));
+            if split > prev {
+                out.push(&self.arr[prev..split]);
             }
             prev = split + 1;
         }
-        if prev != BOARD_WIDTH - 1 {
-            out.push((&self.arr[prev..BOARD_WIDTH - 1], prev, BOARD_WIDTH - 1));
+        if prev != BOARD_WIDTH {
+            out.push(&self.arr[prev..BOARD_WIDTH]);
         }
         out
     }
@@ -233,14 +229,13 @@ impl Board {
         let full_rows = self.arr.into_iter().reduce(|x, y| x & y).unwrap();
         for i in 0..BOARD_WIDTH {
             let mut rows = full_rows; // copy
-            self.arr[i] &= !rows; // delete the cleared rows
             while rows != 0 {
-                let c = self.arr[i];
                 let r = rows.trailing_zeros();
-                let m = 1 << r;
-                let m1 = m - 1 >> 1;
-                self.arr[i] = c >> 1 & !m1 | (c & m1);
-                rows = (rows ^ m) << 1;
+                let mask = (1 << r) - 1;
+                let col = self.arr[i];
+                self.arr[i] = col & mask | col >> 1 & !mask;
+                rows &= !(1 << r);
+                rows >>= 1;
             }
         }
     }
@@ -375,22 +370,22 @@ mod tests {
         let mut board = Board::new();
         board.arr[0] = 0b1010;
         board.arr[1] = 0b0101;
-        assert_eq!(board.checkerboard_parity(), 4);
-        assert_eq!(board.columnar_parity(), 0);
+        assert_eq!(Board::checkerboard_parity(&board.arr), 4);
+        assert_eq!(Board::columnar_parity(&board.arr), 0);
 
         board.arr[1] = 0b1010;
-        assert_eq!(board.checkerboard_parity().abs(), 0);
+        assert_eq!(Board::checkerboard_parity(&board.arr).abs(), 0);
 
         board.arr[2] = 0b1110;
-        assert_eq!(board.checkerboard_parity().abs(), 1);
-        assert_eq!(board.columnar_parity().abs(), 3);
+        assert_eq!(Board::checkerboard_parity(&board.arr).abs(), 1);
+        assert_eq!(Board::columnar_parity(&board.arr).abs(), 3);
 
         // adding a horizontal t-piece
         board.arr[2] = 0b100;
         board.arr[3] = 0b110;
         board.arr[4] = 0b100;
-        assert_eq!(board.checkerboard_parity().abs(), 2);
-        assert_eq!(board.columnar_parity(), 0);
+        assert_eq!(Board::checkerboard_parity(&board.arr).abs(), 2);
+        assert_eq!(Board::columnar_parity(&board.arr), 0);
     }
 
     #[test]
@@ -399,21 +394,32 @@ mod tests {
         board.arr[0] = 0b001;
         board.arr[1] = 0b000;
         board.arr[2] = 0b101;
-        assert_eq!(board.t_slot(), 1);
+        assert_eq!(Board::t_slot(&board.arr), 1);
 
         board.arr[0] <<= 10;
         board.arr[1] <<= 10;
         board.arr[2] <<= 10;
         println!("{}", board);
-        assert_eq!(board.t_slot(), 1);
-        
+        assert_eq!(Board::t_slot(&board.arr), 1);
+
         board.arr[6] = 0b001;
         board.arr[5] = 0b000;
         board.arr[4] = 0b101;
-        assert_eq!(board.t_slot(), 2);
+        assert_eq!(Board::t_slot(&board.arr), 2);
 
         board.arr[2] = 0;
-        assert_eq!(board.t_slot(), 1);
+        assert_eq!(Board::t_slot(&board.arr), 1);
+    }
 
+    #[test]
+    fn test_partition() {
+        let mut board = Board {
+            arr: [1, 42, 3, 31, 4, 8, 2, 3, 18, 7],
+        };
+        let boards = board.partition(4);
+        assert_eq!(boards.len(), 3);
+        assert_eq!(boards[0].len(), 3);
+        assert_eq!(boards[1].len(), 4);
+        assert_eq!(boards[2].len(), 1);
     }
 }

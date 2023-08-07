@@ -5,9 +5,10 @@ use crate::constants::board_constants::*;
 use crate::controller::Controller;
 use crate::game::Game;
 use crate::piece::Piece;
-use itertools::chain;
 use fumen;
+use itertools::chain;
 
+#[derive(Clone, Debug, Copy)]
 pub struct Placement {
     // the last piece in the move sequence
     pub piece: Piece,
@@ -73,4 +74,3 @@ impl Placement {
         // f.encode()
     }
 }
-

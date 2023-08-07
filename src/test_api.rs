@@ -14,6 +14,12 @@ pub mod functions {
         }
     }
 
+    pub fn remove_list(board: &mut Board, list: Vec<[usize; 2]>) {
+        for [r, c] in list.into_iter() {
+            board.set(r, c, 0);
+        }
+    }
+
     pub fn assert_placement_contains(placements: &PlacementList, piece: Piece) {
         assert!(placements.placements.iter().any(|p| p.piece == piece));
     }
@@ -27,10 +33,10 @@ pub mod functions {
         }
     }
 
-    pub fn remove_list(board: &mut Board, list: Vec<[usize; 2]>) {
-        for [r, c] in list.into_iter() {
-            board.set(r, c, 0);
-        }
+    pub fn pco_board() -> Board {
+        let mut board = Board::new();
+        board.arr = [0b1111, 0b1111, 0b0111, 0b0010, 0b0, 0b0, 0b1111, 0b1111, 0b1111, 0b1111];
+        board
     }
 
     pub fn z_spin_board_1() -> Board {

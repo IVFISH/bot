@@ -17,7 +17,7 @@ impl PlacementList {
     /// the filtered list
     pub fn new(placements: Vec<Placement>, pruner: &impl Pruner) -> Self {
         Self {
-            placements: pruner.prune(placements)
+            placements: pruner.prune(placements),
         }
     }
 

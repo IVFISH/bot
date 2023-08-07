@@ -9,13 +9,13 @@ use crate::placement::*;
 use crate::placement_list::*;
 use crate::pruner::*;
 use itertools::concat;
-use std::collections::HashSet;
 use rayon::prelude::*;
+use std::collections::HashSet;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Bot<P: Pruner> {
     pub game: Game,
-    pub pruner: P
+    pub pruner: P,
 }
 
 impl<P: Pruner> Bot<P> {
@@ -23,14 +23,14 @@ impl<P: Pruner> Bot<P> {
     pub fn new() -> Self {
         Self {
             game: Game::random(),
-            pruner: P::new()
+            pruner: P::new(),
         }
     }
 
     pub fn with_seed(seed: usize) -> Self {
         Self {
             game: Game::new(seed),
-            pruner: P::new()
+            pruner: P::new(),
         }
     }
 
@@ -42,16 +42,16 @@ impl<P: Pruner> Bot<P> {
         let game = self.game;
         let mut piece = game.active;
         let controller = Controller::new(&mut piece, &self.game.board);
-        let mut placements = self.move_gen_one_depth(controller, false, game);
+        let mut placements = Self::move_gen_one_depth(controller, false, game, &self.pruner);
 
         // hold
         let game = *self.game.clone().hold();
         let controller = Controller::new(&mut piece, &self.game.board);
-        placements.extend(self.move_gen_one_depth(controller, true, game));
+        placements.extend(Self::move_gen_one_depth(controller, true, game, &self.pruner));
 
         for d in 1..depth {
             // println!("Finished with depth {}.", d);
-            placements = Self::iterate_move_gen(placements);
+            placements = Self::iterate_move_gen(placements, &self.pruner);
         }
         // println!("Finished with depth {}.", depth);
         placements
@@ -59,10 +59,10 @@ impl<P: Pruner> Bot<P> {
 
     /// the one-depth version of move-gen
     fn move_gen_one_depth(
-        &self,
         mut controller: Controller,
         held: bool,
         game_before: Game,
+        pruner: &P
     ) -> PlacementList {
         // find all the new pieces
         let mut seen = HashSet::new();
@@ -71,23 +71,25 @@ impl<P: Pruner> Bot<P> {
 
         // generate the new placements here
         let placements = seen
-                .into_iter()
-                .map(|piece| Self::make_placement(piece, held, game_before))
-                .collect();
-        PlacementList::new(placements, &self.pruner)
+            .into_iter()
+            .map(|piece| Self::make_placement(piece, held, game_before))
+            .collect();
+        PlacementList::new(placements, pruner)
     }
 
     /// helper method for move gen that takes in a placementlist
     /// of generated placements (depth i) and returns a new
     /// placement list of depth i+1 (with and without hold)
-    fn iterate_move_gen(placements: PlacementList) -> PlacementList {
+    fn iterate_move_gen(placements: PlacementList, pruner: &P) -> PlacementList {
         // to make this parallel: change iter to par_iter (but this might make slow cause each
         // operation is in the us range
-        let placements = placements.placements.iter().flat_map(|p| Self::extend_placement(p)).collect();
+        let placements = placements
+            .placements
+            .iter()
+            .flat_map(|p| Self::extend_placement(p))
+            .collect();
         // concat(placements.placements.iter().map(|p| Self::extend_placement(p)))
-        PlacementList {
-            placements: placements
-        }
+        PlacementList::new(placements, pruner)
     }
 
     /// helper method 2 for movegen
@@ -119,10 +121,11 @@ impl<P: Pruner> Bot<P> {
         Self::add_nontrivials(&mut seen, &mut controller);
 
         // generate the new placements here
-        out.extend(seen
-            .into_iter()
-            .map(|piece| Self::make_placement(piece, true, game_before))
-            .collect::<Vec<_>>());
+        out.extend(
+            seen.into_iter()
+                .map(|piece| Self::make_placement(piece, true, game_before))
+                .collect::<Vec<_>>(),
+        );
         out
     }
 
@@ -131,7 +134,10 @@ impl<P: Pruner> Bot<P> {
             piece,
             held,
             game_before,
-            game_after: *game_before.clone().set_active(piece, held).place_active(held)
+            game_after: *game_before
+                .clone()
+                .set_active(piece, held)
+                .place_active(held),
         }
     }
 
@@ -146,7 +152,7 @@ impl<P: Pruner> Bot<P> {
     /// extends the seen hashset by the trivials
     fn add_trivials(seen: &mut HashSet<Piece>, controller: &mut Controller) {
         for rotation in 0..NUM_ROTATE_STATES {
-            if !controller.do_command_mut(Command::Rotate(rotation as u8)){
+            if !controller.do_command_mut(Command::Rotate(rotation as u8)) {
                 continue;
             }
             seen.insert(Self::get_dropped_piece(controller));
@@ -191,19 +197,19 @@ impl<P: Pruner> Bot<P> {
 // mod tests {
 //     use super::*;
 //     use crate::test_api::functions::*;
-// 
+//
 //     // #[test]
 //     fn test_tucks_t() {
 //         let mut bot = Bot::new();
 //         let b = &mut bot.game.board;
 //         add_list(b, vec![[2, 7], [2, 8], [2, 9], [2, 0], [2, 1], [2, 2]]);
 //         bot.game.active = Piece::new(PIECE_T);
-// 
+//
 //         let placements = bot.move_gen(1);
 //         assert_eq!(placements.trivials.len(), 34);
 //         assert_eq!(placements.nontrivials.len(), 34);
 //         assert_eq!(placements.placements.len(), 48);
-// 
+//
 //         // checking for any duplicate pieces
 //         let pieces: HashSet<_> = placements.placements.into_iter().map(|p| p.piece).collect();
 //         assert_eq!(pieces.len(), 48);
@@ -211,19 +217,19 @@ impl<P: Pruner> Bot<P> {
 //         let b = &mut bot.game.board;
 //         assert!(pieces.iter().all(|piece| b.piece_can_set(piece)));
 //     }
-// 
+//
 //     #[test]
 //     fn test_tucks_o() {
 //         let mut bot = Bot::new();
 //         let b = &mut bot.game.board;
 //         add_list(b, vec![[2, 7], [2, 8], [2, 9], [2, 0], [2, 1], [2, 2]]);
 //         bot.game.active = Piece::new(PIECE_O);
-// 
+//
 //         let placements = bot.move_gen(1);
 //         assert_eq!(placements.trivials.len(), 9);
 //         assert_eq!(placements.nontrivials.len(), 9);
 //         assert_eq!(placements.placements.len(), 15);
-// 
+//
 //         // checking for any duplicate pieces
 //         let pieces: HashSet<_> = placements.placements.into_iter().map(|p| p.piece).collect();
 //         assert_eq!(pieces.len(), 15);
@@ -231,7 +237,7 @@ impl<P: Pruner> Bot<P> {
 //         let b = &mut bot.game.board;
 //         assert!(pieces.iter().all(|piece| b.piece_can_set(piece)));
 //     }
-// 
+//
 //     #[test]
 //     fn test_z_spin() {
 //         let mut bot = Bot::new();
@@ -246,7 +252,7 @@ impl<P: Pruner> Bot<P> {
 //         };
 //         assert_placement_contains(&placements, piece);
 //     }
-// 
+//
 //     #[test]
 //     fn test_tst_spin() {
 //         let mut bot = Bot::new();
@@ -261,7 +267,7 @@ impl<P: Pruner> Bot<P> {
 //         };
 //         assert_placement_contains(&placements, piece);
 //     }
-// 
+//
 //     #[test]
 //     fn test_l_spin() {
 //         let mut bot = Bot::new();

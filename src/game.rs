@@ -11,7 +11,7 @@ pub struct Game {
     pub active: Piece,
     pub hold: Option<u8>,
     pub queue: PieceQueue,
-    pub history: u128
+    pub history: u128,
 }
 
 impl Display for Game {
@@ -32,7 +32,7 @@ impl Game {
             queue,
             hold: None,
             board: Board::default(),
-            history: 0
+            history: 0,
         }
     }
 
@@ -78,5 +78,23 @@ impl Game {
     /// returns the piece that would be given from hold
     pub fn get_hold_piece(&self) -> Piece {
         Piece::new(self.hold.unwrap_or_else(|| self.queue.peek()))
+    }
+
+    /// recovers the past board states (up to 8)
+    /// THIS DOES NOT REWIND ANYTHING BESIDES BOARD
+    pub fn past_states(&self) -> Vec<Self> {
+        let mut history = self.history;
+        let mut games = Vec::new();
+        let mut prev = *self;
+        while history != 0 {
+            games.push(prev);
+            let piece = Piece::decode((history & (u16::MAX as u128)) as u16);
+            prev.board.remove_piece(&piece);
+            history >>= 16;
+        }
+        games.push(prev);
+        games.reverse();
+        games
+
     }
 }
