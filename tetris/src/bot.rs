@@ -17,7 +17,7 @@ use itertools::{izip, Itertools};
 use crate::communications::Suggestion;
 use crate::{Dependency, Opener, OpenerStatus, Point};
 use crate::book::openers;
-use crate::constants::board_constants::BOARD_WIDTH;
+use crate::constants::board_constants::{BOARD_WIDTH, MAX_PLACE_HEIGHT};
 use crate::constants::queue_constants::MIN_QUEUE_LENGTH;
 use crate::point_vector::PointVector;
 use num::clamp;
@@ -27,7 +27,7 @@ use num::traits::Pow;
 pub struct Bot {
     game: Game,
     weight: Weights,
-    opener: Opener
+    opener: Opener,
 }
 
 impl Display for Bot {
@@ -103,6 +103,7 @@ impl Player for Bot {
         // println!("{:?}", action);
         // println!("{}", min_score);
         // println!("{}", p[0]);
+        // println!("{:?}", p);
         if min_score < -10000.0{
             println!("{:?}", p);
         }
@@ -168,7 +169,7 @@ impl Bot {
 
     pub fn move_placement_score(
         &mut self,
-        depth: usize,
+        mut depth: usize,
         weights: &Weights,
         ) -> (MoveList, Vec<PlacementList>, ScoreList) {
             let mut dummy = self.game.clone();
@@ -186,7 +187,8 @@ impl Bot {
             let mut next_scores = ScoreList::new();
 
             //pruning parameters
-            let n = 400;
+            let n = 1000 - 600*self.game.board.should_panic() as usize;
+            if self.game.board.should_panic() { depth = depth / 2; }
             let prune_depth = 1;
 
             for curr_depth in 1..depth {
@@ -204,7 +206,7 @@ impl Bot {
                             .unzip();
 
                     curr_scores.sort_by(|(v1, b1), (v2, b2)| (v1 + b1).partial_cmp(&(v2 + b2)).unwrap());
-                    curr_scores.truncate(1 + n - n * curr_depth / depth);
+                    curr_scores.truncate(1 + n - n * (4*curr_depth) / (5*depth));
                 }
 
                 //generating next_mps
@@ -433,7 +435,7 @@ impl Bot {
         //TODO: put all the logic in nice places (scorer class?)
 
         // PC (pseudo) PRUNING
-        if false && (game.board.get_mino_count() % 2 == 0) {
+        /*if false && (game.board.get_mino_count() % 2 == 0) {
             // pseudo pruning, gives a large penalty for unsolvable/hard to solve boards
             let penalty = (100.0, Bot::score_board(&game, &game.board, weights));
 
@@ -470,11 +472,11 @@ impl Bot {
             if parity.1 == false && !(usable_queue.contains(&1) || usable_queue.contains(&5) || usable_queue.contains(&6) || !game.board.get_min_height() >= 2){
                 return penalty
             }
-        }
+        }*/
 
         return (
             Bot::score_board(&game, &game.board, weights),
-            Bot::score_versus(&game.game_data, weights),
+            Bot::score_versus(&game.game_data, &game.board, weights),
         )
     }
 
@@ -482,14 +484,20 @@ impl Bot {
         Bot::get_holes_and_cell_covered_score(board, weights)
             + Bot::get_height_score(board, weights)
             + Bot::get_height_differences_score(board, weights)
-            + Bot::get_t_slot_score(game, board, weights)
+            + Bot::get_t_slot_score(game, board, weights, board.should_panic())
+            + Bot::top_of_board_score(game, board)
     }
 
-    fn score_versus(game_data: &GameData, weight: &Weights) -> Score {
+    fn score_versus(game_data: &GameData, board: &Board, weight: &Weights) -> Score {
         // let spin = Game::get_t_spin_type(piece, board);
-        let combo_score = weight.combo_weight.eval(game_data.combo as f32);
-        let b2b = weight.b2b_weight.eval(game_data.b2b as f32);
-        let attack = weight.damage_weight.eval(game_data.last_sent as f32);
+        let mut combo_score = weight.combo_weight.eval(game_data.combo as f32);
+        let mut b2b = weight.b2b_weight.eval(game_data.b2b as f32);
+        let mut attack = weight.damage_weight.eval(game_data.last_sent as f32);
+        if board.should_panic() {
+            combo_score = weight.panic_combo_weight.eval(game_data.combo as f32);
+            b2b = weight.panic_b2b_weight.eval(game_data.b2b as f32);
+            attack = weight.panic_damage_weight.eval(game_data.last_sent as f32);
+        }
         let clear = weight.clear_weight.eval(game_data.last_cleared as f32);
         let pc = game_data.all_clear;
         let t_spin = game_data.t_spin;
@@ -501,13 +509,18 @@ impl Bot {
         }
         if t_spin {
             extra -= weight.tspin_reward*weight.tspin_reward_expo.pow(game_data.last_cleared as f32);
+            if board.should_panic() {
+                extra -= weight.panic_tspin_reward*weight.panic_tspin_reward_expo.pow(game_data.last_cleared as f32);
+            }
         }
         if game_data.last_placed_piece.get_type() == 6 {
+            let mut wtw = weight.waste_t_weight;
+            if board.should_panic() { wtw = weight.panic_waste_t_weight; }
             match game_data.t_spin_type {
-                0 => extra += weight.waste_t_weight,
-                1 => extra += weight.waste_t_weight * clamp(2 - game_data.last_cleared, 0, 1) as f32, // doubles and triples should not be punished
-                2 => extra += weight.waste_t_weight * 0.8 * clamp(2 - game_data.last_cleared, 0, 1) as f32, // minis should be punished less but not by much
-                _ => extra += weight.waste_t_weight, // idk
+                0 => extra += wtw,
+                1 => extra += wtw * clamp(2 - game_data.last_cleared, 0, 1) as f32, // doubles and triples should not be punished
+                2 => extra += wtw * 0.9 * clamp(2 - game_data.last_cleared, 0, 1) as f32, // minis should be punished less but not by much
+                _ => extra += wtw, // idk
             }
         }
         
@@ -528,9 +541,24 @@ impl Bot {
         adjacent_score + total_score
     }
 
-    pub(crate) fn get_t_slot_score(game: &Game, board: &Board, weight: &Weights) -> f32 {
+    fn top_of_board_score(game: &Game, board: &Board) -> f32 {
+        if
+            board.get_max_height() > MAX_PLACE_HEIGHT ||
+            (board.get_max_height() + board.garbage_in_queue_amnt() > MAX_PLACE_HEIGHT && game.game_data.combo == 0)
+        {
+            return 1000000.0
+        }
+        0.0
+    }
+
+    pub(crate) fn get_t_slot_score(game: &Game, board: &Board, weight: &Weights, panic: bool) -> f32 {
+        if game.nearest_tpiece() == 0 {
+            return 10.0;
+        }
+        if panic {
+            return weight.panic_t_slot_weight.eval(board.t_slot() as f32) * (1.0 - (game.nearest_tpiece() as f32 / MIN_QUEUE_LENGTH as f32));
+        }
         weight.t_slot_weight.eval(board.t_slot() as f32) * (1.0 - (game.nearest_tpiece() as f32 / MIN_QUEUE_LENGTH as f32))
-        // + weight.t_slot_special_weight.eval(board.special_t_slot() as f32)
     }
 
     fn get_height_score(board: &Board, weight: &Weights) -> f32 {

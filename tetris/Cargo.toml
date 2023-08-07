@@ -7,9 +7,10 @@ edition = "2021"
 [dependencies]
 rand = "0.8.5"
 polynomial = "0.2.4"
-itertools = "0.10.5"
+itertools = "0.11.0"
 colored = "2.0.4"
 num = "0.4.1"
+num_cpus = "1.0"
 
 tungstenite = "*"
 serde = { version = "1.0.78", features = ["derive"] }

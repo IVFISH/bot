@@ -8,6 +8,7 @@ use num::clamp;
 use std::fs;
 use std::string::*;
 use crate::constants::localbotgameplay::*;
+use std::{thread, time};
 
 pub trait Player {
     fn get_game(&self) -> &Game;
@@ -35,6 +36,8 @@ pub trait Player {
             // println!("{}", &garbage.to_string());
             // println!("{}", &clamped_lines_sent.to_string());
         }
+
+        self.get_game_mut().board.update_board_garbage_amount();
 
         // println!("{}", clamped_lines_sent)
         // println!("{}", self.get_game().game_data.last_sent);
@@ -95,6 +98,7 @@ pub fn do_command(game: &mut Game, command: Command) -> bool {
             true
         }
         Command::HardDrop => {
+            // println!("{}", game);
             let game_over = !game.hard_drop();
             game.set_game_over(game_over);
             true

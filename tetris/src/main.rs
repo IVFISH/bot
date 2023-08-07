@@ -145,6 +145,7 @@ fn test_tspinkicks() {
         thread::sleep(time::Duration::from_millis(0));
         // println!("{}", bot.get_game());
         println!("{}", bot.get_game());
+        println!("{}", bot.get_game().game_data.t_spin_type);
         println!("{} milliseconds to move", format!("{}", now.elapsed().as_micros() / 1000).green());
         println!("{} lines sent / {} pieces placed = {} app", format!("{}", bot.get_game().game_data.lines_sent).green(), format!("{}", bot.get_game().game_data.pieces_placed).green(), format!("{}", (bot.get_game().game_data.lines_sent as f64) / (bot.get_game().game_data.pieces_placed as f64)).green());
         println!("{} b2b, {} combo", format!("{}", bot.get_game().game_data.b2b).green(), format!("{}", bot.get_game().game_data.combo).green())

@@ -56,7 +56,7 @@ impl PieceQueue {
     }
 
     pub fn next(&mut self) -> Piece {
-        if self.queue.len() <= MIN_QUEUE_LENGTH {
+        while self.queue.len() <= MIN_QUEUE_LENGTH {
             self.next_bag();
         }
 

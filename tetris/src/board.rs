@@ -9,16 +9,20 @@ use std::fmt::{Display, Formatter};
 use colored::*;
 use num::clamp;
 use crate::weight::Weights;
+use crate::constants::localbotgameplay::*;
+use std::fs;
 
 #[derive(Debug, Clone)]
 pub struct Board {
     arr: BoardArray,
+    garbage_in_queue: usize,
 }
 
 impl Default for Board {
     fn default() -> Self {
         Self {
-            arr: [0; BOARD_WIDTH]
+            arr: [0; BOARD_WIDTH],
+            garbage_in_queue: 0,
         }
     }
 }
@@ -351,7 +355,7 @@ impl Board {
                 }
             }
             finalcount += holes_count_weighted as f32;
-            println!("row {} has {} weighted holes", row, holes_count_weighted);
+            println!("row {} has {} weighted holes, {} holes", row, holes_count_weighted, holes_count_total);
             holes_count_total = 0;
             holes_count_weighted = 0;
         }
@@ -374,7 +378,16 @@ impl Board {
         // 0 0 0
         // 1 0 1
 
-        arr == [0b101, 0b000, 0b001] || arr == [0b001, 0b000, 0b101] || arr == [0b101, 0b000, 0b101]
+        // 1 0 1
+        // 1 0 0
+        // 1 0 1
+
+        // 1 0 1
+        // 0 0 1
+        // 1 0 1
+
+        arr == [0b101, 0b000, 0b001] || arr == [0b001, 0b000, 0b101] || arr == [0b101, 0b000, 0b101] ||
+        arr == [0b111, 0b000, 0b101] || arr == [0b101, 0b000, 0b111]
     }
     fn check_special_t(arr: Vec<usize>) -> bool {
         // special tspins
@@ -420,11 +433,11 @@ impl Board {
         }
 
         let mut out = 0;
-        for row in l..(h-3) {
-            let mask = 0b111 << row;
+        for row in l..=(h-3) {
+            let mask = 0b111;
             for columns in self.arr.windows(3) {
                 // create a 3x3 grid
-                let columns: Vec<usize> = columns.iter().map(|x| x & mask).collect();
+                let columns: Vec<usize> = columns.iter().map(|x| x >> row & mask).collect();
 
                 // checks if it is a t slot
                 out += Board::check_hor_t(columns) as usize;
@@ -435,11 +448,11 @@ impl Board {
             return out
         }
 
-        for row in l..(h-5) {
-            let mask = 0b11111 << row;
+        for row in l..=(h-5) {
+            let mask = 0b11111;
             for columns in self.arr.windows(5) {
                 // create a 5x5 grid
-                let columns: Vec<usize> = columns.iter().map(|x| x & mask).collect();
+                let columns: Vec<usize> = columns.iter().map(|x| x >> row & mask).collect();
 
                 // checks if it is a t slot
                 out += Board::check_special_t(columns) as usize;
@@ -457,11 +470,11 @@ impl Board {
         }
 
         let mut out = 0;
-        for row in l..(h-5) {
-            let mask = 0b11111 << row;
+        for row in l..=(h-5) {
+            let mask = 0b11111;
             for columns in self.arr.windows(5) {
                 // create a 5x5 grid
-                let columns: Vec<usize> = columns.iter().map(|x| x & mask).collect();
+                let columns: Vec<usize> = columns.iter().map(|x| x >> row & mask).collect();
 
                 // checks if it is a t slot
                 out += Board::check_special_t(columns) as usize;
@@ -503,6 +516,29 @@ impl Board {
             out += col.count_ones() as usize;
         }
         return out;
+    }
+
+    pub fn should_panic(&self) -> bool {
+        if self.get_max_height() + self.garbage_in_queue > 10 {
+            return true;
+        }
+        false
+    }
+
+    pub fn garbage_in_queue_amnt(&self) -> usize {
+        self.garbage_in_queue
+    }
+
+    pub fn get_garbage_in_queue(&self) -> usize {
+        let mut garbage = 0;
+        if ALLOWLOCALGAMEPLAY {
+            garbage = fs::read_to_string(LOCALGAMEPLAYFILEPATH).expect("e").chars().nth(BOTNUM).expect("e").to_string().parse::<usize>().unwrap();
+        }
+        garbage
+    }
+
+    pub fn update_board_garbage_amount(&mut self) {
+        self.garbage_in_queue = self.get_garbage_in_queue();
     }
 
     // other
