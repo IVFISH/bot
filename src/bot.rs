@@ -6,26 +6,31 @@ use crate::controller::Controller;
 use crate::game::Game;
 use crate::piece::Piece;
 use crate::placement::*;
+use crate::placement_list::*;
+use crate::pruner::*;
 use itertools::concat;
 use std::collections::HashSet;
 use rayon::prelude::*;
 
 #[derive(Debug, Copy, Clone)]
-pub struct Bot {
+pub struct Bot<P: Pruner> {
     pub game: Game,
+    pub pruner: P
 }
 
-impl Bot {
+impl<P: Pruner> Bot<P> {
     // constructors -----------------------------
     pub fn new() -> Self {
         Self {
             game: Game::random(),
+            pruner: P::new()
         }
     }
 
     pub fn with_seed(seed: usize) -> Self {
         Self {
             game: Game::new(seed),
+            pruner: P::new()
         }
     }
 
@@ -65,37 +70,23 @@ impl Bot {
         Self::add_nontrivials(&mut seen, &mut controller);
 
         // generate the new placements here
-        PlacementList {
-            placements: seen
+        let placements = seen
                 .into_iter()
-                .map(|piece| Placement {
-                    piece,
-                    held,
-                    game_before: game_before,
-                    game_after: 
-                        *game_before
-                            .clone()
-                            .set_active(piece, held)
-                            .place_active(),
-                    
-                })
-                .collect(),
-        }
+                .map(|piece| Self::make_placement(piece, held, game_before))
+                .collect();
+        PlacementList::new(placements, &self.pruner)
     }
 
     /// helper method for move gen that takes in a placementlist
     /// of generated placements (depth i) and returns a new
     /// placement list of depth i+1 (with and without hold)
     fn iterate_move_gen(placements: PlacementList) -> PlacementList {
-        const SIZE: usize = 100;
+        // to make this parallel: change iter to par_iter (but this might make slow cause each
+        // operation is in the us range
+        let placements = placements.placements.iter().flat_map(|p| Self::extend_placement(p)).collect();
+        // concat(placements.placements.iter().map(|p| Self::extend_placement(p)))
         PlacementList {
-            placements: 
-                placements
-                    .placements
-                    .par_chunks(SIZE)
-                    .flat_map_iter(|ps| 
-                        concat(ps.iter().map(|p| Self::extend_placement(p)))
-                    ).collect(),
+            placements: placements
         }
     }
 
@@ -115,16 +106,7 @@ impl Bot {
         // generate the new placements here
         let mut out: Vec<_> = seen
             .into_iter()
-            .map(|piece| Placement {
-                piece,
-                held: false,
-                game_before,
-                game_after: 
-                    *game_before
-                        .clone()
-                        .set_active(piece, false)
-                        .place_active(),
-            })
+            .map(|piece| Self::make_placement(piece, false, game_before))
             .collect();
 
         // get the starting position to extend placements from
@@ -137,70 +119,20 @@ impl Bot {
         Self::add_nontrivials(&mut seen, &mut controller);
 
         // generate the new placements here
-        out.extend(
-            seen.into_iter()
-                .map(|piece| Placement {
-                    piece,
-                    held: true,
-                game_before,
-                game_after: 
-                    *game_before
-                        .clone()
-                        .set_active(piece, false)
-                        .place_active(),
-                })
-                .collect::<Vec<_>>(),
-        );
+        out.extend(seen
+            .into_iter()
+            .map(|piece| Self::make_placement(piece, true, game_before))
+            .collect::<Vec<_>>());
         out
     }
 
-    /// return the trivial placements as a vector of vec commands from the starting state
-    fn trivial(
-        &self,
-        controller: &mut Controller,
-        seen: &mut HashSet<Piece>,
-    ) -> (Vec<Vec<Command>>, Vec<Piece>) {
-        let mut out = Vec::new();
-        let mut out_piece = Vec::new();
-        for rotation in 0..NUM_ROTATE_STATES {
-            let mut rep = 1;
-            controller.do_command_mut(Command::Rotate(rotation as u8));
-            let p = Self::get_dropped_piece(controller);
-            seen.insert(p);
-            out_piece.push(p);
-            out.push(vec![Command::Rotate(rotation as u8), Command::MoveDrop]);
-            while controller.do_command(&Command::MoveHorizontal(1)) {
-                let p = Self::get_dropped_piece(controller);
-                seen.insert(p);
-                out_piece.push(p);
-                out.push(vec![
-                    Command::Rotate(rotation as u8),
-                    Command::MoveHorizontal(rep),
-                    Command::MoveDrop,
-                ]);
-                rep += 1;
-            }
-            *controller.piece = controller.peek().unwrap().1; // reset the piece
-            rep = 1; // reset the repetitions counter
-            while controller.do_command(&Command::MoveHorizontal(-1)) {
-                let p = Self::get_dropped_piece(controller);
-                seen.insert(p);
-                out_piece.push(p);
-                out.push(vec![
-                    Command::Rotate(rotation as u8),
-                    Command::MoveHorizontal(-rep),
-                    Command::MoveDrop,
-                ]);
-                rep += 1;
-            }
-            controller.undo();
-
-            if controller.piece.r#type == PIECE_O {
-                // don't generate new trivials for O
-                break;
-            }
+    fn make_placement(piece: Piece, held: bool, game_before: Game) -> Placement {
+        Placement {
+            piece,
+            held,
+            game_before,
+            game_after: *game_before.clone().set_active(piece, held).place_active(held)
         }
-        (out, out_piece)
     }
 
     fn get_dropped_piece(controller: &mut Controller) -> Piece {
@@ -214,7 +146,9 @@ impl Bot {
     /// extends the seen hashset by the trivials
     fn add_trivials(seen: &mut HashSet<Piece>, controller: &mut Controller) {
         for rotation in 0..NUM_ROTATE_STATES {
-            controller.do_command_mut(Command::Rotate(rotation as u8));
+            if !controller.do_command_mut(Command::Rotate(rotation as u8)){
+                continue;
+            }
             seen.insert(Self::get_dropped_piece(controller));
             while controller.do_command(&Command::MoveHorizontal(1)) {
                 seen.insert(Self::get_dropped_piece(controller));
@@ -230,68 +164,6 @@ impl Bot {
                 break;
             }
         }
-    }
-
-    /// extend the trivial placements by recursing through inputs that bring
-    /// pieces to unseen states. this returns the list of new inputs that
-    /// leads to the current state
-    fn nontrivial(
-        &self,
-        controller: &mut Controller,
-        seen: &mut HashSet<Piece>,
-        pieces: Vec<Piece>,
-    ) -> Vec<Vec<Command>> {
-        let mut out = Vec::new();
-
-        for piece in pieces.into_iter() {
-            controller.update_piece(piece);
-            out.push(self.nontrivial_(controller, seen));
-        }
-        controller.reset();
-        out
-    }
-
-    /// helper method for [`bot.nontrivial`]
-    /// extends a single trivial placeement by recursing through inputs
-    /// precondition: the piece is at the location led to by the trivial
-    /// this leaves the location of the piece at its final recurse
-    fn nontrivial_(&self, controller: &mut Controller, seen: &mut HashSet<Piece>) -> Vec<Command> {
-        let mut out = Vec::new();
-
-        let mut dfs_stack = vec![*controller.piece];
-        let mut out_stack = vec![Command::Null];
-
-        while !dfs_stack.is_empty() {
-            // push the backtrack commands
-            let mut backtrack_counter = 0;
-            while let Some(Command::Backtrack(c)) = out_stack.last() {
-                backtrack_counter += c;
-                out_stack.pop();
-            }
-            if backtrack_counter != 0 {
-                out.push(Command::Backtrack(backtrack_counter));
-            }
-
-            // push the current command
-            out.push(out_stack.pop().unwrap());
-
-            // dfs (add to stack)
-            let p = dfs_stack.pop().unwrap();
-            out_stack.push(Command::Backtrack(1));
-            for command in COMMANDS.into_iter() {
-                // update the controller to use this new piece
-                controller.update_piece(p);
-                controller.do_command(&command);
-                let p = *controller.piece;
-                if seen.contains(&p) {
-                    continue;
-                }
-                seen.insert(p);
-                dfs_stack.push(p);
-                out_stack.push(command);
-            }
-        }
-        out
     }
 
     /// extends the seen hashset by the grounded nontrivials

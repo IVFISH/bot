@@ -7,4 +7,6 @@ pub mod game;
 pub mod piece;
 pub mod piece_queue;
 pub mod placement;
+pub mod placement_list;
+pub mod pruner;
 pub mod test_api;

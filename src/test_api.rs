@@ -4,6 +4,7 @@ pub mod functions {
     use crate::board::*;
     use crate::piece::*;
     use crate::placement::*;
+    use crate::placement_list::*;
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
 

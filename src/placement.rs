@@ -5,12 +5,8 @@ use crate::constants::board_constants::*;
 use crate::controller::Controller;
 use crate::game::Game;
 use crate::piece::Piece;
-use fumen;
 use itertools::chain;
-use std::fs::File;
-use std::io::prelude::*;
-use std::iter::zip;
-use std::path::Path;
+use fumen;
 
 pub struct Placement {
     // the last piece in the move sequence
@@ -78,27 +74,3 @@ impl Placement {
     }
 }
 
-#[derive(Default)]
-pub struct PlacementList {
-    pub placements: Vec<Placement>,
-}
-
-impl PlacementList {
-    /// extends each vector field within the placement list
-    pub fn extend(&mut self, other: PlacementList) {
-        self.placements.extend(other.placements);
-    }
-
-    /// debugging tool to write all the fumens to a json file
-    pub fn write_fumens(&self, filename: &str) {
-        let fumens = self
-            .placements
-            .iter()
-            .map(|p| p.get_fumen())
-            .collect::<Vec<_>>()
-            .join("\n");
-        let path = Path::new(filename);
-        let mut file = File::create(&path).unwrap();
-        let _ = file.write_all(fumens.as_bytes());
-    }
-}

@@ -123,6 +123,20 @@ impl Piece {
         kicks
     }
 
+    /// encodes the piece into a u16
+    /// the encoding is as follows:
+    /// 3 bits for type, 2 bits for rot, 
+    /// 5 bits for row, 4 bits for col, 
+    /// 1 bit for held, 1 bit for t-spin
+    pub fn encode(&self, held: bool, t_spin: bool) -> u16 {
+        ((self.r#type) as u16)
+            | ((self.dir as u16) << 3)
+            | ((self.row as u16) << 5)
+            | ((self.col as u16) << 10) 
+            | ((held as u16) << 14)
+            | ((t_spin as u16) << 15)
+    }
+
     // setters ----------------------------------
     /// sets the row of the piece
     /// checks if the row is in bounds

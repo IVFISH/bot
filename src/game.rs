@@ -11,6 +11,7 @@ pub struct Game {
     pub active: Piece,
     pub hold: Option<u8>,
     pub queue: PieceQueue,
+    pub history: u128
 }
 
 impl Display for Game {
@@ -31,6 +32,7 @@ impl Game {
             queue,
             hold: None,
             board: Board::default(),
+            history: 0
         }
     }
 
@@ -44,9 +46,14 @@ impl Game {
     /// places the current active piece onto the board
     /// this also updates the queue and the new active
     /// (this does not check for validity of placement)
-    pub fn place_active(&mut self) -> &mut Self {
+    pub fn place_active(&mut self, held: bool) -> &mut Self {
+        // push the piece into the history
+        let t_spin = false; // fix (have a board method)
+        self.history = self.history << 16 | (self.active.encode(held, t_spin) as u128);
+        // update the board
         self.board.set_piece(&self.active);
         self.board.clear_lines();
+        // update the active
         self.active = self.queue.next();
         self
     }

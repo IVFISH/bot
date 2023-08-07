@@ -45,12 +45,12 @@ impl Board {
 
     /// returns the index of the first empty row in column col
     pub fn get_height(&self, col: usize) -> usize {
-        (u64::BITS - self.arr[col].leading_zeros()) as usize
+        Self::height(self.arr[col])
     }
 
-    /// returns the index of the first empty row in a column col below the specified row
+    /// returns the index of the first empty row in a col below the given row
     pub fn get_height_below(&self, col: usize, row: usize) -> usize {
-        (u64::BITS - (self.arr[col] & !(u64::MAX << row)).leading_zeros()) as usize
+        Self::height(self.arr[col] & !(u64::MAX << row))
     }
 
     /// returns the state (0 or 1) at the grid's row and col
@@ -121,7 +121,8 @@ impl Board {
         !self.piece_collision(piece) && self.piece_grounded(piece)
     }
 
-    /// retuns the amount of rows that a piece can move down
+    /// returns the max amount of rows that a piece can move down
+    /// (as a negative number), output is from (-height, 0]
     pub fn piece_max_down(&self, piece: &Piece) -> i8 {
         if let Some(locs) = piece.abs_locations() {
             locs.into_iter()
@@ -133,7 +134,99 @@ impl Board {
         }
     }
 
-    // aux methods ------------------------------
+    // statistics -------------------------------
+    /// the row of the highest placed mino
+    pub fn get_max_height(arr: &[u64]) -> usize {
+        Self::height(*arr.iter().max().unwrap())
+    }
+
+    /// the row of the lowest placed mino
+    pub fn get_min_height(arr: &[u64]) -> usize {
+        Self::height(*arr.iter().min().unwrap())
+    }
+
+    /// returns the amount of t-slots (with an accessible overhang)
+    /// present in the current board
+    pub fn t_slot(arr: &[u64]) -> usize {
+        const SIZE: usize = 3;
+        (Self::get_min_height(arr)..=(Self::get_max_height(arr) - SIZE))
+            .map(|row| {
+                arr
+                    .windows(SIZE)
+                    .map(|cols| Self::check_hor_t(cols, row) as usize)
+                    .sum::<usize>()
+            })
+            .sum()
+    }
+
+    /// returns a vector of size=9 of the adjacent
+    /// differences between column heights
+    pub fn get_adjacent_height_differences(arr: &[u64]) -> Vec<usize> {
+        arr
+            .windows(2)
+            .map(|w| Self::height(w[0]).abs_diff(Self::height(w[1])))
+            .collect()
+    }
+
+    /// returns the checkerboard parity of the board (differences between checkerboard)
+    /// see https://docs.google.com/document/d/1udtq235q2SdoFYwMZNu-GRYR-4dCYMkp0E8_Hw1XTyg/edit
+    /// for an explanation of parity and PC theory
+    pub fn checkerboard_parity(arr: &[u64]) -> i8 {
+        const MASK: u64 = 0xAAAAAAAAAA; // 1010..
+        arr
+            .chunks(2)
+            .map(|cols| {
+                (cols[0] & MASK).count_ones() as i8 - (cols[0] & (MASK >> 1)).count_ones() as i8
+                    + (cols[1] & (MASK >> 1)).count_ones() as i8
+                    - (cols[1] & MASK).count_ones() as i8
+            })
+            .sum()
+    }
+
+    /// returns the columnar parity of the board (differences between columns)
+    /// see https://docs.google.com/document/d/1udtq235q2SdoFYwMZNu-GRYR-4dCYMkp0E8_Hw1XTyg/edit
+    /// for an explanation of parity and PC theory
+    pub fn columnar_parity(arr: &[u64]) -> i8 {
+        arr
+            .chunks(2)
+            .map(|cols| ((cols[0]).count_ones() as i8) - (cols[1].count_ones() as i8))
+            .sum()
+    }
+
+    /// returns the amount of non-empty cells on the board
+    pub fn cell_count(arr: &[u64]) -> u32 {
+        arr.iter().map(|c| c.count_ones()).sum()
+    }
+
+    /// partitions the board into sections that are split by columns of height row
+    /// the full columns are not included in the partition
+    /// includes the range of the included columns by
+    pub fn partition(&self, row: usize) -> Vec<(&[u64], usize, usize)> {
+        let mut out = Vec::new();
+        let mut prev = 0;
+        let iter = self
+            .arr
+            .iter()
+            .enumerate()
+            .filter(|(_, c)| Self::height(**c) == row);
+        for (split, _) in iter {
+            if prev - split > 0 {
+                out.push((&self.arr[prev..split], prev, split));
+            }
+            prev = split + 1;
+        }
+        if prev != BOARD_WIDTH - 1 {
+            out.push((&self.arr[prev..BOARD_WIDTH - 1], prev, BOARD_WIDTH - 1));
+        }
+        out
+    }
+
+    // versus -----------------------------------
+    /// returns whether the board is empty
+    pub fn all_clear(&self) -> bool {
+        self.arr.iter().sum::<u64>() == 0
+    }
+
     /// clears all filled lines on the board and moves down
     /// the blocks above those lines
     pub fn clear_lines(&mut self) {
@@ -161,6 +254,24 @@ impl Board {
     /// sets the state at the row and col to 1
     fn add(&mut self, row: usize, col: usize) {
         self.arr[col] |= 1 << row;
+    }
+
+    /// the height of a col
+    fn height(col: u64) -> usize {
+        (u64::BITS - col.leading_zeros()) as usize
+    }
+
+    /// whether a 3x3 grid is a horizontal t-slot
+    /// with the bottom at the given row. for example:
+    /// 1 0 0  |  0 0 1
+    /// 0 0 0  |  0 0 0
+    /// 1 0 1  |  1 0 1
+    fn check_hor_t(arr: &[u64], row: usize) -> bool {
+        const MASK: u64 = 0b111;
+        let c1 = arr[0] >> row & MASK;
+        let c2 = arr[1] >> row & MASK;
+        let c3 = arr[2] >> row & MASK;
+        [c1, c2, c3] == [0b101, 0b000, 0b001] || [c1, c2, c3] == [0b001, 0b000, 0b101]
     }
 }
 
@@ -257,5 +368,52 @@ mod tests {
         assert_eq!(board.get_heights(), [0, 0, 6, 6, 0, 0, 0, 0, 0, 0]);
         remove_list(&mut board, vec![[5, 2], [5, 3]]);
         assert_eq!(board.get_heights(), [0, 0, 4, 0, 0, 0, 0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn test_parity() {
+        let mut board = Board::new();
+        board.arr[0] = 0b1010;
+        board.arr[1] = 0b0101;
+        assert_eq!(board.checkerboard_parity(), 4);
+        assert_eq!(board.columnar_parity(), 0);
+
+        board.arr[1] = 0b1010;
+        assert_eq!(board.checkerboard_parity().abs(), 0);
+
+        board.arr[2] = 0b1110;
+        assert_eq!(board.checkerboard_parity().abs(), 1);
+        assert_eq!(board.columnar_parity().abs(), 3);
+
+        // adding a horizontal t-piece
+        board.arr[2] = 0b100;
+        board.arr[3] = 0b110;
+        board.arr[4] = 0b100;
+        assert_eq!(board.checkerboard_parity().abs(), 2);
+        assert_eq!(board.columnar_parity(), 0);
+    }
+
+    #[test]
+    fn test_t_slot() {
+        let mut board = Board::new();
+        board.arr[0] = 0b001;
+        board.arr[1] = 0b000;
+        board.arr[2] = 0b101;
+        assert_eq!(board.t_slot(), 1);
+
+        board.arr[0] <<= 10;
+        board.arr[1] <<= 10;
+        board.arr[2] <<= 10;
+        println!("{}", board);
+        assert_eq!(board.t_slot(), 1);
+        
+        board.arr[6] = 0b001;
+        board.arr[5] = 0b000;
+        board.arr[4] = 0b101;
+        assert_eq!(board.t_slot(), 2);
+
+        board.arr[2] = 0;
+        assert_eq!(board.t_slot(), 1);
+
     }
 }

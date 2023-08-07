@@ -7,15 +7,18 @@ mod game;
 mod piece;
 mod piece_queue;
 mod placement;
+mod placement_list;
 mod test_api;
+mod pruner;
 
 use crate::bot::*;
+use crate::pruner::*;
 use crate::test_api::functions::*;
 use std::time::Instant;
 
 #[allow(unused)]
 fn bench() {
-    let bot = Bot::new();
+    let bot = Bot::<NoPruner>::new();
     let n = 500_000;
 
     let now = Instant::now();
@@ -26,10 +29,12 @@ fn bench() {
 }
 
 fn main() {
+    // println!("{:?}", std::env::current_exe());
+    std::env::set_var("RUST_BACKTRACE", "1");
     let now = Instant::now();
-    let mut bot = Bot::with_seed(3);
+    let mut bot = Bot::<NoPruner>::with_seed(3);
     bot.game.board = l_spin_board_5();
-    let placements = bot.move_gen(4);
+    let placements = bot.move_gen(3);
     println!("Took {} seconds", now.elapsed().as_secs());
 
     // placements.write_fumens("fumens.txt");
