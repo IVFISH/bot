@@ -13,6 +13,11 @@ use game_rules_and_data::*;
 use std::fmt::{Display, Formatter};
 use crate::game::game_rules_and_data::SpinBonus::TSpin;
 use colored::*;
+use crate::constants::localbotgameplay::*;
+use std::fs;
+use crate::constants::board_constants::MAX_PLACE_HEIGHT;
+use crate::constants::queue_constants::MIN_QUEUE_LENGTH;
+use num::clamp;
 
 #[derive(Default, Clone)]
 pub struct Game {
@@ -296,6 +301,48 @@ impl Game {
         self.piece_queue.nearest_tpiece()
     }
 
+    pub fn nearest_ipiece(&self) -> usize {
+        if self.hold_piece == Some(4) || self.active_piece.get_type() == 4 {
+            return 0;
+        }
+        self.piece_queue.nearest_ipiece()
+    }
+
+    pub fn should_panic(&self) -> bool {
+        if
+            self.board.get_max_height() + self.game_data.garbage_in_queue > MAX_PLACE_HEIGHT / 2 && !self.game_data.panic ||
+            self.game_data.combo > 0 && self.game_data.panic ||
+            self.board.get_max_height() > MAX_PLACE_HEIGHT / 2 && self.game_data.panic
+        {
+            return true;
+        }
+        false
+    }
+
+    pub fn get_paranoia(&self) -> f32 {
+        if self.should_panic() {
+            return 0.0;
+        }
+
+        let (holes_count_total, holes_count_weighted, _) = self.board.holes_cell_covered();
+
+        (clamp(2.0 * self.board.get_max_height() as f32 / MAX_PLACE_HEIGHT as f32, 0.1, 1.0) * self.nearest_ipiece() as f32) +
+        (holes_count_total as f32 / 20.0 + holes_count_weighted as f32 / 8.0)
+    }
+
+    pub fn get_garbage_in_queue(&self) -> usize {
+        let mut garbage = 0;
+        if ALLOWLOCALGAMEPLAY {
+            garbage = fs::read_to_string(LOCALGAMEPLAYFILEPATH).expect("e").chars().nth(BOTNUM).expect("e").to_string().parse::<usize>().unwrap();
+        }
+        garbage
+    }
+
+    pub fn update_garbage_amount(&mut self) {
+        self.game_data.garbage_in_queue = self.get_garbage_in_queue();
+        self.game_data.panic = self.should_panic();
+    }
+
     pub fn update(&mut self) {
         let t_spin_type = Game::get_t_spin_type(&self.active_piece, &self.board);
         let lines_cleared = self.board.clear_lines();
@@ -328,6 +375,9 @@ pub mod game_rules_and_data {
         pub t_spin_type: u16,
 
         pub game_over: bool,
+
+        pub panic: bool,
+        pub garbage_in_queue: usize,
     }
 
     impl GameData {

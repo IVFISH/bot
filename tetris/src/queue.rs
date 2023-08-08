@@ -123,10 +123,19 @@ impl PieceQueue {
     pub fn nearest_tpiece(&self) -> usize {
         for piece in 0..MIN_QUEUE_LENGTH {
             if self.queue[piece] == 6 {
-                return piece;
+                return piece + 1;
             }
         }
-        return MIN_QUEUE_LENGTH;
+        return MIN_QUEUE_LENGTH + 1;
+    }
+
+    pub fn nearest_ipiece(&self) -> usize {
+        for piece in 0..MIN_QUEUE_LENGTH {
+            if self.queue[piece] == 4 {
+                return piece + 1;
+            }
+        }
+        return MIN_QUEUE_LENGTH + 1;
     }
 }
 

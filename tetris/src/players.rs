@@ -37,8 +37,6 @@ pub trait Player {
             // println!("{}", &clamped_lines_sent.to_string());
         }
 
-        self.get_game_mut().board.update_board_garbage_amount();
-
         // println!("{}", clamped_lines_sent)
         // println!("{}", self.get_game().game_data.last_sent);
         true

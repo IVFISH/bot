@@ -88,6 +88,7 @@ fn bot_play_local() {
     let mut time = 0;
     while !bot.get_game().get_game_over() && bot.get_game().game_data.pieces_placed < 10000 {
         let now = time::Instant::now();
+        bot.get_game_mut().update_garbage_amount();
         bot.make_move();
         time += now.elapsed().as_micros();
         
@@ -102,6 +103,7 @@ fn bot_play_local() {
         thread::sleep(time::Duration::from_millis(0));
         // println!("{}", bot.get_game());
         println!("{}", bot.get_game());
+        println!("{}", bot.get_game().get_paranoia());
         println!("{} milliseconds to move", format!("{}", now.elapsed().as_micros() / 1000).green());
         println!("{} lines sent / {} pieces placed = {} app", format!("{}", bot.get_game().game_data.lines_sent).green(), format!("{}", bot.get_game().game_data.pieces_placed).green(), format!("{}", (bot.get_game().game_data.lines_sent as f64) / (bot.get_game().game_data.pieces_placed as f64)).green());
         println!("{} b2b, {} combo", format!("{}", bot.get_game().game_data.b2b).green(), format!("{}", bot.get_game().game_data.combo).green())

@@ -9,20 +9,16 @@ use std::fmt::{Display, Formatter};
 use colored::*;
 use num::clamp;
 use crate::weight::Weights;
-use crate::constants::localbotgameplay::*;
-use std::fs;
 
 #[derive(Debug, Clone)]
 pub struct Board {
     arr: BoardArray,
-    garbage_in_queue: usize,
 }
 
 impl Default for Board {
     fn default() -> Self {
         Self {
             arr: [0; BOARD_WIDTH],
-            garbage_in_queue: 0,
         }
     }
 }
@@ -516,29 +512,6 @@ impl Board {
             out += col.count_ones() as usize;
         }
         return out;
-    }
-
-    pub fn should_panic(&self) -> bool {
-        if self.get_max_height() + self.garbage_in_queue > 10 {
-            return true;
-        }
-        false
-    }
-
-    pub fn garbage_in_queue_amnt(&self) -> usize {
-        self.garbage_in_queue
-    }
-
-    pub fn get_garbage_in_queue(&self) -> usize {
-        let mut garbage = 0;
-        if ALLOWLOCALGAMEPLAY {
-            garbage = fs::read_to_string(LOCALGAMEPLAYFILEPATH).expect("e").chars().nth(BOTNUM).expect("e").to_string().parse::<usize>().unwrap();
-        }
-        garbage
-    }
-
-    pub fn update_board_garbage_amount(&mut self) {
-        self.garbage_in_queue = self.get_garbage_in_queue();
     }
 
     // other
