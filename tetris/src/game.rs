@@ -327,7 +327,8 @@ impl Game {
         let (holes_count_total, holes_count_weighted, _) = self.board.holes_cell_covered();
 
         (clamp(2.0 * self.board.get_max_height() as f32 / MAX_PLACE_HEIGHT as f32, 0.1, 1.0) * self.nearest_ipiece() as f32) +
-        (holes_count_total as f32 / 20.0 + holes_count_weighted as f32 / 8.0)
+        (holes_count_total as f32 / 20.0 + holes_count_weighted as f32 / 8.0) +
+        (self.nearest_ipiece() as f32 / 4.0)
     }
 
     pub fn get_garbage_in_queue(&self) -> usize {

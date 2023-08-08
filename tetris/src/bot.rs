@@ -187,7 +187,7 @@ impl Bot {
             let mut next_scores = ScoreList::new();
 
             //pruning parameters
-            let mut n = 1600 - clamp(self.game.get_paranoia(), 0.0, 2.0) as usize * 400;
+            let mut n = 1200 - clamp(self.game.get_paranoia(), 0.0, 2.0) as usize * 500;
             if self.game.should_panic() { n = 200; }
             let prune_depth = 1;
 
