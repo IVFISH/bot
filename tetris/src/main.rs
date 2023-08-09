@@ -24,6 +24,7 @@ use crate::board::Board;
 use crate::constants::types::Dependencies;
 use crate::constants::versus_constants::AttackType::T;
 use crate::constants::localbotgameplay::*;
+use crate::constants::board_constants::CONSOLE_DISPLAY_STATS;
 use crate::game::Game;
 use crate::piece::Piece;
 use crate::weight::Weights;
@@ -103,10 +104,12 @@ fn bot_play_local() {
         thread::sleep(time::Duration::from_millis(0));
         // println!("{}", bot.get_game());
         println!("{}", bot.get_game());
-        println!("{}", bot.get_game().get_paranoia());
-        println!("{} milliseconds to move", format!("{}", now.elapsed().as_micros() / 1000).green());
-        println!("{} lines sent / {} pieces placed = {} app", format!("{}", bot.get_game().game_data.lines_sent).green(), format!("{}", bot.get_game().game_data.pieces_placed).green(), format!("{}", (bot.get_game().game_data.lines_sent as f64) / (bot.get_game().game_data.pieces_placed as f64)).green());
-        println!("{} b2b, {} combo", format!("{}", bot.get_game().game_data.b2b).green(), format!("{}", bot.get_game().game_data.combo).green())
+        if CONSOLE_DISPLAY_STATS {
+            println!("{} milliseconds to move", format!("{}", now.elapsed().as_micros() / 1000).green());
+            println!("{} pps, {} apm", format!("{}", (bot.get_game().game_data.pieces_placed as f64 / (time as f64 / 1000000000.0)).round() / 1000.0).green(), format!("{}", (60.0 * bot.get_game().game_data.lines_sent as f64 / (time as f64 / 1000000000.0)).round() / 1000.0).green());
+            println!("{} lines sent / {} pieces placed = {} app", format!("{}", bot.get_game().game_data.lines_sent).green(), format!("{}", bot.get_game().game_data.pieces_placed).green(), format!("{}", (bot.get_game().game_data.lines_sent as f64) / (bot.get_game().game_data.pieces_placed as f64)).green());
+            println!("{} b2b, {} combo", format!("{}", bot.get_game().game_data.b2b).green(), format!("{}", bot.get_game().game_data.combo).green());
+        }
     }
     println!(
         "Making {} moves took {} microseconds on average",

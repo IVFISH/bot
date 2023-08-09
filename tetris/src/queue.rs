@@ -149,6 +149,11 @@ pub fn piece_type_to_string_colored(piece: PieceType) -> ColoredString {
     arr[piece].to_owned()
 }
 
+pub fn piece_type_to_block_colored(piece: PieceType) -> ColoredString {
+    let arr = ["■".red(), "■".truecolor(255,128,0), "■".bright_yellow(), "■".green(), "■".bright_blue(), "■".blue(), "■".bright_purple()];
+    arr[piece].to_owned()
+}
+
 impl Display for PieceQueue {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         for piece in 0..MIN_QUEUE_LENGTH {

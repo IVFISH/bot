@@ -79,6 +79,8 @@ pub trait Player {
 pub fn do_move_list(game: &mut Game, commands: CommandList) {
     for command in commands {
         do_command(game, command);
+        // println!("{}", game);
+        // thread::sleep(time::Duration::from_millis(2));
     }
 }
 
@@ -96,7 +98,6 @@ pub fn do_command(game: &mut Game, command: Command) -> bool {
             true
         }
         Command::HardDrop => {
-            // println!("{}", game);
             let game_over = !game.hard_drop();
             game.set_game_over(game_over);
             true

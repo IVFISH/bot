@@ -37,6 +37,8 @@ pub mod board_constants {
 
     pub const ZERO_ONE: usize = 0x5555555555;
     pub const ONE_ZERO: usize = 0xAAAAAAAAAA;
+
+    pub const CONSOLE_DISPLAY_STATS: bool = true;
 }
 
 pub mod piece_constants {

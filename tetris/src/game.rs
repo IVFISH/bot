@@ -341,6 +341,7 @@ impl Game {
 
     pub fn update_garbage_amount(&mut self) {
         self.game_data.garbage_in_queue = self.get_garbage_in_queue();
+        self.game_data.total_garbage_recieved += self.game_data.garbage_in_queue; // will die in edge cases with garbage being sent during cancellation combos but im too lazy to accurately track this
         self.game_data.panic = self.should_panic();
     }
 
@@ -379,6 +380,7 @@ pub mod game_rules_and_data {
 
         pub panic: bool,
         pub garbage_in_queue: usize,
+        pub total_garbage_recieved: usize,
     }
 
     impl GameData {

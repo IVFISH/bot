@@ -208,8 +208,8 @@ impl Bot {
             let mut next_scores = ScoreList::new();
 
             //pruning parameters
-            let mut n = 800 - clamp(self.game.get_paranoia(), 0.0, 4.0) as usize * 150;
-            if self.game.should_panic() { n = 120; }
+            let mut n = 600 - clamp(self.game.get_paranoia(), 0.0, 4.0) as usize * 100;
+            if self.game.should_panic() { n = 80; }
             let prune_depth = 1;
 
             for curr_depth in 1..depth {

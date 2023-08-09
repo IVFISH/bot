@@ -3,7 +3,7 @@
 use crate::constants::board_constants::*;
 use crate::constants::types::*;
 use crate::piece::*;
-use crate::queue::{piece_type_to_string_colored};
+use crate::queue::{piece_type_to_block_colored};
 use crate::point_vector::{Point, PointVector};
 use std::fmt::{Display, Formatter};
 use colored::*;
@@ -523,7 +523,7 @@ impl Board {
                 if self.get(row, col) {
                     out.push_str("■ ");
                 } else if locations.contains(&Point(row as i8, col as i8)) {
-                    out.push_str(&format!("{} ", piece_type_to_string_colored(active_piece.get_type())));
+                    out.push_str(&format!("{} ", piece_type_to_block_colored(active_piece.get_type())));
                 } else {
                     out.push_str(&format!("{} ", ("▫".truecolor(clamp(8*row,0,255).try_into().unwrap(),clamp(100-4*row,0,255).try_into().unwrap(),clamp(40,0,255).try_into().unwrap()))));
                 }
