@@ -28,6 +28,7 @@ pub struct Bot {
     game: Game,
     weight: Weights,
     opener: Opener,
+    next_placements: PlacementList,
 }
 
 impl Display for Bot {
@@ -43,6 +44,7 @@ impl Default for Bot {
             game: Game::new(None),
             weight: Weights::default(),
             opener: Opener::default(),
+            next_placements: PlacementList::new(),
         }
     }
 }
@@ -59,6 +61,23 @@ impl Player for Bot {
     fn get_next_move(&mut self) -> CommandList {
         // R, C
         let mut action = vec![];
+
+        if self.next_placements.len() > 0 {
+            println!("{:?}", self.next_placements);
+            match Bot::moves_to_placement(&mut self.get_game().clone(), &self.next_placements[0]) {
+                Ok(m) => {
+                    action = m;
+                    action.push(Command::HardDrop);
+                    self.next_placements.remove(0);
+
+                    return action;
+                },
+                Err(_) => {
+                    eprintln!("error");
+                    self.next_placements = PlacementList::new();
+                }
+            }
+        }
 
         if self.opener.status == OpenerStatus::New {
             let mut sequence = vec![self.get_game().active_piece.piece_type];
@@ -104,8 +123,10 @@ impl Player for Bot {
         // println!("{}", min_score);
         // println!("{}", p[0]);
         // println!("{:?}", p);
-        if min_score < -10000.0{
-            println!("{:?}", p);
+        if min_score < -100000.0{
+            self.next_placements = p;
+            self.next_placements.remove(0);
+            println!("{:?}", self.next_placements);
         }
 
         action.push(Command::HardDrop);
@@ -187,8 +208,8 @@ impl Bot {
             let mut next_scores = ScoreList::new();
 
             //pruning parameters
-            let mut n = 1200 - clamp(self.game.get_paranoia(), 0.0, 2.0) as usize * 500;
-            if self.game.should_panic() { n = 200; }
+            let mut n = 800 - clamp(self.game.get_paranoia(), 0.0, 4.0) as usize * 150;
+            if self.game.should_panic() { n = 120; }
             let prune_depth = 1;
 
             for curr_depth in 1..depth {
@@ -506,7 +527,7 @@ impl Bot {
         let mut extra = 0.0;
 
         if pc {
-            extra -= 10000.0;
+            extra -= 1000000.0;
         }
         if t_spin {
             extra -= weight.tspin_reward*weight.tspin_reward_expo.pow(game_data.last_cleared as f32);
@@ -547,7 +568,7 @@ impl Bot {
             board.get_max_height() > MAX_PLACE_HEIGHT ||
             (board.get_max_height() + game.game_data.garbage_in_queue > MAX_PLACE_HEIGHT && game.game_data.combo == 0)
         {
-            return 1000000.0
+            return 10000000.0
         }
         0.0
     }

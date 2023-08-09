@@ -55,7 +55,7 @@ impl Default for Weights {
             waste_t_weight: 600.0,
             tspin_reward: 300.0,
             tspin_reward_expo: 2.0,
-            paranoia_weight: 80.0,
+            paranoia_weight: 40.0,
 
             // Panic
 
