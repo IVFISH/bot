@@ -73,7 +73,7 @@ fn add_list(board: &mut Board, list: Vec<[usize; 2]>) {
     }
 }
 
-// criterion_group!(benches, movegen_benchmark_no_pruning);
-criterion_group!(benches, movegen_benchmark_pc_pruning);
+criterion_group!(benches, movegen_benchmark_no_pruning);
+// criterion_group!(benches, movegen_benchmark_pc_pruning);
 // criterion_group!(benches, clearlines_benchmark);
 criterion_main!(benches);

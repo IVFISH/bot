@@ -31,7 +31,19 @@ fn bench() {
     println!("Averaged {} microseconds", now.elapsed().as_micros() / n);
 }
 
+#[allow(unused)]
+fn test() {
+    let bot = Bot::<NoPruner>::with_seed(4);
+    let movegen = bot.move_gen(1).placements;
+    let mut placements = movegen.iter();
+    println!("{}", placements.clone().count());
+    println!("{}", placements.next().unwrap().game.board);
+    println!("{}", placements.next().unwrap().game.board);
+}
+
 fn main() {
+    test();
+    return;
     println!("{:?}", std::env::current_exe());
     std::env::set_var("RUST_BACKTRACE", "1");
     let now = Instant::now();
@@ -48,7 +60,7 @@ fn main() {
         .placements
         .clone()
         .into_iter()
-        .filter(|p| Board::get_max_height(&p.game_after.board.arr) == 0)
+        .filter(|p| Board::get_max_height(&p.game.board.arr) == 0)
         .collect::<Vec<_>>();
     println!("{}", pc_placements.len());
 

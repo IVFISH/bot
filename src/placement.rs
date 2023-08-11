@@ -6,37 +6,23 @@ use crate::controller::Controller;
 use crate::game::Game;
 use crate::piece::Piece;
 use fumen;
-use itertools::chain;
-use std::hash::{Hash, Hasher};
 
 #[derive(Clone, Debug, Copy)]
 pub struct Placement {
-    // the last piece in the move sequence
-    pub piece: Piece,
-    pub held: bool,
-
-    // add the score and any other info here
-
-    // games
-    pub game_before: Game, // game at depth = n-1
-    pub game_after: Game,  // game at depth = n
+    pub game: Game,  // game after the piece has been placed
 }
-
-impl Hash for Placement {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.game_after.hash(state);
-    }
-}
-
-impl PartialEq for Placement {
-    fn eq(&self, other: &Self) -> bool {
-        self.game_after == other.game_after
-    }
-}
-
-impl Eq for Placement {}
 
 impl Placement {
+    pub fn new(game: Game) -> Self {
+        Self {
+            game
+        }
+    }
+
+    pub fn get_last_piece(&self) -> Piece {
+        Piece::decode((self.game.history & 0xFFFF) as u16)
+    }
+
     /// returns the fumen string that represents the
     /// series of pieces that the placement stores
     pub fn get_fumen(&self) -> String {

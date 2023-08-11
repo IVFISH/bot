@@ -21,7 +21,8 @@ pub mod functions {
     }
 
     pub fn assert_placement_contains(placements: &PlacementList, piece: Piece) {
-        assert!(placements.placements.iter().any(|p| p.piece == piece));
+        placements.placements.iter().for_each(|p| println!("{:?}", p.get_last_piece()));
+        assert!(placements.placements.iter().any(|p| p.get_last_piece() == piece));
     }
 
     pub fn assert_location_eq(locations: Option<[[usize; 2]; 4]>, sols: [[usize; 2]; 4]) {
