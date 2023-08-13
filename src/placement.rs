@@ -9,14 +9,12 @@ use fumen;
 
 #[derive(Clone, Debug, Copy)]
 pub struct Placement {
-    pub game: Game,  // game after the piece has been placed
+    pub game: Game, // game after the piece has been placed
 }
 
 impl Placement {
     pub fn new(game: Game) -> Self {
-        Self {
-            game
-        }
+        Self { game }
     }
 
     pub fn get_last_piece(&self) -> Piece {

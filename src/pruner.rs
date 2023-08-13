@@ -12,7 +12,7 @@ pub trait Pruner {
     /// return true means that it should not be pruned
     /// assumes that the placement is valid to set
     fn condition(&self, placement: &Placement) -> bool;
-    
+
     /// required condition for pruning
     /// this condition is for evaluating placements independently
     /// of other placements in the same depth, see `condition`
@@ -147,11 +147,11 @@ impl Pruner for AllClearPruner {
 
         height != 0
             && self.all_rules(&game.board.arr, &game, height)
-                && game
-                    .board
-                    .partition(height)
-                    .into_iter()
-                    .all(|b| self.partition_rules(b, &game, height))
+            && game
+                .board
+                .partition(height)
+                .into_iter()
+                .all(|b| self.partition_rules(b, &game, height))
     }
 }
 

@@ -35,8 +35,10 @@ impl PlacementList {
     }
 
     /// adds all elements of an iterable that should not be pruned
-    pub fn add_many<T>(&mut self, placements: T) 
-    where T: IntoIterator<Item = Placement> {
+    pub fn add_many<T>(&mut self, placements: T)
+    where
+        T: IntoIterator<Item = Placement>,
+    {
         self.placements.extend(placements.into_iter())
     }
 

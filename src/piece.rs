@@ -2,9 +2,10 @@
 
 use crate::constants::board_constants::*;
 use crate::constants::piece_constants::*;
+use serde::{Deserialize, Serialize};
 use std::hash::{Hash, Hasher};
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct Piece {
     pub r#type: u8,
     pub dir: u8,

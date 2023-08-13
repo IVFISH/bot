@@ -9,4 +9,6 @@ pub mod piece_queue;
 pub mod placement;
 pub mod placement_list;
 pub mod pruner;
+pub mod server;
+pub mod suggestion;
 pub mod test_api;

@@ -8,6 +8,7 @@ use crate::piece::Piece;
 use crate::placement::*;
 use crate::placement_list::*;
 use crate::pruner::*;
+use crate::suggestion::*;
 use rayon::prelude::*;
 use std::collections::HashSet;
 
@@ -34,6 +35,16 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
     }
 
     // move generation --------------------------
+    /// the API function for getting the next move
+    pub fn suggest(&self) -> Suggestion {
+        // todo fix magic numbers
+        let depth = 2;
+        let placements = self.move_gen(depth);
+        let chosen = placements.placements[0]; // check for out of bounds!
+        let piece = Piece::decode((chosen.game.history >> (16 * (depth - 1)) & 0xFFFF) as u16);
+        Suggestion::new(piece)
+    }
+
     /// the API function for generating all current moves of depth
     /// for the current active piece, as well as after holding
     pub fn move_gen(&self, depth: usize) -> PlacementList {
@@ -103,9 +114,7 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
 
     fn make_placement(piece: Piece, held: bool, mut game_before: Game) -> Placement {
         game_before.set_active(piece, held).place_active(held);
-        Placement {
-            game: game_before,
-        }
+        Placement { game: game_before }
     }
 
     fn get_dropped_piece(controller: &mut Controller) -> Piece {
@@ -174,7 +183,13 @@ mod tests {
         bot.game.active = Piece::new(PIECE_T);
 
         // remove all held pieces (not t)
-        let pieces: Vec<_> = bot.move_gen(1).placements.iter().map(|p| p.get_last_piece()).filter(|p| p.r#type == PIECE_T).collect();
+        let pieces: Vec<_> = bot
+            .move_gen(1)
+            .placements
+            .iter()
+            .map(|p| p.get_last_piece())
+            .filter(|p| p.r#type == PIECE_T)
+            .collect();
         assert_eq!(pieces.len(), 48);
 
         // checking for any duplicate pieces
@@ -193,7 +208,13 @@ mod tests {
         bot.game.active = Piece::new(PIECE_O);
 
         // remove all held pieces (not o)
-        let pieces: Vec<_> = bot.move_gen(1).placements.iter().map(|p| p.get_last_piece()).filter(|p| p.r#type == PIECE_O).collect();
+        let pieces: Vec<_> = bot
+            .move_gen(1)
+            .placements
+            .iter()
+            .map(|p| p.get_last_piece())
+            .filter(|p| p.r#type == PIECE_O)
+            .collect();
         assert_eq!(pieces.len(), 15);
 
         // checking for any duplicate pieces

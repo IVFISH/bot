@@ -9,6 +9,8 @@ mod piece_queue;
 mod placement;
 mod placement_list;
 mod pruner;
+mod server;
+mod suggestion;
 mod test_api;
 
 use crate::board::*;
