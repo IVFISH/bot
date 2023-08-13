@@ -41,8 +41,10 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         let depth = 2;
         let placements = self.move_gen(depth);
         let chosen = placements.placements[0]; // check for out of bounds!
-        let piece = Piece::decode((chosen.game.history >> (16 * (depth - 1)) & 0xFFFF) as u16);
-        Suggestion::new(piece)
+        // let piece = Piece::decode((chosen.game.history >> (16 * (depth - 1)) & 0xFFFF) as u16);
+        // Suggestion::new(piece)
+        let board = chosen.game.board;
+        Suggestion::new(board)
     }
 
     /// the API function for generating all current moves of depth

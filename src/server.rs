@@ -1,6 +1,8 @@
 use crate::constants::piece_constants::*;
 use crate::piece::*;
 use crate::suggestion::*;
+use crate::bot::*;
+use crate::pruner::*;
 use futures_util::stream::{SplitSink, SplitStream};
 use futures_util::{Sink, SinkExt, Stream, StreamExt};
 use std::time::Duration;
@@ -11,14 +13,16 @@ use tokio_tungstenite::{accept_async, WebSocketStream};
 use tungstenite::protocol::Message;
 use tungstenite::{Error, Result};
 
-async fn accept_connection<S>(stream: TcpStream) {
+async fn accept_connection(stream: TcpStream) {
     let ws_stream = accept_async(stream).await.unwrap();
-    let _ = handle_connection(ws_stream).await;
+    let bot = Bot::<NoPruner>::new(); 
+    let _ = handle_connection(ws_stream, bot).await;
 }
 
-async fn handle_connection<S>(ws_stream: S) -> Result<()>
+async fn handle_connection<S, P>(ws_stream: S, mut bot: Bot<P>) -> Result<()>
 where
     S: Unpin + Stream<Item = Result<Message, Error>> + Sink<Message>,
+    P: Pruner + std::marker::Sync,
 {
     // split into a sink and a stream
     let (mut ws_sender, mut ws_receiver) = ws_stream.split();
@@ -34,9 +38,9 @@ where
                 // get the board state, queue, etc. from msg
             }
             // branch 2: bot is ready to input to client
-            inputs = get_suggestion(&mut interval) => {
+            inputs = get_suggestion(&mut interval, &bot) => {
                 let msg = serde_json::to_string(&inputs).unwrap();
-                ws_sender.send(Message::Text(msg));
+                let _ = ws_sender.send(Message::Text(msg)).await;
             }
         }
     }
@@ -65,9 +69,20 @@ where
 }
 
 /// gets the next inputs from the bot
-async fn get_suggestion(interval: &mut Interval) -> Suggestion {
-    interval.tick().await;
-    // dummy code
-    let piece = Piece::new(PIECE_O);
-    Suggestion::new(piece)
+async fn get_suggestion<P>(interval: &mut Interval, bot: &Bot<P>) -> Suggestion
+where P: Pruner + std::marker::Sync {
+    let _ = interval.tick().await;
+    bot.suggest()
+}
+
+/// driver function
+#[tokio::main]
+pub async fn init() {
+    let addr = "127.0.0.1:23512";
+    let listener = TcpListener::bind(&addr).await.unwrap();
+
+    // accept a client connection
+    while let Ok((stream, _)) = listener.accept().await {
+        tokio::spawn(accept_connection(stream));
+    }
 }
