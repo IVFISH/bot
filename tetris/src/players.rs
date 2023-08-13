@@ -4,6 +4,11 @@ use crate::communications::Suggestion;
 use crate::constants::bot_constants::*;
 use crate::constants::types::*;
 use crate::game::Game;
+use num::clamp;
+use std::fs;
+use std::string::*;
+use crate::constants::localbotgameplay::*;
+use std::{thread, time};
 
 pub trait Player {
     fn get_game(&self) -> &Game;
@@ -17,6 +22,23 @@ pub trait Player {
         let action = self.get_next_move();
         // println!("{:?}", action);
         do_move_list(self.get_game_mut(), action);
+
+        // for local gameplay in cmd
+        if ALLOWLOCALGAMEPLAY {
+            let mut commsfile = fs::read_to_string(LOCALGAMEPLAYFILEPATH).expect("e");
+            let mut garbage = commsfile.chars().nth(BOTNUM).expect("e").to_string().parse::<i16>().unwrap();
+            let clamped_lines_sent = clamp(clamp(self.get_game().game_data.last_sent as i16 - garbage, 0, 9) + commsfile.chars().nth(BOTNUM2).expect("e").to_string().parse::<i16>().unwrap(), 0, 9);
+            garbage = clamp(garbage - self.get_game().game_data.last_sent as i16, 0, 9);
+            commsfile.replace_range(BOTNUM..BOTNUM+1, &garbage.to_string());
+            commsfile.replace_range(BOTNUM2..BOTNUM2+1, &clamped_lines_sent.to_string());
+            let _ = fs::write(LOCALGAMEPLAYFILEPATH, commsfile);
+
+            // println!("{}", &garbage.to_string());
+            // println!("{}", &clamped_lines_sent.to_string());
+        }
+
+        // println!("{}", clamped_lines_sent)
+        // println!("{}", self.get_game().game_data.last_sent);
         true
     }
 
@@ -57,6 +79,8 @@ pub trait Player {
 pub fn do_move_list(game: &mut Game, commands: CommandList) {
     for command in commands {
         do_command(game, command);
+        // println!("{}", game);
+        // thread::sleep(time::Duration::from_millis(2));
     }
 }
 

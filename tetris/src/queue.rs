@@ -8,6 +8,7 @@ use std::collections::VecDeque;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 use std::string::ParseError;
+use colored::*;
 
 #[derive(Default, Clone)]
 pub struct PieceQueue {
@@ -55,7 +56,7 @@ impl PieceQueue {
     }
 
     pub fn next(&mut self) -> Piece {
-        if self.queue.len() <= MIN_QUEUE_LENGTH {
+        while self.queue.len() <= MIN_QUEUE_LENGTH {
             self.next_bag();
         }
 
@@ -118,6 +119,24 @@ impl PieceQueue {
         }
         arr
     }
+
+    pub fn nearest_tpiece(&self) -> usize {
+        for piece in 0..MIN_QUEUE_LENGTH {
+            if self.queue[piece] == 6 {
+                return piece + 1;
+            }
+        }
+        return MIN_QUEUE_LENGTH + 1;
+    }
+
+    pub fn nearest_ipiece(&self) -> usize {
+        for piece in 0..MIN_QUEUE_LENGTH {
+            if self.queue[piece] == 4 {
+                return piece + 1;
+            }
+        }
+        return MIN_QUEUE_LENGTH + 1;
+    }
 }
 
 pub fn piece_type_to_string(piece: PieceType) -> String {
@@ -125,10 +144,20 @@ pub fn piece_type_to_string(piece: PieceType) -> String {
     arr[piece].to_owned()
 }
 
+pub fn piece_type_to_string_colored(piece: PieceType) -> ColoredString {
+    let arr = ["Z".red(), "L".truecolor(255,128,0), "O".bright_yellow(), "S".green(), "I".bright_blue(), "J".blue(), "T".bright_purple()];
+    arr[piece].to_owned()
+}
+
+pub fn piece_type_to_block_colored(piece: PieceType) -> ColoredString {
+    let arr = ["■".red(), "■".truecolor(255,128,0), "■".bright_yellow(), "■".green(), "■".bright_blue(), "■".blue(), "■".bright_purple()];
+    arr[piece].to_owned()
+}
+
 impl Display for PieceQueue {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         for piece in 0..MIN_QUEUE_LENGTH {
-            write!(f, "{} ", piece_type_to_string(self.queue[piece]))?;
+            write!(f, "{} ", piece_type_to_string_colored(self.queue[piece]))?;
         }
         Ok(())
     }

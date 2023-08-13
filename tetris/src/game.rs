@@ -4,13 +4,20 @@ use crate::board::Board;
 use crate::constants::piece_constants::{NUM_ROTATE_STATES, RELATIVE_CORNERS};
 use crate::constants::types::{PieceType, RotationDirection};
 use crate::constants::versus_constants::*;
+use crate::constants::queue_constants::*;
 use crate::piece::Piece;
 use crate::point_vector::PointVector;
-use crate::queue::{piece_type_to_string, BagType, PieceQueue};
+use crate::queue::{piece_type_to_string, piece_type_to_string_colored, BagType, PieceQueue};
 use crate::versus::*;
 use game_rules_and_data::*;
 use std::fmt::{Display, Formatter};
 use crate::game::game_rules_and_data::SpinBonus::TSpin;
+use colored::*;
+use crate::constants::localbotgameplay::*;
+use std::fs;
+use crate::constants::board_constants::MAX_PLACE_HEIGHT;
+use crate::constants::queue_constants::MIN_QUEUE_LENGTH;
+use num::clamp;
 
 #[derive(Default, Clone)]
 pub struct Game {
@@ -25,11 +32,13 @@ pub struct Game {
 
 impl Display for Game {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Queue: {}", self.piece_queue)?;
-        if let Some(hold) = self.hold_piece {
-            write!(f, "Hold: {}\n", piece_type_to_string(hold))?;
-        } else {
-            write!(f, "Hold: None\n")?;
+        if CONSOLE_DISPLAY_QUEUE {
+            write!(f, "Queue: {}", self.piece_queue)?;
+            if let Some(hold) = self.hold_piece {
+                write!(f, "Hold: {}\n", piece_type_to_string_colored(hold))?;
+            } else {
+                write!(f, "Hold: None\n")?;
+            }
         }
 
         write!(f, "{}", self.board.display_with_active(&self.active_piece))?;
@@ -115,6 +124,7 @@ impl Game {
 
     pub fn active_drop(&mut self) -> bool {
         let out = self.active_down();
+        if out { self.active_piece.set_kick(999)}
         while out && self.active_down() {}
         out
     }
@@ -278,9 +288,61 @@ impl Game {
 
         self.board.set_piece(&self.active_piece);
         self.update();
+        self.game_data.last_placed_piece = self.active_piece;
         self.active_piece = self.piece_queue.next();
 
         true
+    }
+
+    pub fn nearest_tpiece(&self) -> usize {
+        if self.hold_piece == Some(6) || self.active_piece.get_type() == 6 {
+            return 0;
+        }
+        self.piece_queue.nearest_tpiece()
+    }
+
+    pub fn nearest_ipiece(&self) -> usize {
+        if self.hold_piece == Some(4) || self.active_piece.get_type() == 4 {
+            return 0;
+        }
+        self.piece_queue.nearest_ipiece()
+    }
+
+    pub fn should_panic(&self) -> bool {
+        if
+            self.board.get_max_height() + self.game_data.garbage_in_queue > MAX_PLACE_HEIGHT / 2 && !self.game_data.panic ||
+            self.game_data.combo > 0 && self.game_data.panic ||
+            self.board.get_max_height() > MAX_PLACE_HEIGHT / 2 && self.game_data.panic
+        {
+            return true;
+        }
+        false
+    }
+
+    pub fn get_paranoia(&self) -> f32 {
+        if self.should_panic() {
+            return 0.0;
+        }
+
+        let (holes_count_total, holes_count_weighted, _) = self.board.holes_cell_covered();
+
+        (clamp(2.0 * self.board.get_max_height() as f32 / MAX_PLACE_HEIGHT as f32, 0.1, 1.0) * self.nearest_ipiece() as f32) +
+        (holes_count_total as f32 / 20.0 + holes_count_weighted as f32 / 8.0) +
+        (self.nearest_ipiece() as f32 / 4.0)
+    }
+
+    pub fn get_garbage_in_queue(&self) -> usize {
+        let mut garbage = 0;
+        if ALLOWLOCALGAMEPLAY {
+            garbage = fs::read_to_string(LOCALGAMEPLAYFILEPATH).expect("e").chars().nth(BOTNUM).expect("e").to_string().parse::<usize>().unwrap();
+        }
+        garbage
+    }
+
+    pub fn update_garbage_amount(&mut self) {
+        self.game_data.garbage_in_queue = self.get_garbage_in_queue();
+        self.game_data.total_garbage_recieved += self.game_data.garbage_in_queue; // will die in edge cases with garbage being sent during cancellation combos but im too lazy to accurately track this
+        self.game_data.panic = self.should_panic();
     }
 
     pub fn update(&mut self) {
@@ -288,8 +350,7 @@ impl Game {
         let lines_cleared = self.board.clear_lines();
         let attack_type = attack_type(t_spin_type, lines_cleared);
 
-        self.game_data
-            .update(lines_cleared, attack_type, self.board.all_clear());
+        self.game_data.update(lines_cleared, attack_type, t_spin_type, self.board.all_clear());
     }
 }
 
@@ -308,37 +369,46 @@ pub mod game_rules_and_data {
         pub pieces_placed: usize,
         pub lines_cleared: usize,
         pub lines_sent: u16,
-        pub last_sent: u8,
+        pub last_sent: u16,
         pub last_cleared: usize,
+        pub last_placed_piece: Piece,
 
         pub t_spin: bool,
+        pub t_spin_type: u16,
 
         pub game_over: bool,
+
+        pub panic: bool,
+        pub garbage_in_queue: usize,
+        pub total_garbage_recieved: usize,
     }
 
     impl GameData {
-        pub fn update(&mut self, lines_cleared: usize, attack: AttackType, all_clear: bool) {
+        pub fn update(&mut self, lines_cleared: usize, attack: AttackType, t_spin_type: TSpinType, all_clear: bool) {
             self.pieces_placed += 1;
+            self.t_spin_type = t_spin_type as u16;
 
             if lines_cleared == 0 {
                 self.combo = 0;
                 self.all_clear = false;
                 self.last_cleared = 0;
                 self.last_sent = 0;
+                self.t_spin = false;
                 return;
             }
 
             self.lines_cleared += lines_cleared;
             self.last_cleared = lines_cleared;
 
-            if attack == TD{
+            if self.t_spin_type > 0 {
                 self.t_spin = true;
             }
 
             // update lines sent before adding b2b/combo
-            let lines_sent = calc_damage(self, attack, lines_cleared);
+            let mut lines_sent = calc_damage(self, attack, lines_cleared);
+            if all_clear { lines_sent += 10; }
             self.lines_sent += lines_sent as u16;
-            self.last_sent = lines_sent as u8;
+            self.last_sent = lines_sent as u16;
             let b2b = BACK_TO_BACK_TYPES.contains(&attack);
             if b2b {
                 self.b2b += 1;

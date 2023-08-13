@@ -17,14 +17,18 @@ use itertools::{izip, Itertools};
 use crate::communications::Suggestion;
 use crate::{Dependency, Opener, OpenerStatus, Point};
 use crate::book::openers;
-use crate::constants::board_constants::BOARD_WIDTH;
+use crate::constants::board_constants::{BOARD_WIDTH, MAX_PLACE_HEIGHT};
+use crate::constants::queue_constants::MIN_QUEUE_LENGTH;
 use crate::point_vector::PointVector;
+use num::clamp;
+use num::traits::Pow;
 
 
 pub struct Bot {
     game: Game,
     weight: Weights,
-    opener: Opener
+    opener: Opener,
+    next_placements: PlacementList,
 }
 
 impl Display for Bot {
@@ -40,6 +44,7 @@ impl Default for Bot {
             game: Game::new(None),
             weight: Weights::default(),
             opener: Opener::default(),
+            next_placements: PlacementList::new(),
         }
     }
 }
@@ -56,6 +61,23 @@ impl Player for Bot {
     fn get_next_move(&mut self) -> CommandList {
         // R, C
         let mut action = vec![];
+
+        if self.next_placements.len() > 0 {
+            println!("{:?}", self.next_placements);
+            match Bot::moves_to_placement(&mut self.get_game().clone(), &self.next_placements[0]) {
+                Ok(m) => {
+                    action = m;
+                    action.push(Command::HardDrop);
+                    self.next_placements.remove(0);
+
+                    return action;
+                },
+                Err(_) => {
+                    eprintln!("error");
+                    self.next_placements = PlacementList::new();
+                }
+            }
+        }
 
         if self.opener.status == OpenerStatus::New {
             let mut sequence = vec![self.get_game().active_piece.piece_type];
@@ -78,7 +100,8 @@ impl Player for Bot {
 
         // thread::sleep(time::Duration::from_millis(250));
 
-        let (deep_moves, places, deep_scores) = self.move_placement_score(11, &self.weight.clone());
+        // println!("{}", self.get_game().board.get_max_height());
+        let (deep_moves, places, deep_scores) = self.move_placement_score(MOVEPLACEMENTSCORE - self.get_game().board.get_max_height()*PANICBURST, &self.weight.clone());
         let deep_scores: Vec<f32> = deep_scores
             .iter()
             .map(|(board, versus)| board + versus)
@@ -96,11 +119,14 @@ impl Player for Bot {
         }
 
 
-        println!("{:?}", action);
-        println!("{}", min_score);
-        println!("{}", p[0]);
-        if min_score < -10000.0{
-            println!("{:?}", p);
+        // println!("{:?}", action);
+        // println!("{}", min_score);
+        // println!("{}", p[0]);
+        // println!("{:?}", p);
+        if min_score < -100000.0{
+            self.next_placements = p;
+            self.next_placements.remove(0);
+            println!("{:?}", self.next_placements);
         }
 
         action.push(Command::HardDrop);
@@ -164,7 +190,7 @@ impl Bot {
 
     pub fn move_placement_score(
         &mut self,
-        depth: usize,
+        mut depth: usize,
         weights: &Weights,
         ) -> (MoveList, Vec<PlacementList>, ScoreList) {
             let mut dummy = self.game.clone();
@@ -182,7 +208,8 @@ impl Bot {
             let mut next_scores = ScoreList::new();
 
             //pruning parameters
-            let n = 50;
+            let mut n = 600 - clamp(self.game.get_paranoia(), 0.0, 4.0) as usize * 100;
+            if self.game.should_panic() { n = 80; }
             let prune_depth = 1;
 
             for curr_depth in 1..depth {
@@ -200,7 +227,7 @@ impl Bot {
                             .unzip();
 
                     curr_scores.sort_by(|(v1, b1), (v2, b2)| (v1 + b1).partial_cmp(&(v2 + b2)).unwrap());
-                    curr_scores.truncate(n);
+                    curr_scores.truncate(1 + n - n * (4*curr_depth) / (5*depth));
                 }
 
                 //generating next_mps
@@ -231,7 +258,7 @@ impl Bot {
 
                         next_moves.push(one_move.clone());
                         next_placements.push(placements.clone());
-                        next_scores.push((board, (versus + add_versus) * (1.0-(0.5*curr_depth as f32/depth as f32))));
+                        next_scores.push((board, (versus + add_versus) * (1.0-(0.25*curr_depth as f32/depth as f32))));
                     }
                 }
                 curr_moves = mem::take(&mut next_moves);
@@ -429,9 +456,9 @@ impl Bot {
         //TODO: put all the logic in nice places (scorer class?)
 
         // PC (pseudo) PRUNING
-        if false && (game.board.get_mino_count() % 2 == 0) {
+        /*if false && (game.board.get_mino_count() % 2 == 0) {
             // pseudo pruning, gives a large penalty for unsolvable/hard to solve boards
-            let penalty = (100000.0, Bot::score_board(&game.board, weights));
+            let penalty = (100.0, Bot::score_board(&game, &game.board, weights));
 
             let target_height = 4 + (game.board.get_mino_count() % 4)/2;
 
@@ -466,29 +493,36 @@ impl Bot {
             if parity.1 == false && !(usable_queue.contains(&1) || usable_queue.contains(&5) || usable_queue.contains(&6) || !game.board.get_min_height() >= 2){
                 return penalty
             }
-        }
+        }*/
 
         return (
-            Bot::score_board(&game.board, weights),
-            Bot::score_versus(&game.game_data, weights),
+            Bot::score_board(&game, &game.board, weights),
+            Bot::score_versus(&game, &game.game_data, weights),
         )
     }
 
-    fn score_board(board: &Board, weights: &Weights) -> Score {
-        Bot::get_holes_and_cell_covered_score(board, weights)
-            + Bot::get_height_score(board, weights)
+    fn score_board(game: &Game, board: &Board, weights: &Weights) -> Score {
+        Bot::get_holes_and_cell_covered_score(board, weights, game.should_panic())
+            + Bot::get_height_score(board, weights, game.should_panic())
             + Bot::get_height_differences_score(board, weights)
-            + Bot::get_t_slot_score(board, weights)
+            + Bot::get_t_slot_score(game, board, weights, game.should_panic())
+            + Bot::top_of_board_score(game, board)
     }
 
-    fn score_versus(game_data: &GameData, weight: &Weights) -> Score {
+    fn score_versus(game: &Game, game_data: &GameData, weight: &Weights) -> Score {
         // let spin = Game::get_t_spin_type(piece, board);
-        let combo_score = weight.combo_weight.eval(game_data.combo as f32);
-        let b2b = weight.b2b_weight.eval(game_data.b2b as f32);
-        let attack = weight.damage_weight.eval(game_data.last_sent as f32);
+        let mut combo_score = weight.combo_weight.eval(game_data.combo as f32);
+        let mut b2b = weight.b2b_weight.eval(game_data.b2b as f32);
+        let mut attack = weight.damage_weight.eval(game_data.last_sent as f32);
+        if game.should_panic() {
+            combo_score = weight.panic_combo_weight.eval(game_data.combo as f32);
+            b2b = weight.panic_b2b_weight.eval(game_data.b2b as f32);
+            attack = weight.panic_damage_weight.eval(game_data.last_sent as f32);
+        }
         let clear = weight.clear_weight.eval(game_data.last_cleared as f32);
         let pc = game_data.all_clear;
         let t_spin = game_data.t_spin;
+        let paranoia = game.get_paranoia() * weight.paranoia_weight;
 
         let mut extra = 0.0;
 
@@ -496,10 +530,23 @@ impl Bot {
             extra -= 1000000.0;
         }
         if t_spin {
-            extra -= 100.0
+            extra -= weight.tspin_reward*weight.tspin_reward_expo.pow(game_data.last_cleared as f32);
+            if game.should_panic() {
+                extra -= weight.panic_tspin_reward*weight.panic_tspin_reward_expo.pow(game_data.last_cleared as f32);
+            }
         }
-
-        combo_score + b2b + attack + clear + extra
+        if game_data.last_placed_piece.get_type() == 6 {
+            let mut wtw = weight.waste_t_weight;
+            if game.should_panic() { wtw = weight.panic_waste_t_weight; }
+            match game_data.t_spin_type {
+                0 => extra += wtw,
+                1 => extra += wtw * clamp(2 - game_data.last_cleared, 0, 1) as f32, // doubles and triples should not be punished
+                2 => extra += wtw * 0.9 * clamp(2 - game_data.last_cleared, 0, 1) as f32, // minis should be punished less but not by much
+                _ => extra += wtw, // idk
+            }
+        }
+        
+        combo_score + b2b + attack + clear + paranoia + extra
     }
 
     fn get_height_differences_score(board: &Board, weight: &Weights) -> f32 {
@@ -516,24 +563,60 @@ impl Bot {
         adjacent_score + total_score
     }
 
-    pub(crate) fn get_t_slot_score(board: &Board, weight: &Weights) -> f32 {
-        weight.t_slot_weight.eval(board.t_slot() as f32)
+    fn top_of_board_score(game: &Game, board: &Board) -> f32 {
+        if
+            board.get_max_height() > MAX_PLACE_HEIGHT ||
+            (board.get_max_height() + game.game_data.garbage_in_queue > MAX_PLACE_HEIGHT && game.game_data.combo == 0)
+        {
+            return 10000000.0
+        }
+        0.0
     }
 
-    fn get_height_score(board: &Board, weight: &Weights) -> f32 {
+    pub(crate) fn get_t_slot_score(game: &Game, board: &Board, weight: &Weights, panic: bool) -> f32 {
+        if game.nearest_tpiece() == 0 {
+            return 10.0;
+        }
+        if panic {
+            return weight.panic_t_slot_weight.eval(board.t_slot() as f32) * (1.0 - (game.nearest_tpiece() as f32 / MIN_QUEUE_LENGTH as f32));
+        }
+        weight.t_slot_weight.eval(board.t_slot() as f32) * (1.0 - (game.nearest_tpiece() as f32 / MIN_QUEUE_LENGTH as f32))
+    }
+
+    fn get_height_score(board: &Board, weight: &Weights, panic: bool) -> f32 {
         let total_height = board.get_max_height();
+        if panic {
+            return weight.panic_height_weight.eval(total_height as f32);
+        }
         weight.height_weight.eval(total_height as f32)
     }
 
-    fn get_holes_and_cell_covered_score(board: &Board, weight: &Weights) -> f32 {
+    fn get_holes_and_cell_covered_score(board: &Board, weight: &Weights, panic: bool) -> f32 {
         let mut out = 0.0;
 
         let (holes_t, holes_w, covered) = board.holes_cell_covered();
 
-        out += weight.num_hole_total_weight.eval(holes_t as f32);
+        if panic {
+            out += weight.panic_num_hole_total_weight.eval(holes_t as f32);
+        } else {
+            out += weight.num_hole_total_weight.eval(holes_t as f32);
+        }
         out += weight.num_hole_weighted_weight.eval(holes_w as f32);
         out += weight.cell_covered_weight.eval(covered as f32);
+        out += board.horizontal_holes_weighted(weight);
 
         out
+    }
+
+    pub fn addgarbage(&mut self, col: usize, amnt: usize) {
+        self.game.board.add_garbage(col,amnt)
+    }
+
+    pub fn addtoboard(&mut self, row: usize, col: usize) {
+        self.game.board.add(row, col)
+    }
+
+    pub fn removefromboard(&mut self, row: usize, col: usize) {
+        self.game.board.remove(row, col)
     }
 }

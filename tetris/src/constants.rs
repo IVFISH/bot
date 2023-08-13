@@ -37,6 +37,8 @@ pub mod board_constants {
 
     pub const ZERO_ONE: usize = 0x5555555555;
     pub const ONE_ZERO: usize = 0xAAAAAAAAAA;
+
+    pub const CONSOLE_DISPLAY_STATS: bool = true;
 }
 
 pub mod piece_constants {
@@ -83,7 +85,7 @@ pub mod versus_constants {
         TT,
     }
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Copy, Clone, Debug, PartialEq)]
     pub enum TSpinType {
         None,
         Full,
@@ -92,12 +94,13 @@ pub mod versus_constants {
 }
 
 pub mod queue_constants {
-    pub const MIN_QUEUE_LENGTH: usize = 6;
+    pub const MIN_QUEUE_LENGTH: usize = 13;
 
     // lehmer RNG (MINSTD)
     pub const MULTIPLIER: usize = 16807;
     pub const MODULUS: usize = 2147483647;
 
+    pub const CONSOLE_DISPLAY_QUEUE: bool = true;
 }
 
 pub mod bot_constants {
@@ -162,6 +165,9 @@ pub mod bot_constants {
         Game::active_180,
         // Game::active_drop,
     ];
+
+    pub const MOVEPLACEMENTSCORE: usize = 7;
+    pub const PANICBURST: usize = 0; // test and will likely not be the function used later
 }
 
 pub mod rotation {
@@ -431,4 +437,11 @@ pub mod offset {
             PointVector(-1, -1),
         ],
     ];
+}
+
+pub mod localbotgameplay {
+    pub const ALLOWLOCALGAMEPLAY: bool = true;
+    pub const LOCALGAMEPLAYFILEPATH: &str = r".\src\localdata.txt";
+    pub const BOTNUM: usize = 0;
+    pub const BOTNUM2: usize = 1;
 }

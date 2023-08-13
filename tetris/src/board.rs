@@ -2,9 +2,13 @@
 
 use crate::constants::board_constants::*;
 use crate::constants::types::*;
-use crate::piece::Piece;
+use crate::piece::*;
+use crate::queue::{piece_type_to_block_colored};
 use crate::point_vector::{Point, PointVector};
 use std::fmt::{Display, Formatter};
+use colored::*;
+use num::clamp;
+use crate::weight::Weights;
 
 #[derive(Debug, Clone)]
 pub struct Board {
@@ -14,7 +18,7 @@ pub struct Board {
 impl Default for Board {
     fn default() -> Self {
         Self {
-            arr: [0; BOARD_WIDTH]
+            arr: [0; BOARD_WIDTH],
         }
     }
 }
@@ -98,6 +102,24 @@ impl Board {
     pub fn add_list(&mut self, locations: Vec<Point>) {
         for Point(row, col) in locations {
             self.add(row as usize, col as usize)
+        }
+    }
+
+    pub fn add_garbage(&mut self, col: usize, amount: usize) {
+        let highest = BOARD_HEIGHT;
+
+        for r in 0..highest-amount+1 {
+            self._set_row(highest-r, self.get_row(highest-r-amount));
+        }
+
+        for n in 0..amount {
+            for w in 0..BOARD_WIDTH {
+                if w == col {
+                    self.arr[w] &= !(1 << n);
+                } else {
+                    self.arr[w] |= 1 << n;
+                }
+            }
         }
     }
 
@@ -276,6 +298,67 @@ impl Board {
         (holes_count_total, holes_count_weighted, cell_covered_count)
     }
 
+    pub fn horizontal_holes_weighted(&self, weight: &Weights) -> f32 {
+        let mut holes_count_total = 0;
+        let mut holes_count_weighted = 0;
+        let mut finalweight = 0.0;
+
+        for row in 0..self.get_max_height() {
+            // only counting when you find a filled block
+            let mut counting = true;
+
+            for col in 0..BOARD_WIDTH {
+                let spot = self.get(row, col);
+                // hole
+                if !spot {
+                    holes_count_total += 1;
+                    if counting {
+                        holes_count_weighted += 1;
+                        counting = false;
+                    }
+                } else {
+                    counting = true;
+                }
+            }
+            finalweight += (holes_count_total as f32)*0.0 + weight.holes_per_row_weighted_weight.eval(holes_count_weighted as f32);
+            holes_count_total = 0;
+            holes_count_weighted = 0;
+        }
+
+        finalweight
+    }
+
+    pub fn count_horizontal_holes(&self) -> f32 {
+        let mut holes_count_total = 0;
+        let mut holes_count_weighted = 0;
+        let mut finalcount = 0.0;
+
+        for row in 0..self.get_max_height() {
+            // only counting when you find a filled block
+            let mut counting = true;
+
+            for col in 0..BOARD_WIDTH {
+                let spot = self.get(row, col);
+                // hole
+                if !spot {
+                    holes_count_total += 1;
+                    if counting {
+                        holes_count_weighted += 1;
+                        counting = false;
+                    }
+                } else {
+                    counting = true;
+                }
+            }
+            finalcount += holes_count_weighted as f32;
+            println!("row {} has {} weighted holes, {} holes", row, holes_count_weighted, holes_count_total);
+            holes_count_total = 0;
+            holes_count_weighted = 0;
+        }
+
+        finalcount
+    }
+
     fn check_hor_t(arr: Vec<usize>) -> bool {
         // only for horizontal t slots rn
 
@@ -287,9 +370,55 @@ impl Board {
         // 0 0 0
         // 1 0 1
 
-        arr == [0b101, 0b000, 0b001] || arr == [0b001, 0b000, 0b101]
-        // arr == vec![5, 0, 1] || arr == vec![1, 0, 5]
+        // 1 0 1
+        // 0 0 0
+        // 1 0 1
 
+        // 1 0 1
+        // 1 0 0
+        // 1 0 1
+
+        // 1 0 1
+        // 0 0 1
+        // 1 0 1
+
+        arr == [0b101, 0b000, 0b001] || arr == [0b001, 0b000, 0b101] || arr == [0b101, 0b000, 0b101] ||
+        arr == [0b111, 0b000, 0b101] || arr == [0b101, 0b000, 0b111]
+    }
+    fn check_special_t(arr: Vec<usize>) -> bool {
+        // special tspins
+
+        // 1 1 0 0 1
+        // 1 0 0 0 1
+        // 1 0 1 1 1
+        // 1 0 0 1 1
+        // 1 0 1 1 1
+
+        arr == [0b11111, 0b10000, 0b00101, 0b00111, 0b11111] || arr == [0b11111, 0b00111, 0b00101, 0b10000, 0b11111] ||
+
+        // 1 1 0 0 0
+        // 1 0 0 0 0
+        // 1 0 1 1 1
+        // 1 0 0 1 1
+        // 1 0 1 1 1
+
+        arr == [0b11111, 0b10000, 0b00101, 0b00111, 0b00111] || arr == [0b00111, 0b00111, 0b00101, 0b10000, 0b11111] ||
+
+        // 1 1 0 0 1
+        // 1 0 0 0 1
+        // 1 0 1 1 1
+        // 1 0 0 1 1
+        // 1 0 0 1 1
+
+        arr == [0b11111, 0b10000, 0b00100, 0b00111, 0b11111] || arr == [0b11111, 0b00111, 0b00100, 0b10000, 0b11111] ||
+
+        // 1 1 0 0 0
+        // 1 0 0 0 0
+        // 1 0 1 1 1
+        // 1 0 0 1 1
+        // 1 0 0 1 1
+
+        arr == [0b11111, 0b10000, 0b00100, 0b00111, 0b00111] || arr == [0b00111, 0b00111, 0b00100, 0b10000, 0b11111]
     }
     pub fn t_slot(&self) -> usize {
         let h = self.get_max_height();
@@ -310,8 +439,45 @@ impl Board {
                 out += Board::check_hor_t(columns) as usize;
             }
         }
-        out
 
+        if h - l < 5 {
+            return out
+        }
+
+        for row in l..=(h-5) {
+            let mask = 0b11111;
+            for columns in self.arr.windows(5) {
+                // create a 5x5 grid
+                let columns: Vec<usize> = columns.iter().map(|x| x >> row & mask).collect();
+
+                // checks if it is a t slot
+                out += Board::check_special_t(columns) as usize;
+            }
+        }
+
+        out
+    }
+    pub fn special_t_slot(&self) -> usize {
+        let h = self.get_max_height();
+        let l = self.get_min_height();
+
+        if h - l < 5 {
+            return 0
+        }
+
+        let mut out = 0;
+        for row in l..=(h-5) {
+            let mask = 0b11111;
+            for columns in self.arr.windows(5) {
+                // create a 5x5 grid
+                let columns: Vec<usize> = columns.iter().map(|x| x >> row & mask).collect();
+
+                // checks if it is a t slot
+                out += Board::check_special_t(columns) as usize;
+            }
+        }
+
+        out
     }
 
     pub fn get_max_height_difference(&self) -> usize {
@@ -357,9 +523,9 @@ impl Board {
                 if self.get(row, col) {
                     out.push_str("■ ");
                 } else if locations.contains(&Point(row as i8, col as i8)) {
-                    out.push_str("⬚ ");
+                    out.push_str(&format!("{} ", piece_type_to_block_colored(active_piece.get_type())));
                 } else {
-                    out.push_str("□ ");
+                    out.push_str(&format!("{} ", ("▫".truecolor(clamp(8*row,0,255).try_into().unwrap(),clamp(100-4*row,0,255).try_into().unwrap(),clamp(40,0,255).try_into().unwrap()))));
                 }
             }
             out.push_str("\n");
