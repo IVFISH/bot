@@ -9,27 +9,14 @@ pub trait Pruner {
     fn new() -> Self;
 
     /// required condition for pruning
-    /// return true means that it should not be pruned
-    /// assumes that the placement is valid to set
-    fn condition(&self, placement: &Placement) -> bool;
-
-    /// required condition for pruning
     /// this condition is for evaluating placements independently
     /// of other placements in the same depth, see `condition`
     /// for pruning that is done dependently of other placements
-    fn precondition(&self, placement: &Placement) -> bool {
-        true
-    }
+    fn precondition(&self, placement: &Placement) -> bool;
 
-    /// pruning method that prunes based on the condition
-    /// should not generally be overridden
-    /// returns the filtered list
-    fn prune(&self, placements: Vec<Placement>) -> Vec<Placement> {
-        placements
-            .into_iter()
-            .filter(|p| self.condition(&p))
-            .collect()
-    }
+    /// pruning method that prunes placements relative to others
+    /// all placements already pass teh precondition
+    fn prune(&self, placements: Vec<Placement>) -> Vec<Placement>;
 }
 
 pub struct AllClearPruner {
@@ -128,7 +115,6 @@ impl Pruner for AllClearPruner {
     fn prune(&self, placements: Vec<Placement>) -> Vec<Placement> {
         let (pc, no_pc): (Vec<_>, Vec<_>) = placements
             .into_iter()
-            .filter(|p| self.condition(&p))
             .partition(|p| self.is_pc(&p));
         if pc.is_empty() {
             no_pc
@@ -137,7 +123,7 @@ impl Pruner for AllClearPruner {
         }
     }
 
-    fn condition(&self, placement: &Placement) -> bool {
+    fn precondition(&self, placement: &Placement) -> bool {
         let game = placement.game;
         let height = match Board::cell_count(&game.board.arr) & 0b11 {
             2 => 3,
@@ -162,8 +148,8 @@ impl Pruner for NoPruner {
         Self {}
     }
 
-    fn condition(&self, _placement: &Placement) -> bool {
-        false
+    fn precondition(&self, _placement: &Placement) -> bool {
+        true
     }
 
     fn prune(&self, placements: Vec<Placement>) -> Vec<Placement> {
@@ -183,12 +169,12 @@ mod tests {
         let placement1 = Placement {
             game: Game::random(),
         };
-        assert!(pruner.condition(&placement1));
+        assert!(pruner.precondition(&placement1));
 
         let mut placement2 = placement1.clone();
         placement2.game.board = tst_board();
         placement2.game.board.set(10, 9, 1);
-        assert!(!pruner.condition(&placement2));
+        assert!(!pruner.precondition(&placement2));
 
         let mut placements = (0..10).map(|_| placement1.clone()).collect::<Vec<_>>();
         placements.push(placement2.clone());
