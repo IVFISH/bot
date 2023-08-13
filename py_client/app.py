@@ -32,10 +32,15 @@ class App(tk.Tk):
         x1, x2 = col * 30, col * 30 + 30
         return [x1 + 20, y1 + 20, x2 + 20, y2 + 20]
 
-    def display(self):
+    def run(self, conn):
         try:
             while self.state():
+                board = conn.recv()
+                self.update_board(Board(board))
+                conn.send(board)
+
                 self.update()
                 self.update_idletasks()
         except tk.TclError:
             print("Exiting...")
+

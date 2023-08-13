@@ -31,11 +31,10 @@ where
         // waiting for multiple async branches
         tokio::select! {
             // branch 1: receiving updates from client
-            msg = poll_next(&mut ws_receiver) => {
+            msg = poll_next(&mut ws_receiver, &bot) => {
                 if let Err(_) = msg {
                     break;
                 }
-                // get the board state, queue, etc. from msg
             }
             // branch 2: bot is ready to input to client
             inputs = get_suggestion(&mut interval, &bot) => {
@@ -47,15 +46,18 @@ where
     Ok(())
 }
 
-/// gets the next message from the stream and processes the info for the bot
-async fn poll_next<S>(ws_receiver: &mut S) -> Result<(), Error>
+/// gets the next message from the stream and updates the bot
+async fn poll_next<S, P>(ws_receiver: &mut S, bot: &Bot<P>) -> Result<(), Error>
 where
     S: Stream<Item = Result<Message, Error>> + Unpin,
+    P: Pruner + std::marker::Sync
 {
     match ws_receiver.next().await {
         Some(msg) => {
             let msg = msg?;
             if msg.is_text() || msg.is_binary() {
+                // let board = serde_json::from_str(msg).unwrap();
+                // bot.game.board.arr = board;
                 Ok(())
             } else if msg.is_close() {
                 Err(Error::ConnectionClosed)
