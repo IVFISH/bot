@@ -15,7 +15,7 @@ use tungstenite::{Error, Result};
 
 async fn accept_connection(stream: TcpStream) {
     let ws_stream = accept_async(stream).await.unwrap();
-    let bot = Bot::<NoPruner>::new(); 
+    let bot = Bot::<AllClearPruner>::new(); 
     let _ = handle_connection(ws_stream, bot).await;
 }
 
@@ -31,13 +31,14 @@ where
         // waiting for multiple async branches
         tokio::select! {
             // branch 1: receiving updates from client
-            msg = poll_next(&mut ws_receiver, &bot) => {
+            msg = poll_next(&mut ws_receiver) => {
                 if let Err(_) = msg {
                     break;
                 }
+                // idk what updates are here yet
             }
-            // branch 2: bot is ready to input to client
-            inputs = get_suggestion(&mut interval, &bot) => {
+            // branch 2: bot makes move and tells client the move
+            inputs = get_suggestion(&mut interval, &mut bot) => {
                 let msg = serde_json::to_string(&inputs).unwrap();
                 let _ = ws_sender.send(Message::Text(msg)).await;
             }
@@ -47,17 +48,14 @@ where
 }
 
 /// gets the next message from the stream and updates the bot
-async fn poll_next<S, P>(ws_receiver: &mut S, bot: &Bot<P>) -> Result<(), Error>
+async fn poll_next<S>(ws_receiver: &mut S) -> Result<(), Error>
 where
     S: Stream<Item = Result<Message, Error>> + Unpin,
-    P: Pruner + std::marker::Sync
 {
     match ws_receiver.next().await {
         Some(msg) => {
             let msg = msg?;
             if msg.is_text() || msg.is_binary() {
-                // let board = serde_json::from_str(msg).unwrap();
-                // bot.game.board.arr = board;
                 Ok(())
             } else if msg.is_close() {
                 Err(Error::ConnectionClosed)
@@ -71,10 +69,10 @@ where
 }
 
 /// gets the next inputs from the bot
-async fn get_suggestion<P>(interval: &mut Interval, bot: &Bot<P>) -> Suggestion
+async fn get_suggestion<P>(interval: &mut Interval, bot: &mut Bot<P>) -> Suggestion
 where P: Pruner + std::marker::Sync {
     let _ = interval.tick().await;
-    bot.suggest()
+    bot.r#do()
 }
 
 /// driver function
