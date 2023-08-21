@@ -225,7 +225,7 @@ impl Board {
 
     /// clears all filled lines on the board and moves down
     /// the blocks above those lines
-    pub fn clear_lines(&mut self) {
+    pub fn clear_lines(&mut self) -> u64 {
         let full_rows = self.arr.into_iter().reduce(|x, y| x & y).unwrap();
         for i in 0..BOARD_WIDTH {
             let mut rows = full_rows; // copy
@@ -237,6 +237,34 @@ impl Board {
                 rows &= !(1 << r);
                 rows >>= 1;
             }
+        }
+        full_rows
+    }
+
+    /// method for undoing a clear_lines
+    /// rows is the output of clear_lines
+    pub fn insert_rows(&mut self, rows: usize) {
+        let mut rows = rows;
+        while (rows != 0) {
+            let row = rows.trailing_zeros();
+            self.insert_full_line(row as usize);
+            rows &= !(1<< row);
+        }
+    }
+
+    /// inserts a line on the row and moves everything above up
+    pub fn insert_full_line(&mut self, row: usize) {
+        // move all the rows up by 1
+        // clear the first row lines
+        // add back the original row lines
+        // set row to full
+        for i in 0..BOARD_WIDTH {
+            let mut col = self.arr[i];
+            col &= !((1 << row) - 1);
+            col <<= 1;
+            col |= (col & (((1 << row) - 1)));
+            col |= 1 << row;
+            self.arr[i] = col;
         }
     }
 

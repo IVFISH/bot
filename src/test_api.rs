@@ -5,6 +5,7 @@ pub mod functions {
     use crate::piece::*;
     use crate::placement::*;
     use crate::placement_list::*;
+    use crate::game::*;
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
 
@@ -37,6 +38,14 @@ pub mod functions {
             assert_eq!(locs, sols)
         } else {
             assert!(false)
+        }
+    }
+
+    pub fn assert_games_eq(v1: &Vec<Game>, v2: &Vec<Game>) {
+        assert_eq!(v1.len(), v2.len());
+        for i in 0..v1.len() {
+            println!("{}", i);
+            assert_eq!(v1[i].board, v2[i].board);
         }
     }
 

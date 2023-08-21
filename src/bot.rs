@@ -71,9 +71,6 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
     /// of generated placements (depth i) and returns a new
     /// placement list of depth i+1 (with and without hold)
     fn iterate_move_gen(placements: PlacementList, pruner: &P) -> PlacementList {
-        // to make this parallel: change iter to par_iter (but this might make slow cause each
-        // operation is in the us range
-        // and flat_map to flat_map_iter
         let placements = placements
             .placements
             .par_iter()

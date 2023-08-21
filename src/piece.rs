@@ -124,6 +124,15 @@ impl Piece {
         kicks
     }
 
+    /// returns the lowest row this piece is on
+    pub fn bottom_row(&self) -> Option<usize> {
+        if let Some(pos) = self.abs_locations() {
+            Some(pos.into_iter().map(|[r, _]| r).min_by(|r1, r2| r1.cmp(r2)).unwrap())
+        } else {
+            None
+        }
+    }
+
     /// encodes the piece into a u16
     /// the encoding is as follows:
     /// 3 bits for type, 2 bits for rot,
