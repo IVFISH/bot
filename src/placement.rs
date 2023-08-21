@@ -24,32 +24,6 @@ impl Placement {
     /// returns the fumen string that represents the
     /// series of pieces that the placement stores
     pub fn get_fumen(&self) -> String {
-        fn to_fumen_piece(piece: Piece) -> fumen::Piece {
-            let rotation = match piece.dir {
-                0 => fumen::RotationState::North,
-                1 => fumen::RotationState::East,
-                2 => fumen::RotationState::South,
-                _ => fumen::RotationState::West,
-            };
-
-            let kind = match piece.r#type {
-                0 => fumen::PieceType::Z,
-                1 => fumen::PieceType::L,
-                2 => fumen::PieceType::O,
-                3 => fumen::PieceType::S,
-                4 => fumen::PieceType::I,
-                5 => fumen::PieceType::J,
-                _ => fumen::PieceType::T,
-            };
-
-            fumen::Piece {
-                x: piece.col as u32,
-                y: piece.row as u32,
-                kind,
-                rotation,
-            }
-        }
-
         fn to_fumen(game: Game) -> fumen::Fumen {
             let mut fumen = fumen::Fumen::default();
             let page = fumen.add_page();
@@ -63,13 +37,23 @@ impl Placement {
             fumen
         }
 
-        unimplemented!()
+        fn add_page(fumen: &mut fumen::Fumen, game: Game) {
+            let page = fumen.add_page();
+            page.field = [[fumen::CellColor::Empty; 10]; 23]; // clear page
+            for row in (0..VISIBLE_BOARD_HEIGHT).rev() {
+                for col in 0..BOARD_WIDTH {
+                    if game.board.get(row, col) {
+                        page.field[row][col] = fumen::CellColor::Grey;
+                    }
+                }
+            }
+        }
 
-        // let mut f = to_fumen(*self.game);
-        // for piece in self.pieces.iter() {
-        //     f.add_page().piece = Some(to_fumen_piece(*piece));
-        // }
-        // f.add_page().piece = Some(to_fumen_piece(self.piece));
-        // f.encode()
+        let mut games = self.game.past_states();
+        let mut f = to_fumen(games.pop().unwrap());
+        for game in games.into_iter().rev() {
+            add_page(&mut f, game);
+        }
+        f.encode()
     }
 }
