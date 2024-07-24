@@ -12,3 +12,5 @@ harness = false
 
 [dependencies]
 itertools = "0.11.0"
+rayon = "1.10.0"
+crossbeam = "0.8.4"

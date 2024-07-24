@@ -7,6 +7,8 @@ use crate::piece::Piece;
 use crate::placement::{Placement, PlacementList};
 use itertools::Itertools;
 
+use rayon::prelude::*;
+
 // TODO: decide WHERE to score, decide WHERE to prune, priority queue?
 // KEEP MUTLITHREADING IN MIND
 
@@ -37,12 +39,19 @@ pub fn many_lookahead(start_game: Game, depth: u8) -> Vec<Game> {
 /// Return a (larger) list of games, each with their base Placement.
 /// TODO: finalize inputs (game or bot?), implement base Placement Rc, update game, multithreading
 fn lookahead(games: Vec<Game>) -> Vec<Game> {
-    let mut out = Vec::new();
-    for game in games {
-        let mut bot: Bot = Bot { game };
-        place_and_push(move_gen_hold(bot), &game, &mut out);
-    }
-    out
+    // let mut out = Vec::new();
+    // for game in games {
+    //     let mut bot: Bot = Bot { game };
+    //     place_and_push(move_gen_hold(bot), &game, &mut out);
+    // }
+
+    let mut temp = Vec::new();
+    games.par_iter()
+        .map(|game| {
+            let mut bot = Bot { game: *game };
+            place_and_return(move_gen_hold(bot), game)
+        }).collect_into_vec(&mut temp);
+    itertools::concat(temp)
 }
 
 // helper methods---------------------------------------------
@@ -57,6 +66,17 @@ fn move_gen_hold(mut bot: Bot) -> HashSet<Piece> {
 
     placements.extend(bot.move_gen());
     placements
+}
+
+fn place_and_return(placements: HashSet<Piece>, base_game: &Game) -> Vec<Game> {
+    let mut out: Vec<Game> = Vec::new();
+    for placement in placements {
+        let mut out_game = *base_game; // copy
+        out_game.active = placement;
+        out_game.place_active();
+        out.push(out_game)
+    }
+    out
 }
 
 fn place_and_push(placements: HashSet<Piece>, base_game: &Game, push_to: &mut Vec<Game>) {
