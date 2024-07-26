@@ -317,6 +317,7 @@ impl Bot {
             if !Bot::new_placement(&game.get_active_piece(), &placements) {
                 continue;
             }
+            let mut new_move: CommandList = new_move.clone();
             new_move.push(command);
             if sd { new_move.push(Command::SoftDrop); }
             moves.push(new_move.clone());
@@ -325,7 +326,7 @@ impl Bot {
             Bot::non_trivial_recurse(
                 game,
                 weight,
-                new_move,
+                &mut new_move,
                 moves,
                 placements,
                 scores,

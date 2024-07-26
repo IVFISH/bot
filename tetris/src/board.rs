@@ -357,7 +357,7 @@ impl Board {
                 if self.get(row, col) {
                     out.push_str("■ ");
                 } else if locations.contains(&Point(row as i8, col as i8)) {
-                    out.push_str("⬚ ");
+                    out.push_str("x ");
                 } else {
                     out.push_str("□ ");
                 }
