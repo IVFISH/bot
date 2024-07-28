@@ -20,6 +20,7 @@ use crate::book::openers;
 use crate::constants::board_constants::BOARD_WIDTH;
 use crate::point_vector::PointVector;
 
+use argmin::core::{CostFunction, Error, Executor};
 
 pub struct Bot {
     game: Game,
@@ -113,6 +114,14 @@ impl Bot {
     pub fn new(game: Game) -> Self {
         Self {
             game,
+            ..Default::default()
+        }
+    }
+
+    pub fn with_weights(weight: Weights) -> Self {
+        Self {
+            game: Game::new(None),
+            weight,
             ..Default::default()
         }
     }
@@ -488,16 +497,17 @@ impl Bot {
         let b2b = weight.b2b_weight.eval(game_data.b2b as f32);
         let attack = weight.damage_weight.eval(game_data.last_sent as f32);
         let clear = weight.clear_weight.eval(game_data.last_cleared as f32);
+
         let pc = game_data.all_clear;
         let t_spin = game_data.t_spin;
 
         let mut extra = 0.0;
 
         if pc {
-            extra -= 1000000.0;
+            extra += weight.perfect_clear_weight;
         }
         if t_spin {
-            extra -= 100.0
+            extra += weight.tspin_weight;
         }
 
         combo_score + b2b + attack + clear + extra

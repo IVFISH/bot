@@ -15,6 +15,9 @@ pub struct Weights {
     pub combo_weight: Polynomial<f32>,
     pub damage_weight: Polynomial<f32>,
     pub clear_weight: Polynomial<f32>,
+
+    pub perfect_clear_weight: f32,
+    pub tspin_weight: f32,
 }
 
 impl Default for Weights {
@@ -32,6 +35,9 @@ impl Default for Weights {
             combo_weight: Polynomial::new(vec![0.0, 8.0, -4.0]),
             damage_weight: Polynomial::new(vec![0.0, 28.0, -8.0]),
             clear_weight: Polynomial::new(vec![0.0, 49.0, -7.0]),
+            
+            perfect_clear_weight: -1000000.0,
+            tspin_weight: -100.0,
         }
     }
 }
