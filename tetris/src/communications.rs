@@ -15,7 +15,7 @@ use serde_json;
 use serde_json::json;
 use std::collections::VecDeque;
 use std::net::SocketAddr;
-use std::{thread, time};
+use std::{thread, time, usize};
 use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::{accept_async, tungstenite::Error};
 use tungstenite::{Message, Result};
@@ -66,7 +66,8 @@ async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
                 match parsed_type {
                     "rules" => {
                         eprintln!("start game");
-                        bot = create_bot_from_parsed(&parsed)
+                        bot = create_bot_from_parsed(&parsed);
+                        ws_sender.send(Message::Text(serde_json::to_string(&json!(bot.make_suggest_move())).unwrap())).await?
                     },
                     "play" => {
 
@@ -167,26 +168,29 @@ async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
 }
 
 fn create_bot_from_parsed(parsed: &serde_json::Value) -> Bot {
-    Bot::new(Game::from_rules(
-        Some(parsed["seed"].as_u64().unwrap() as usize),
-        GameRules {
-            bag_type: parsed["bagtype"]
-                .as_str()
-                .unwrap_or("singleplayer")
-                .parse()
-                .unwrap(),
-            allow_hard_drop: parsed["allow_harddrop"].as_bool().unwrap_or(true),
-            allow_180: parsed["allow180"].as_bool().unwrap(),
-            allow_b2b_chain: parsed["b2bchaining"].as_bool().unwrap_or(true),
-            max_board_height: parsed["boardheight"].as_u64().unwrap() as usize,
-            kick_set: parsed["kickset"].as_str().unwrap().parse().unwrap(),
-            spin_bonus: parsed["spinbonuses"]
-                .as_str()
-                .unwrap_or("singleplayer")
-                .parse()
-                .unwrap(),
-        },
-    ))
+    Bot::new(
+        Game::new(Some(parsed["seed"].as_u64().unwrap() as usize))
+        )
+    //Bot::new(Game::from_rules(
+    //    Some(parsed["seed"].as_u64().unwrap() as usize),
+    //    GameRules {
+    //        bag_type: parsed["bagtype"]
+    //            .as_str()
+    //            .unwrap_or("singleplayer")
+    //            .parse()
+    //            .unwrap(),
+    //        allow_hard_drop: parsed["allow_harddrop"].as_bool().unwrap_or(true),
+    //        allow_180: parsed["allow180"].as_bool().unwrap(),
+    //        allow_b2b_chain: parsed["b2bchaining"].as_bool().unwrap_or(true),
+    //        max_board_height: parsed["boardheight"].as_u64().unwrap() as usize,
+    //        kick_set: parsed["kickset"].as_str().unwrap().parse().unwrap(),
+    //        spin_bonus: parsed["spinbonuses"]
+    //            .as_str()
+    //            .unwrap_or("singleplayer")
+    //            .parse()
+    //            .unwrap(),
+    //    },
+    //))
 }
 
 #[tokio::main]
