@@ -4,13 +4,13 @@ use crate::board::Board;
 use crate::constants::piece_constants::{NUM_ROTATE_STATES, RELATIVE_CORNERS};
 use crate::constants::types::{PieceType, RotationDirection};
 use crate::constants::versus_constants::*;
+use crate::game::game_rules_and_data::SpinBonus::TSpin;
 use crate::piece::Piece;
 use crate::point_vector::PointVector;
 use crate::queue::{piece_type_to_string, BagType, PieceQueue};
 use crate::versus::*;
 use game_rules_and_data::*;
 use std::fmt::{Display, Formatter};
-use crate::game::game_rules_and_data::SpinBonus::TSpin;
 
 #[derive(Default, Clone)]
 pub struct Game {
@@ -265,7 +265,7 @@ impl Game {
 
     pub fn hard_drop(&mut self) -> bool {
         self.active_drop();
-        return self.set_piece()
+        return self.set_piece();
     }
 
     pub fn set_piece(&mut self) -> bool {
@@ -294,10 +294,10 @@ impl Game {
 }
 
 pub mod game_rules_and_data {
-    use std::str::FromStr;
     use super::*;
-    use crate::constants::board_constants::{MAX_PLACE_HEIGHT};
+    use crate::constants::board_constants::MAX_PLACE_HEIGHT;
     use crate::constants::versus_constants::AttackType::TD;
+    use std::str::FromStr;
 
     #[derive(Default, Clone)]
     pub struct GameData {
@@ -331,7 +331,7 @@ pub mod game_rules_and_data {
             self.lines_cleared += lines_cleared;
             self.last_cleared = lines_cleared;
 
-            if attack == TD{
+            if attack == TD {
                 self.t_spin = true;
             }
 
@@ -371,7 +371,7 @@ pub mod game_rules_and_data {
                 allow_b2b_chain: true,
                 max_board_height: MAX_PLACE_HEIGHT,
                 kick_set: Default::default(),
-                spin_bonus: Default::default()
+                spin_bonus: Default::default(),
             }
         }
     }

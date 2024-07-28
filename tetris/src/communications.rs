@@ -168,9 +168,7 @@ async fn handle_connection(peer: SocketAddr, stream: TcpStream) -> Result<()> {
 }
 
 fn create_bot_from_parsed(parsed: &serde_json::Value) -> Bot {
-    Bot::new(
-        Game::new(Some(parsed["seed"].as_u64().unwrap() as usize))
-        )
+    Bot::new(Game::new(Some(parsed["seed"].as_u64().unwrap() as usize)))
     //Bot::new(Game::from_rules(
     //    Some(parsed["seed"].as_u64().unwrap() as usize),
     //    GameRules {

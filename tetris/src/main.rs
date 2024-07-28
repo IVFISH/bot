@@ -7,6 +7,7 @@ mod bot;
 mod communications;
 mod constants;
 mod game;
+mod opener;
 mod piece;
 mod players;
 mod point_vector;
@@ -14,23 +15,25 @@ mod population;
 mod queue;
 mod versus;
 mod weight;
-mod opener;
 
-use crate::bot::*;
-use crate::players::Player;
-use std::{thread, time};
-use std::collections::VecDeque;
 use crate::board::Board;
+use crate::bot::*;
 use crate::constants::types::Dependencies;
 use crate::constants::versus_constants::AttackType::T;
 use crate::game::Game;
-use crate::piece::Piece;
-use crate::weight::Weights;
-use crate::point_vector::Point;
 use crate::opener::*;
+use crate::piece::Piece;
+use crate::players::Player;
+use crate::point_vector::Point;
+use crate::weight::Weights;
+use std::collections::VecDeque;
+use std::{thread, time};
 
+use argmin::core::observers::ObserverMode;
 use argmin::core::{CostFunction, Error, Executor};
 use argmin::solver::particleswarm::ParticleSwarm;
+use argmin_checkpointing_file::{CheckpointingFrequency, FileCheckpoint};
+use argmin_observer_slog::SlogLogger;
 use polynomial::Polynomial;
 
 struct Trainer {}
@@ -40,55 +43,62 @@ impl CostFunction for Trainer {
     type Output = f32;
 
     fn cost(&self, param: &Self::Param) -> Result<Self::Output, Error> {
-        let mut bot = Bot::with_weights(
-            Weights {
-                height_weight: Polynomial::new(vec![0.0, param[0]]),
-                adjacent_height_differences_weight: Polynomial::new(vec![0.0, param[1]]),
-                total_height_difference_weight: Polynomial::new(vec![0.0, param[2]]),
-                num_hole_total_weight: Polynomial::new(vec![0.0, param[3]]),
-                num_hole_weighted_weight: Polynomial::new(vec![0.0, param[4]]),
-                cell_covered_weight: Polynomial::new(vec![0.0, param[5]]),
-    
-                t_slot_weight: Polynomial::new(vec![0.0, param[6]]),
-                b2b_weight: Polynomial::new(vec![0.0, param[7]]),
-                combo_weight: Polynomial::new(vec![0.0, param[8]]),
-                damage_weight: Polynomial::new(vec![0.0, param[9]]),
-                clear_weight: Polynomial::new(vec![0.0, param[10]]),
-                
-                perfect_clear_weight: param[11],
-                tspin_weight: param[12],
-            }
-        );
+        let mut bot = Bot::with_weights(Weights::from_params(param));
 
         while !bot.get_game().get_game_over() && bot.get_game().game_data.pieces_placed < 1000 {
             bot.make_move();
         }
 
-        let mut out = bot.get_game().game_data.lines_sent as f32 + 0.01 * bot.get_game().game_data.pieces_placed as f32;
+        let mut out = bot.get_game().game_data.lines_sent as f32
+            + 0.01 * bot.get_game().game_data.pieces_placed as f32;
         out *= -1.0;
-        if bot.get_game().get_game_over() { out += 100.0 }
-        
+        if bot.get_game().get_game_over() {
+            out += 100.0
+        }
+
+        println!(
+            "Bot survived for {} pieces, sending {} lines",
+            bot.get_game().game_data.pieces_placed,
+            bot.get_game().game_data.lines_sent
+        );
         Ok(out)
     }
 }
 
-
 fn main() {
-    if let Err(ref e) = bot_train() {
-        println!("{e}");
-    }
-    // bot_play();
+    // if let Err(ref e) = bot_train() {
+    //     println!("{e}");
+    // }
+    bot_play();
     // tetrio_play();
-
 }
 
 fn bot_train() -> Result<(), Error> {
     let cost_function = Trainer {};
 
-    let solver = ParticleSwarm::new((vec![-4.0, -4.0], vec![4.0, 4.0]), 40);
+    let solver = ParticleSwarm::new(
+        (
+            vec![
+                -10.0, -10.0, -10.0, -10.0, -10.0, -10.0, -10.0, -10.0, -10.0, -10.0, -10.0,
+                -1000.0, -1000.0,
+            ],
+            vec![
+                10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 1000.0, 1000.0,
+            ],
+        ),
+        16,
+    );
+
+    let checkpoint = FileCheckpoint::new(
+        ".checkpoints",
+        "rosenbrock_optim",
+        CheckpointingFrequency::Always,
+    );
 
     let res = Executor::new(cost_function, solver)
         .configure(|state| state.max_iters(100))
+        .add_observer(SlogLogger::term(), ObserverMode::Always)
+        .checkpointing(checkpoint)
         .run()?;
 
     // Print Result
@@ -103,7 +113,6 @@ fn bot_play() {
 
     let mut time = 0;
     while !bot.get_game().get_game_over() && bot.get_game().game_data.pieces_placed < 10000 {
-
         let now = time::Instant::now();
         bot.make_move();
         time += now.elapsed().as_micros();
@@ -111,7 +120,6 @@ fn bot_play() {
         thread::sleep(time::Duration::from_millis(0));
         // println!("{}", bot.get_game());
         println!("{}", bot.get_game());
-
     }
     println!(
         "Making {} moves took {} microseconds on average",

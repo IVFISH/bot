@@ -1,13 +1,13 @@
 #![allow(dead_code)]
 
 pub mod types {
-    use std::collections::VecDeque;
-    use crate::constants::board_constants::*;
-    use crate::opener::Dependency;
     use super::bot_constants::*;
     use super::piece_constants::*;
+    use crate::constants::board_constants::*;
+    use crate::opener::Dependency;
     use crate::piece::Piece;
     use crate::point_vector::Point;
+    use std::collections::VecDeque;
 
     pub type BoardArray = [usize; BOARD_WIDTH];
     pub type Row = usize;
@@ -97,12 +97,11 @@ pub mod queue_constants {
     // lehmer RNG (MINSTD)
     pub const MULTIPLIER: usize = 16807;
     pub const MODULUS: usize = 2147483647;
-
 }
 
 pub mod bot_constants {
-    use std::fmt::{Display, Formatter};
     use crate::game::Game;
+    use std::fmt::{Display, Formatter};
 
     #[derive(Copy, Clone, Debug, PartialEq)]
 

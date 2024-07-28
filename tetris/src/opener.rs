@@ -1,15 +1,14 @@
 #![allow(dead_code)]
 
-use std::collections::VecDeque;
 use crate::constants::piece_constants::NUM_PIECES;
 use crate::constants::types::*;
-use crate::{Piece, Point};
 use crate::queue::PieceQueue;
-
+use crate::{Piece, Point};
+use std::collections::VecDeque;
 
 #[derive(Default)]
 pub struct Dependency {
-    pub dependency: Vec<PieceType>
+    pub dependency: Vec<PieceType>,
 }
 
 #[derive(PartialEq, Debug)]
@@ -35,7 +34,6 @@ impl Default for OpenerStatus {
     }
 }
 
-
 impl Default for Opener {
     fn default() -> Self {
         Self {
@@ -45,7 +43,7 @@ impl Default for Opener {
             bag_progress: 0,
             variant: 0,
             piece_order: vec![],
-            status: Default::default()
+            status: Default::default(),
         }
     }
 }
@@ -67,7 +65,7 @@ impl Opener {
         } else {
             self.status = OpenerStatus::Invalid
         }
-        println!("With queue {:?}, Opener is {:?}", queue, self.status);
+        // println!("With queue {:?}, Opener is {:?}", queue, self.status);
     }
 
     pub fn bag_number(&self) -> BagNumber {
@@ -75,7 +73,8 @@ impl Opener {
     }
 
     pub fn next_placement(&mut self, queue: &PieceOrder) -> Piece {
-        let out = self.opener_sequence[self.bag][self.variant][self.piece_order[self.bag_progress]].clone();
+        let out = self.opener_sequence[self.bag][self.variant][self.piece_order[self.bag_progress]]
+            .clone();
         self.bag_progress += 1;
         if self.bag_progress == NUM_PIECES {
             self.bag_progress = 0;
@@ -131,7 +130,9 @@ impl Opener {
             let variations = Self::queue_variations(queue, hold);
             let mut filtered = variations
                 .into_iter()
-                .filter(|queue| Self::satisfy_dependencies(queue, &self.dependencies_list[self.bag][i]))
+                .filter(|queue| {
+                    Self::satisfy_dependencies(queue, &self.dependencies_list[self.bag][i])
+                })
                 .collect::<Vec<PieceOrder>>();
             if let Some(queue) = filtered.pop() {
                 self.piece_order = queue;
@@ -142,5 +143,4 @@ impl Opener {
         println!("unable to solve");
         false
     }
-
 }

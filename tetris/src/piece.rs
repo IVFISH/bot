@@ -1,12 +1,12 @@
 #![allow(dead_code)]
 
+use crate::constants::board_constants::{BOARD_HEIGHT, BOARD_WIDTH};
 use crate::constants::offset::*;
 use crate::constants::piece_constants::*;
 use crate::constants::rotation::*;
 use crate::constants::types::*;
 use crate::point_vector::*;
 use std::fmt::{Display, Formatter};
-use crate::constants::board_constants::{BOARD_HEIGHT, BOARD_WIDTH};
 
 #[derive(Default, Debug, Copy, Clone)]
 pub struct Piece {
@@ -82,7 +82,7 @@ impl Piece {
     }
 
     pub fn get_kicks(&self, dir: RotationDirection) -> Vec<PointVector> {
-        let before = (self.rotation_state + NUM_ROTATE_STATES - dir ) % NUM_ROTATE_STATES;
+        let before = (self.rotation_state + NUM_ROTATE_STATES - dir) % NUM_ROTATE_STATES;
         let kicks;
         if self.piece_type == 4 {
             // I piece is the special child
@@ -141,20 +141,22 @@ impl Piece {
 
     // move
     pub fn moved(&mut self, v: PointVector) -> bool {
-        if self.abs_locations() == None {return false}
+        if self.abs_locations() == None {
+            return false;
+        }
         if let Some(moved) = v.add_to_point(&self.center) {
-            for point in self.abs_locations().unwrap(){
+            for point in self.abs_locations().unwrap() {
                 if v.add_to_point(&point) == None {
-                    return false
+                    return false;
                 }
             }
             self.center = moved;
-            return true
+            return true;
         }
         false
     }
 
-    pub fn unsafe_move (&mut self, v: PointVector) {
+    pub fn unsafe_move(&mut self, v: PointVector) {
         self.center.0 += v.0;
         self.center.1 += v.1;
     }

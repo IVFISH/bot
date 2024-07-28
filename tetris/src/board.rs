@@ -14,7 +14,7 @@ pub struct Board {
 impl Default for Board {
     fn default() -> Self {
         Self {
-            arr: [0; BOARD_WIDTH]
+            arr: [0; BOARD_WIDTH],
         }
     }
 }
@@ -47,11 +47,15 @@ impl Board {
     }
 
     pub fn get_heights(&self) -> Vec<usize> {
-        (0..BOARD_WIDTH).into_iter().map(|col| self.get_height(col)).collect()
+        (0..BOARD_WIDTH)
+            .into_iter()
+            .map(|col| self.get_height(col))
+            .collect()
     }
 
     fn set(&mut self, row: usize, col: usize, item: usize) {
-        if item < 1 { // false
+        if item < 1 {
+            // false
             self.remove(row, col)
         } else {
             self.add(row, col)
@@ -67,7 +71,10 @@ impl Board {
     }
 
     pub fn get_row(&self, row: usize) -> Row {
-        (0..BOARD_WIDTH).into_iter().map(|col| self._get(row, col) << col).sum()
+        (0..BOARD_WIDTH)
+            .into_iter()
+            .map(|col| self._get(row, col) << col)
+            .sum()
     }
 
     pub fn get_col(&self, col: usize) -> Column {
@@ -79,11 +86,19 @@ impl Board {
     }
 
     pub fn get_max_height(&self) -> usize {
-        (0..BOARD_WIDTH).into_iter().map(|col| self.get_height(col)).max().unwrap()
+        (0..BOARD_WIDTH)
+            .into_iter()
+            .map(|col| self.get_height(col))
+            .max()
+            .unwrap()
     }
 
     pub fn get_min_height(&self) -> usize {
-         (0..BOARD_WIDTH).into_iter().map(|col| self.get_height(col)).min().unwrap()
+        (0..BOARD_WIDTH)
+            .into_iter()
+            .map(|col| self.get_height(col))
+            .min()
+            .unwrap()
     }
 
     // setters
@@ -289,18 +304,17 @@ impl Board {
 
         arr == [0b101, 0b000, 0b001] || arr == [0b001, 0b000, 0b101]
         // arr == vec![5, 0, 1] || arr == vec![1, 0, 5]
-
     }
     pub fn t_slot(&self) -> usize {
         let h = self.get_max_height();
         let l = self.get_min_height();
 
         if h - l < 3 {
-            return 0
+            return 0;
         }
 
         let mut out = 0;
-        for row in l..=(h-3) {
+        for row in l..=(h - 3) {
             let mask = 0b111;
             for columns in self.arr.windows(3) {
                 // create a 3x3 grid
@@ -311,7 +325,6 @@ impl Board {
             }
         }
         out
-
     }
 
     pub fn get_max_height_difference(&self) -> usize {
@@ -332,17 +345,16 @@ impl Board {
             let ones = col.count_ones() as usize;
             let blacks = (col & ZERO_ONE).count_ones() as i32;
             let whites = (col & ONE_ZERO).count_ones() as i32;
-            col_parity = col_parity + (((i%2) * ones) as i32)
-                - ((((i+1)%2) * ones) as i32);
-            checkerboard_parity = checkerboard_parity + ((i%2) as i32) * (blacks - whites)
-                - (((i+1)%2) as i32) * (blacks - whites);
+            col_parity = col_parity + (((i % 2) * ones) as i32) - ((((i + 1) % 2) * ones) as i32);
+            checkerboard_parity = checkerboard_parity + ((i % 2) as i32) * (blacks - whites)
+                - (((i + 1) % 2) as i32) * (blacks - whites);
         }
-        return (checkerboard_parity == 0, col_parity == 0)
+        return (checkerboard_parity == 0, col_parity == 0);
     }
 
     pub fn get_mino_count(&self) -> usize {
         let mut out: usize = 0;
-        for col in self.get_arr(){
+        for col in self.get_arr() {
             out += col.count_ones() as usize;
         }
         return out;
@@ -381,7 +393,12 @@ mod board_tests {
         println!("{}", board.get(1, 1));
         println!("{}", board.get(2, 1));
 
-        board.set_row(4, vec!(false, false, false, true, true, true, false, true, true, true));
+        board.set_row(
+            4,
+            vec![
+                false, false, false, true, true, true, false, true, true, true,
+            ],
+        );
         println!("{}", board);
     }
 
@@ -419,21 +436,21 @@ mod board_tests {
     fn test_heights_2() {
         let mut board = Board::new();
 
-        board.set_row(8, vec!(true; BOARD_WIDTH));
+        board.set_row(8, vec![true; BOARD_WIDTH]);
         board.add_list(vec![Point(5, 2), Point(3, 2), Point(5, 3)]);
         assert_eq!(board.get_heights(), [9; BOARD_WIDTH]);
         board.remove_row(8);
         assert_eq!(board.get_heights(), [0, 0, 6, 6, 0, 0, 0, 0, 0, 0]);
 
-        board.set_row(8, vec!(true; BOARD_WIDTH));
+        board.set_row(8, vec![true; BOARD_WIDTH]);
         board.add(9, 3);
         println!("{}", board);
         board.clear_lines();
         println!("{}", board);
         assert_eq!(board.get_heights(), [0, 0, 6, 9, 0, 0, 0, 0, 0, 0]);
 
-        board.set_row(6, vec!(true; BOARD_WIDTH));
-        board.set_row(7, vec!(true; BOARD_WIDTH));
+        board.set_row(6, vec![true; BOARD_WIDTH]);
+        board.set_row(7, vec![true; BOARD_WIDTH]);
         assert_eq!(board.get_heights(), [8, 8, 8, 9, 8, 8, 8, 8, 8, 8]);
         board.clear_lines();
         assert_eq!(board.get_heights(), [0, 0, 6, 7, 0, 0, 0, 0, 0, 0]);
@@ -444,10 +461,10 @@ mod board_tests {
         let mut board = Board::new();
         assert_eq!(board.get_parities(), (true, true));
         // T PIECE
-        board.add(0,1);
-        board.add(1,1);
-        board.add(1,2);
-        board.add(2,1);
+        board.add(0, 1);
+        board.add(1, 1);
+        board.add(1, 2);
+        board.add(2, 1);
         println!("{}", board);
         assert_eq!(board.get_parities(), (false, false));
 
@@ -455,10 +472,10 @@ mod board_tests {
         board.remove_row(1);
         board.remove_row(2);
         // L PIECE
-        board.add(0,1);
-        board.add(0,2);
-        board.add(1,1);
-        board.add(2,1);
+        board.add(0, 1);
+        board.add(0, 2);
+        board.add(1, 1);
+        board.add(2, 1);
         println!("{}", board);
         assert_eq!(board.get_parities(), (true, false));
         board.remove_row(0);
@@ -467,8 +484,14 @@ mod board_tests {
 
         // ONE OF THE CASES
 
-        board.set_row(0, vec!(true, true, true, true, true, true, true, true, false, false));
-        board.set_row(1, vec!(true, true, true, true, true, true, true, true, false, false));
+        board.set_row(
+            0,
+            vec![true, true, true, true, true, true, true, true, false, false],
+        );
+        board.set_row(
+            1,
+            vec![true, true, true, true, true, true, true, true, false, false],
+        );
         println!("{}", board);
         assert_eq!(board.get_parities(), (true, true));
         board.remove_row(0);
@@ -477,7 +500,12 @@ mod board_tests {
 
         // ONE OTHER OF THE CASES
 
-        board.set_row(0, vec!(true, false, false, false, false, true, true, true, true, true));
+        board.set_row(
+            0,
+            vec![
+                true, false, false, false, false, true, true, true, true, true,
+            ],
+        );
         println!("{}", board);
         assert_eq!(board.get_parities(), (true, true));
         board.remove_row(0);
@@ -499,7 +527,7 @@ mod board_tests {
         board.arr[2] <<= 10;
         println!("{}", board);
         assert_eq!(board.t_slot(), 1);
-        
+
         board.arr[6] = 0b001;
         board.arr[5] = 0b000;
         board.arr[4] = 0b101;
@@ -509,6 +537,5 @@ mod board_tests {
         board.arr[2] = 0;
         println!("{}", board);
         assert_eq!(board.t_slot(), 1);
-
     }
 }

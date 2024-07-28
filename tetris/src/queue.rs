@@ -40,7 +40,9 @@ impl PieceQueue {
         *self.queue.front().unwrap()
     }
 
-    pub fn peek_index(&self, index: usize) -> PieceType { *self.queue.get(index).unwrap()}
+    pub fn peek_index(&self, index: usize) -> PieceType {
+        *self.queue.get(index).unwrap()
+    }
 
     pub fn get_queue(&self) -> &VecDeque<PieceType> {
         &self.queue
