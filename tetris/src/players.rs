@@ -12,6 +12,7 @@ pub trait Player {
     fn get_game(&self) -> &Game;
     fn get_game_mut(&mut self) -> &mut Game;
     fn get_next_move(&mut self) -> CommandList;
+    fn insert_garbage(&mut self, col: usize, amt: usize);
 
     fn make_move(&mut self) -> bool {
         if self.get_game().get_game_over() {
@@ -27,7 +28,8 @@ pub trait Player {
         let amt = dist.sample(&mut rng);
         let col = rand::thread_rng().gen_range(0..10);
 
-        self.get_game_mut().board.insert_garbage(col, amt);
+        self.insert_garbage(col, amt);
+
         true
     }
 

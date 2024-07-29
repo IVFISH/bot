@@ -27,6 +27,7 @@ use argmin::core::{CostFunction, Error, Executor};
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct Bot {
     game: Game,
+    simulate_garbage: bool,
     #[serde(skip)]
     weight: Weights,
     #[serde(skip)]
@@ -44,6 +45,7 @@ impl Default for Bot {
     fn default() -> Self {
         Self {
             game: Game::new(None),
+            simulate_garbage: false,
             weight: Weights::default(),
             opener: Opener::default(),
         }
@@ -111,6 +113,12 @@ impl Player for Bot {
         action.push(Command::HardDrop);
         action
     }
+
+    fn insert_garbage(&mut self, col: usize, amt: usize) {
+        if self.simulate_garbage {
+            self.get_game_mut().board.insert_garbage(col, amt);
+        }
+    }
 }
 
 impl Bot {
@@ -122,10 +130,11 @@ impl Bot {
         }
     }
 
-    pub fn with_weights(weight: Weights) -> Self {
+    pub fn with_weights(weight: Weights, simulate_garbage: bool) -> Self {
         Self {
             game: Game::new(None),
             weight,
+            simulate_garbage,
             ..Default::default()
         }
     }
@@ -568,7 +577,7 @@ impl Bot {
         if (slots - filled) > 1 {
             out += weight.too_many_t_slot_weight
         }
-        if shapes > 0 {
+        if (shapes - filled) > 0 {
             out += weight.t_shape_weight
         }
         out

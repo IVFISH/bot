@@ -34,8 +34,18 @@ impl Display for Game {
             write!(f, "Hold: None\n")?;
         }
 
-        write!(f, "{}", self.board.display_with_active(&self.active_piece))?;
-        // write!(f, "{}", self.game_data.to_string())?;
+        write!(
+            f,
+            "{}\n",
+            self.board.display_with_active(&self.active_piece)
+        )?;
+        write!(
+            f,
+            "Pieces: {}  Attack: {}  APP: {}",
+            self.game_data.pieces_placed,
+            self.game_data.lines_sent,
+            self.game_data.lines_sent as f32 / self.game_data.pieces_placed as f32
+        )?;
         Ok(())
     }
 }

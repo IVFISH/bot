@@ -45,25 +45,35 @@ impl CostFunction for Trainer {
     type Output = f32;
 
     fn cost(&self, param: &Self::Param) -> Result<Self::Output, Error> {
-        let mut bot = Bot::with_weights(Weights::from_params(param));
+        // Simulate without garbage
+        let mut bot = Bot::with_weights(Weights::from_params(param), false);
 
-        while !bot.get_game().get_game_over() && bot.get_game().game_data.pieces_placed < 3000 {
+        while !bot.get_game().get_game_over() && bot.get_game().game_data.pieces_placed < 2000 {
             bot.make_move();
         }
 
-        let mut out = bot.get_game().game_data.lines_sent as f32
-            + 0.01 * bot.get_game().game_data.pieces_placed as f32;
-        out *= -1.0;
+        let mut out1 = bot.get_game().game_data.lines_sent as f32
+            + 0.001 * bot.get_game().game_data.pieces_placed as f32;
+        out1 *= -1.0;
         if bot.get_game().get_game_over() {
-            out += 800.0; // We really hate dying
+            out1 += 800.0; // We really hate dying
         }
 
-        println!(
-            "Bot survived for {} pieces, sending {} lines",
-            bot.get_game().game_data.pieces_placed,
-            bot.get_game().game_data.lines_sent
-        );
-        Ok(out)
+        // Simulate with garbage
+        bot = Bot::with_weights(Weights::from_params(param), true);
+        while !bot.get_game().get_game_over() && bot.get_game().game_data.pieces_placed < 2000 {
+            bot.make_move();
+        }
+
+        let mut out2 = bot.get_game().game_data.lines_sent as f32
+            + 0.001 * bot.get_game().game_data.pieces_placed as f32;
+        out2 *= -1.0;
+        if bot.get_game().get_game_over() {
+            out2 += 500.0; // We hate dying a little less
+        }
+
+        println!("Bot scored {} solo and {} with garbage", out1, out2);
+        Ok(out1 + out2)
     }
 }
 
@@ -90,11 +100,11 @@ fn bot_train() -> Result<(), Error> {
         ),
         24,
     )
-    .with_rng_generator(rand_xoshiro::Xoroshiro128Plus::seed_from_u64(234098));
+    .with_rng_generator(rand_xoshiro::Xoroshiro128Plus::seed_from_u64(10928));
 
     let checkpoint = FileCheckpoint::new(
         ".checkpoints",
-        "fish_optim_shape",
+        "fish_optim_shape2",
         CheckpointingFrequency::Always,
     );
 
