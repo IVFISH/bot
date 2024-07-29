@@ -90,16 +90,13 @@ fn bot_train() -> Result<(), Error> {
         ),
         24,
     )
-    .with_rng_generator(rand_xoshiro::Xoroshiro128Plus::seed_from_u64(124274));
+    .with_rng_generator(rand_xoshiro::Xoroshiro128Plus::seed_from_u64(234098));
 
-    let checkpoint = FileCheckpoint::new(
-        ".checkpoints",
-        "rosenbrock_optim",
-        CheckpointingFrequency::Always,
-    );
+    let checkpoint =
+        FileCheckpoint::new(".checkpoints", "fish_optim", CheckpointingFrequency::Always);
 
     let res = Executor::new(cost_function, solver)
-        .configure(|state| state.max_iters(100))
+        .configure(|state| state.max_iters(1000))
         .add_observer(SlogLogger::term(), ObserverMode::Always)
         .checkpointing(checkpoint)
         .run()?;

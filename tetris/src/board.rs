@@ -326,8 +326,8 @@ impl Board {
                     slots += 1;
 
                     // check if t slot is filled
-                    if (self.get_row(row) ^ (0b010 << i) == 1023
-                        && self.get_row(row + 1) ^ (mask << i) == 1023)
+                    if self.get_row(row) ^ (0b010 << i) == 1023
+                        && self.get_row(row + 1) ^ (mask << i) == 1023
                     {
                         filled += 1;
                     }

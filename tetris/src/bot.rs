@@ -193,7 +193,7 @@ impl Bot {
         let mut next_scores = ScoreList::new();
 
         //pruning parameters
-        let n = 1000;
+        let n = 50;
         let prune_depth = 1;
 
         for curr_depth in 1..depth {
