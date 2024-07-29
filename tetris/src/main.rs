@@ -55,7 +55,7 @@ impl CostFunction for Trainer {
             + 0.01 * bot.get_game().game_data.pieces_placed as f32;
         out *= -1.0;
         if bot.get_game().get_game_over() {
-            out += 800.0 // We really hate dying
+            out += 800.0; // We really hate dying
         }
 
         println!(
@@ -92,8 +92,11 @@ fn bot_train() -> Result<(), Error> {
     )
     .with_rng_generator(rand_xoshiro::Xoroshiro128Plus::seed_from_u64(234098));
 
-    let checkpoint =
-        FileCheckpoint::new(".checkpoints", "fish_optim_shape", CheckpointingFrequency::Always);
+    let checkpoint = FileCheckpoint::new(
+        ".checkpoints",
+        "fish_optim_shape",
+        CheckpointingFrequency::Always,
+    );
 
     let res = Executor::new(cost_function, solver)
         .configure(|state| state.max_iters(1000))

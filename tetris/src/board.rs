@@ -258,7 +258,7 @@ impl Board {
             .collect()
     }
 
-    pub fn insert_garbage(&mut self, col:usize, amount:usize) {
+    pub fn insert_garbage(&mut self, col: usize, amount: usize) {
         for col in 0..BOARD_WIDTH {
             self.arr[col] <<= amount;
         }
@@ -330,7 +330,7 @@ impl Board {
             return (0, 0, 0);
         }
 
-        let mut shapes= 0;
+        let mut shapes = 0;
         let mut slots = 0;
         let mut filled = 0;
 
