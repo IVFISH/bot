@@ -18,24 +18,31 @@ pub struct Weights {
 
     pub perfect_clear_weight: f32,
     pub tspin_weight: f32,
+    pub filled_tsd_weight: f32,
+    pub too_many_t_slot_weight: f32,
+
+    pub clear_single_weight: f32,
+    pub clear_double_weight: f32,
+    pub clear_triple_weight: f32,
+    pub clear_tetris_weight: f32,
 }
 
 impl Default for Weights {
     fn default() -> Self {
         Self::from_params(&vec![
-            4.8639483,
-            8.767454,
+            10.0,
+            4.0458274,
+            -4.0797834,
+            0.8254502,
+            -0.32339233,
+            10.0,
+            -54.007343,
             -10.0,
-            10.0,
+            4.6619377,
+            -9.993479,
             -10.0,
-            10.0,
-            10.0,
-            -0.02735138,
-            10.0,
-            -8.890719,
-            9.508551,
-            100.0,
-            -100.0,
+            261.80038,
+            0.0,
         ])
         // Self {
         //     height_weight: Polynomial::new(vec![0.0, -10.0, 5.0]),
@@ -75,6 +82,14 @@ impl Weights {
 
             perfect_clear_weight: param[11],
             tspin_weight: param[12],
+
+            filled_tsd_weight: param[13],
+            too_many_t_slot_weight: param[14],
+
+            clear_single_weight: param[15],
+            clear_double_weight: param[16],
+            clear_triple_weight: param[17],
+            clear_tetris_weight: param[18],
         }
     }
 }

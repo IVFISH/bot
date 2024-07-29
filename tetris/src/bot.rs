@@ -193,7 +193,7 @@ impl Bot {
         let mut next_scores = ScoreList::new();
 
         //pruning parameters
-        let n = 50;
+        let n = 1000;
         let prune_depth = 1;
 
         for curr_depth in 1..depth {
@@ -527,6 +527,14 @@ impl Bot {
 
         let mut extra = 0.0;
 
+        match game_data.last_cleared {
+            1 => extra += weight.clear_single_weight,
+            2 => extra += weight.clear_double_weight,
+            3 => extra += weight.clear_triple_weight,
+            4 => extra += weight.clear_tetris_weight,
+            _ => extra += 0.0,
+        }
+
         if pc {
             extra += weight.perfect_clear_weight;
         }
@@ -553,7 +561,14 @@ impl Bot {
     }
 
     pub(crate) fn get_t_slot_score(board: &Board, weight: &Weights) -> f32 {
-        weight.t_slot_weight.eval(board.t_slot() as f32)
+        let (slots, filled) = board.t_slot();
+        let mut out: f32 = 0.0;
+        out += weight.t_slot_weight.eval(slots as f32);
+        out += weight.filled_tsd_weight * filled as f32;
+        if (slots - filled) > 1 {
+            out += weight.too_many_t_slot_weight
+        }
+        out
     }
 
     fn get_height_score(board: &Board, weight: &Weights) -> f32 {
