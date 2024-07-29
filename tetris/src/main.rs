@@ -47,7 +47,7 @@ impl CostFunction for Trainer {
     fn cost(&self, param: &Self::Param) -> Result<Self::Output, Error> {
         let mut bot = Bot::with_weights(Weights::from_params(param));
 
-        while !bot.get_game().get_game_over() && bot.get_game().game_data.pieces_placed < 1000 {
+        while !bot.get_game().get_game_over() && bot.get_game().game_data.pieces_placed < 3000 {
             bot.make_move();
         }
 
@@ -55,7 +55,7 @@ impl CostFunction for Trainer {
             + 0.01 * bot.get_game().game_data.pieces_placed as f32;
         out *= -1.0;
         if bot.get_game().get_game_over() {
-            out += 1000.0 // We really hate dying
+            out += 800.0 // We really hate dying
         }
 
         println!(
