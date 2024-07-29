@@ -25,30 +25,16 @@ pub struct Weights {
     pub clear_double_weight: f32,
     pub clear_triple_weight: f32,
     pub clear_tetris_weight: f32,
+
+    pub t_shape_weight: f32,
 }
 
 impl Default for Weights {
     fn default() -> Self {
         Self::from_params(&vec![
-            10.0,
-            4.0458274,
-            -4.0797834,
-            0.8254502,
-            -0.32339233,
-            10.0,
-            -54.007343,
-            -10.0,
-            4.6619377,
-            -9.993479,
-            -10.0,
-            261.80038,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
+            -83.787895, 3.5668898, 100.0, 63.156162, 100.0, 100.0, -99.898346, -99.91325,
+            -39.471348, -100.0, 16.499115, 31.164734, 100.0, -68.342255, -100.0, 99.48023,
+            -20.857794, -55.02384, -81.26002, 0.0, 0.0,
         ])
         // Self {
         //     height_weight: Polynomial::new(vec![0.0, -10.0, 5.0]),
@@ -96,6 +82,7 @@ impl Weights {
             clear_double_weight: param[16],
             clear_triple_weight: param[17],
             clear_tetris_weight: param[18],
+            t_shape_weight: param[19],
         }
     }
 }

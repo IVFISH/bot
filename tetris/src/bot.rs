@@ -561,12 +561,15 @@ impl Bot {
     }
 
     pub(crate) fn get_t_slot_score(board: &Board, weight: &Weights) -> f32 {
-        let (slots, filled) = board.t_slot();
+        let (shapes, slots, filled) = board.t_slot();
         let mut out: f32 = 0.0;
         out += weight.t_slot_weight.eval(slots as f32);
         out += weight.filled_tsd_weight * filled as f32;
         if (slots - filled) > 1 {
             out += weight.too_many_t_slot_weight
+        }
+        if shapes > 0 {
+            out += weight.t_shape_weight
         }
         out
     }

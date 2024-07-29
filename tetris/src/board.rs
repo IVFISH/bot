@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+use rand::seq::index::sample;
+
 use crate::constants::board_constants::*;
 use crate::constants::types::*;
 use crate::piece::Piece;
@@ -256,6 +258,15 @@ impl Board {
             .collect()
     }
 
+    pub fn insert_garbage(&mut self, col:usize, amount:usize) {
+        for col in 0..BOARD_WIDTH {
+            self.arr[col] <<= amount;
+        }
+        for row in 0..amount {
+            self._set_row(row, 0b1111111111 ^ (0b1 << col));
+        }
+    }
+
     // stats
     pub fn holes_cell_covered(&self) -> (usize, usize, usize) {
         let mut holes_count_total = 0;
@@ -291,7 +302,7 @@ impl Board {
         (holes_count_total, holes_count_weighted, cell_covered_count)
     }
 
-    fn check_hor_t(arr: Vec<usize>) -> bool {
+    fn check_hor_t(arr: Vec<usize>) -> (bool, bool) {
         // only for horizontal t slots rn
 
         // 1 0 0
@@ -302,27 +313,39 @@ impl Board {
         // 0 0 0
         // 1 0 1
 
-        arr == [0b101, 0b000, 0b001] || arr == [0b001, 0b000, 0b101]
-        // arr == vec![5, 0, 1] || arr == vec![1, 0, 5]
+        // Check t slots
+        let is_slot = arr == [0b101, 0b000, 0b001] || arr == [0b001, 0b000, 0b101];
+
+        // Check t shapes
+        let arr: Vec<usize> = arr.iter().map(|x| x & 0b011).collect();
+        let is_shape = arr == [0b01, 0b00, 0b01];
+
+        (is_shape, is_slot)
     }
-    pub fn t_slot(&self) -> (usize, usize) {
+    pub fn t_slot(&self) -> (usize, usize, usize) {
         let h = self.get_max_height();
         let l = self.get_min_height();
 
-        if h - l < 3 {
-            return (0, 0);
+        if h - l < 2 {
+            return (0, 0, 0);
         }
 
+        let mut shapes= 0;
         let mut slots = 0;
         let mut filled = 0;
-        for row in l..=(h - 3) {
+
+        for row in l..=(h - 2) {
             let mask = 0b111;
             for (i, columns) in self.arr.windows(3).enumerate() {
                 // create a 3x3 grid
                 let columns: Vec<usize> = columns.iter().map(|x| x >> row & mask).collect();
 
                 // checks if it is a t slot
-                if Board::check_hor_t(columns) {
+                let (is_shape, is_slot) = Board::check_hor_t(columns);
+                if is_shape {
+                    shapes += 1;
+                }
+                if is_slot {
                     slots += 1;
 
                     // check if t slot is filled
@@ -337,7 +360,7 @@ impl Board {
                 }
             }
         }
-        (slots, filled)
+        (shapes, slots, filled)
     }
 
     pub fn get_max_height_difference(&self) -> usize {
@@ -396,6 +419,8 @@ impl Board {
 
 #[cfg(test)]
 mod board_tests {
+    use tungstenite::http::header::WARNING;
+
     use super::*;
 
     #[test]
@@ -527,29 +552,40 @@ mod board_tests {
     }
 
     #[test]
+    fn test_t_shape() {
+        let mut board = Board::new();
+        board.arr[0] = 0b01;
+        board.arr[1] = 0b00;
+        board.arr[2] = 0b01;
+        board.arr[3] = 0b11;
+        println!("{}", board);
+        assert_eq!(board.t_slot(), (1, 0, 0));
+    }
+
+    #[test]
     fn test_t_slot() {
         let mut board = Board::new();
         board.arr[0] = 0b001;
         board.arr[1] = 0b000;
         board.arr[2] = 0b101;
         println!("{}", board);
-        assert_eq!(board.t_slot(), (1, 0));
+        assert_eq!(board.t_slot(), (1, 1, 0));
 
         board.arr[0] <<= 10;
         board.arr[1] <<= 10;
         board.arr[2] <<= 10;
         println!("{}", board);
-        assert_eq!(board.t_slot(), (1, 0));
+        assert_eq!(board.t_slot(), (1, 1, 0));
 
         board.arr[6] = 0b001;
         board.arr[5] = 0b000;
         board.arr[4] = 0b101;
         println!("{}", board);
-        assert_eq!(board.t_slot(), (2, 0));
+        assert_eq!(board.t_slot(), (2, 2, 0));
 
         board.arr[2] = 0;
         println!("{}", board);
-        assert_eq!(board.t_slot(), (1, 0));
+        assert_eq!(board.t_slot(), (1, 1, 0));
     }
 
     #[test]
@@ -561,15 +597,24 @@ mod board_tests {
         board.arr[1] = 0b000;
         board.arr[2] = 0b101;
         println!("{}", board);
-        assert_eq!(board.t_slot(), (1, 1));
+        assert_eq!(board.t_slot(), (1, 1, 1));
 
         board.set(0, 9, 0);
-        assert_eq!(board.t_slot(), (1, 0));
+        assert_eq!(board.t_slot(), (1, 1, 0));
 
         board.set(1, 9, 0);
-        assert_eq!(board.t_slot(), (1, 0));
+        assert_eq!(board.t_slot(), (1, 1, 0));
 
         board.set(0, 9, 1);
-        assert_eq!(board.t_slot(), (1, 0));
+        assert_eq!(board.t_slot(), (1, 1, 0));
     }
+
+    // #[test]
+    // fn test_insert_garbage() {
+    //     let mut board = Board::new();
+    //     board.insert_garbage(2, 4);
+    //     board.insert_garbage(3, 2);
+    //     println!("{}", board);
+    //     assert!(false);
+    // }
 }

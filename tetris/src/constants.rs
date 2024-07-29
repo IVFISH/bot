@@ -161,6 +161,9 @@ pub mod bot_constants {
         Game::active_180,
         // Game::active_drop,
     ];
+
+
+    pub const PROBABILITIES: [f32; 9] = [1., 0.008, 0.012, 0.018, 0.04, 0.03, 0.007, 0.003, 0.001];
 }
 
 pub mod rotation {

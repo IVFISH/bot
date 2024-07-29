@@ -4,6 +4,9 @@ use crate::communications::Suggestion;
 use crate::constants::bot_constants::*;
 use crate::constants::types::*;
 use crate::game::Game;
+use rand::Rng;
+use rand_distr::Distribution;
+use rand_distr::WeightedIndex;
 
 pub trait Player {
     fn get_game(&self) -> &Game;
@@ -17,6 +20,14 @@ pub trait Player {
         let action = self.get_next_move();
         // println!("{:?}", action);
         do_move_list(self.get_game_mut(), action);
+
+        // Generate garbage
+        let mut rng = rand::thread_rng();
+        let dist = WeightedIndex::new(&PROBABILITIES).unwrap();
+        let amt = dist.sample(&mut rng);
+        let col = rand::thread_rng().gen_range(0..10);
+
+        self.get_game_mut().board.insert_garbage(col, amt);
         true
     }
 
