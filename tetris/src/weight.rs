@@ -43,6 +43,12 @@ impl Default for Weights {
             -10.0,
             261.80038,
             0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
         ])
         // Self {
         //     height_weight: Polynomial::new(vec![0.0, -10.0, 5.0]),
