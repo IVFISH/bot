@@ -21,3 +21,4 @@ argmin = { version = "0.10", features = ['full', 'serde1', 'rayon'] }
 argmin-math = { version = "0.4", features = ["ndarray_latest", "nalgebra_latest"] }
 argmin-checkpointing-file = "0.1.0"
 argmin-observer-slog = "*"
+rand_xoshiro = "*"

@@ -10,15 +10,17 @@ use crate::point_vector::PointVector;
 use crate::queue::{piece_type_to_string, BagType, PieceQueue};
 use crate::versus::*;
 use game_rules_and_data::*;
+use serde::ser::SerializeStruct;
+use serde::Serialize;
 use std::fmt::{Display, Formatter};
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Game {
     pub board: Board,
     pub piece_queue: PieceQueue,
     pub game_data: GameData,
+    #[serde(skip)]
     game_rules: GameRules,
-
     pub active_piece: Piece,
     pub hold_piece: Option<PieceType>,
 }
@@ -299,7 +301,7 @@ pub mod game_rules_and_data {
     use crate::constants::versus_constants::AttackType::TD;
     use std::str::FromStr;
 
-    #[derive(Default, Clone)]
+    #[derive(Default, Clone, serde::Serialize, serde::Deserialize)]
     pub struct GameData {
         pub all_clear: bool,
         pub combo: i8,

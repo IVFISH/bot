@@ -9,7 +9,7 @@ use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 use std::string::ParseError;
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, serde::Serialize, serde::Deserialize)]
 pub struct PieceQueue {
     queue: VecDeque<PieceType>,
     randomizer: BagType,
@@ -136,7 +136,7 @@ impl Display for PieceQueue {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum BagType {
     SevenBag,
     FourteenBag,

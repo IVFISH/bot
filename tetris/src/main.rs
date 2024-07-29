@@ -31,10 +31,12 @@ use std::{thread, time};
 
 use argmin::core::observers::ObserverMode;
 use argmin::core::{CostFunction, Error, Executor};
+use argmin::solver;
 use argmin::solver::particleswarm::ParticleSwarm;
 use argmin_checkpointing_file::{CheckpointingFrequency, FileCheckpoint};
 use argmin_observer_slog::SlogLogger;
 use polynomial::Polynomial;
+use rand::SeedableRng;
 
 struct Trainer {}
 
@@ -66,16 +68,15 @@ impl CostFunction for Trainer {
 }
 
 fn main() {
-    // if let Err(ref e) = bot_train() {
-    //     println!("{e}");
-    // }
-    bot_play();
+    if let Err(ref e) = bot_train() {
+        println!("{e}");
+    }
+    // bot_play();
     // tetrio_play();
 }
 
 fn bot_train() -> Result<(), Error> {
     let cost_function = Trainer {};
-
     let solver = ParticleSwarm::new(
         (
             vec![
@@ -86,8 +87,9 @@ fn bot_train() -> Result<(), Error> {
                 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 1000.0, 1000.0,
             ],
         ),
-        16,
-    );
+        24,
+    )
+    .with_rng_generator(rand_xoshiro::Xoroshiro128Plus::seed_from_u64(124274));
 
     let checkpoint = FileCheckpoint::new(
         ".checkpoints",

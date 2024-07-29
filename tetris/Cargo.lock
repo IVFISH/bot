@@ -1084,6 +1084,7 @@ dependencies = [
  "log",
  "polynomial",
  "rand",
+ "rand_xoshiro",
  "serde",
  "serde_json",
  "tokio",

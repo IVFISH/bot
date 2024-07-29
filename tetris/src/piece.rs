@@ -8,7 +8,7 @@ use crate::constants::types::*;
 use crate::point_vector::*;
 use std::fmt::{Display, Formatter};
 
-#[derive(Default, Debug, Copy, Clone)]
+#[derive(Default, Debug, Copy, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Piece {
     pub piece_type: PieceType,
     pub rotation_state: RotationState,

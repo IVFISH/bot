@@ -6,7 +6,7 @@ use crate::piece::Piece;
 use crate::point_vector::{Point, PointVector};
 use std::fmt::{Display, Formatter};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Board {
     arr: BoardArray,
 }

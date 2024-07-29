@@ -3,7 +3,7 @@
 use crate::constants::board_constants::*;
 use crate::constants::piece_constants::*;
 
-#[derive(Debug, Clone, PartialEq, Copy)]
+#[derive(Debug, Clone, PartialEq, Copy, serde::Serialize, serde::Deserialize)]
 pub struct Point(pub i8, pub i8);
 
 impl Default for Point {

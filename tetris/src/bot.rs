@@ -15,6 +15,8 @@ use crate::weight::Weights;
 use crate::{Dependency, Opener, OpenerStatus, Point};
 use futures_util::stream::iter;
 use itertools::{izip, Itertools};
+use serde::ser::SerializeStruct;
+use serde::Serialize;
 use std::cmp::Ordering::Equal;
 use std::fmt::{Display, Formatter};
 use std::iter::zip;
@@ -22,9 +24,12 @@ use std::{mem, thread, time};
 
 use argmin::core::{CostFunction, Error, Executor};
 
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct Bot {
     game: Game,
+    #[serde(skip)]
     weight: Weights,
+    #[serde(skip)]
     opener: Opener,
 }
 
