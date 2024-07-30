@@ -34,6 +34,7 @@ use argmin::core::{CostFunction, Error, Executor};
 use argmin::solver;
 use argmin::solver::particleswarm::ParticleSwarm;
 use argmin_checkpointing_file::{CheckpointingFrequency, FileCheckpoint};
+use argmin_observer_paramwriter::{ParamWriter, ParamWriterFormat};
 use argmin_observer_slog::SlogLogger;
 use polynomial::Polynomial;
 use rand::SeedableRng;
@@ -72,7 +73,7 @@ impl CostFunction for Trainer {
             out2 += 500.0; // We hate dying a little less
         }
 
-        println!("Bot scored {} solo and {} with garbage", out1, out2);
+        //println!("Bot scored {}, {} solo and {} with garbage", out1+out2, out1, out2);
         Ok(out1 + out2)
     }
 }
@@ -100,17 +101,21 @@ fn bot_train() -> Result<(), Error> {
         ),
         24,
     )
-    .with_rng_generator(rand_xoshiro::Xoroshiro128Plus::seed_from_u64(10928));
+    .with_rng_generator(rand_xoshiro::Xoroshiro128Plus::seed_from_u64(12213328));
 
     let checkpoint = FileCheckpoint::new(
         ".checkpoints",
-        "fish_optim_shape2",
+        "test3",
         CheckpointingFrequency::Always,
     );
 
     let res = Executor::new(cost_function, solver)
-        .configure(|state| state.max_iters(1000))
-        .add_observer(SlogLogger::term(), ObserverMode::Always)
+        .configure(|state| state.max_iters(200))
+        .add_observer(SlogLogger::term_noblock(), ObserverMode::Always)
+        .add_observer(
+            ParamWriter::new("params", "writer", ParamWriterFormat::JSON),
+            ObserverMode::NewBest,
+        )
         .checkpointing(checkpoint)
         .run()?;
 

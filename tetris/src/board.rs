@@ -313,12 +313,17 @@ impl Board {
         // 0 0 0
         // 1 0 1
 
-        // Check t slots
-        let is_slot = arr == [0b101, 0b000, 0b001] || arr == [0b001, 0b000, 0b101];
-
         // Check t shapes
         let arr: Vec<usize> = arr.iter().map(|x| x & 0b011).collect();
         let is_shape = arr == [0b01, 0b00, 0b01];
+
+        // There cannot be a slot if there is no shape
+        if !is_shape {
+            return (false, false);
+        }
+
+        // Check t slots
+        let is_slot = arr == [0b101, 0b000, 0b001] || arr == [0b001, 0b000, 0b101];
 
         (is_shape, is_slot)
     }
@@ -342,9 +347,10 @@ impl Board {
 
                 // checks if it is a t slot
                 let (is_shape, is_slot) = Board::check_hor_t(columns);
-                if is_shape {
-                    shapes += 1;
+                if !is_shape {
+                    continue;
                 }
+                shapes += 1;
                 if is_slot {
                     slots += 1;
 

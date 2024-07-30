@@ -90,6 +90,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "argmin-observer-paramwriter"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "03e01fe9fcb0ab34a0df2777e64f8fa018aadc9d74ff549b82af7afbf76b6664"
+dependencies = [
+ "argmin",
+ "bincode",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "argmin-observer-slog"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1095,6 +1107,7 @@ dependencies = [
  "argmin",
  "argmin-checkpointing-file",
  "argmin-math",
+ "argmin-observer-paramwriter",
  "argmin-observer-slog",
  "futures-util",
  "itertools",
