@@ -11,6 +11,7 @@ use crate::pruner::*;
 use crate::suggestion::*;
 use rayon::prelude::*;
 use std::collections::HashSet;
+use std::sync::Arc;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Bot<P: Pruner> {
@@ -41,7 +42,7 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         // todo fix magic numbers
         let depth = 3;
         let placements = self.move_gen(depth);
-        let chosen = placements.placements[0]; // check for out of bounds!
+        let chosen = &placements.placements[0]; // check for out of bounds!
         let piece_encoding = (chosen.game.history >> (16 * (depth - 1)) & 0xFFFF) as u16;
         let piece = Piece::decode(piece_encoding);
         let held = (piece_encoding >> 14 & 1) != 0;
@@ -56,14 +57,13 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
     /// the API function for generating all current moves of depth
     /// for the current active piece, as well as after holding
     pub fn move_gen(&self, depth: usize) -> PlacementList {
-        let mut placements = PlacementList::default();
-        placements.add(Placement::new(self.game), &self.pruner);
+        let start = Placement::new(self.game);
 
-        for d in 0..depth {
-            // println!("Finished with depth {}.", d + 1);
+        let mut placements = PlacementList { placements: Self::get_base_placements(&start) }; // depth 1
+        for _ in 1..depth {
             placements = Self::iterate_move_gen(placements, &self.pruner);
         }
-        // println!("Finished with depth {}.", depth);
+
         placements
     }
 
@@ -73,8 +73,8 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
     fn iterate_move_gen(placements: PlacementList, pruner: &P) -> PlacementList {
         let placements = placements
             .placements
-            .par_iter()
-            .flat_map_iter(|p| Self::extend_placement(p, pruner))
+            .into_par_iter()
+            .flat_map_iter(|p| Self::extend_placement(&p, pruner))
             .collect();
         PlacementList::new(placements, pruner)
     }
@@ -82,11 +82,11 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
     /// helper method 2 for movegen
     /// given a starting placement (of depth i), returns a new list of placements
     /// of depth i+1 (with and without hold)
+    /// note that this ruins placement
     fn extend_placement(placement: &Placement, pruner: &P) -> Vec<Placement> {
         // get the starting position to extend placements from
-        let game_before = placement.game; // copy
-        let mut piece = game_before.active; // copy
-        let mut controller = Controller::new(&mut piece, &game_before.board);
+        let mut piece = placement.game.active;
+        let mut controller = Controller::new(&mut piece, &placement.game.board);
         // find all the new pieces
         let mut seen = Vec::new();
         Self::add_trivials(&mut seen, &mut controller);
@@ -94,15 +94,16 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
 
         // generate the new placements here
         let mut out: Vec<_> = seen
-            .into_iter()
-            .map(|piece| Self::make_placement(piece, false, game_before))
+            .iter()
+            .map(|piece| Self::make_placement(*piece, false, placement))
             .filter(|piece| pruner.precondition(piece))
-            .collect();
+            .collect(); 
 
         // get the starting position to extend placements from
-        let game_before = *placement.game.clone().hold(); // copy
-        let mut piece = game_before.active; // copy
-        let mut controller = Controller::new(&mut piece, &game_before.board);
+        let placement = &mut placement.clone();
+        placement.game.hold();
+        let mut piece = placement.game.active;
+        let mut controller = Controller::new(&mut piece, &placement.game.board);
         // find all the new pieces
         let mut seen = Vec::new();
         Self::add_trivials(&mut seen, &mut controller);
@@ -111,16 +112,17 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         // generate the new placements here
         out.extend(
             seen.into_iter()
-                .map(|piece| Self::make_placement(piece, true, game_before))
+                .map(|piece| Self::make_placement(piece, true, placement))
                 .filter(|piece| pruner.precondition(piece)),
         );
         out
     }
 
-    fn make_placement(piece: Piece, held: bool, mut game_before: Game) -> Placement {
-        game_before.set_active(piece, held).place_active(held);
-        Placement { game: game_before }
-    }
+    fn make_placement(piece: Piece, held: bool, place_before: &Placement) -> Placement {
+        let mut new_placement = place_before.clone();
+        new_placement.game.set_active(piece, held).place_active(held);
+        new_placement
+    }    
 
     fn get_dropped_piece(controller: &mut Controller) -> Piece {
         let cp = *controller.piece;
@@ -141,7 +143,7 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
             while controller.do_command(&Command::MoveHorizontal(1)) {
                 seen.push(Self::get_dropped_piece(controller));
             }
-            *controller.piece = controller.peek().unwrap().1; // reset the piece
+            controller.update_piece(controller.peek().unwrap().1); // reset the piece
             while controller.do_command(&Command::MoveHorizontal(-1)) {
                 seen.push(Self::get_dropped_piece(controller));
             }
@@ -173,6 +175,86 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
             }
         }
     }
+
+    fn get_base_placements(start: &Placement) -> Vec<Placement> {
+        let mut piece = start.game.active;
+        let controller = &mut Controller::new(&mut piece, &start.game.board);
+
+        let pairs = &mut Self::get_base_trivials(controller);
+        Self::get_base_nontrivials(pairs, controller);
+
+        let mut out: Vec<Placement> = pairs.iter()
+        .map(|(p, cmds)| 
+            Placement { 
+                game: Self::make_placement(*p, false, &start).game, 
+                base_command: Arc::new(cmds.clone()) })
+        .collect();
+
+        let mut start = start.clone();
+        start.game.hold();
+        let mut piece = start.game.active;
+        let controller = &mut Controller::new(&mut piece, &start.game.board);
+
+        let pairs = &mut Self::get_base_trivials(controller);
+        Self::get_base_nontrivials(pairs, controller);
+        out.extend(pairs.iter()
+        .map(|(p, cmds)| 
+            Placement { 
+                game: Self::make_placement(*p, true, &start).game, 
+                base_command: Arc::new(cmds.clone()) })
+        .collect::<Vec<Placement>>());
+
+        out
+    }
+
+    fn get_base_trivials(controller: &mut Controller) -> Vec<(Piece, Vec<Command>)>{
+        let mut out: Vec<(Piece, Vec<Command>)> = Vec::new();
+        for rotation in 0..NUM_ROTATE_STATES {
+            if !controller.do_command_mut(Command::Rotate(rotation as u8)) {
+                continue;
+            }
+            let mut commands: Vec<Command> = vec!(Command::Rotate(rotation as u8));
+            out.push((Self::get_dropped_piece(controller), commands.iter().chain([&Command::MoveDrop]).cloned().collect()));
+            while controller.do_command(&Command::MoveHorizontal(1)) {
+                commands.push(Command::MoveHorizontal(1));
+                out.push((Self::get_dropped_piece(controller), commands.iter().chain([&Command::MoveDrop]).cloned().collect()));
+            }
+            controller.update_piece(controller.peek().unwrap().1); // reset the piece
+            let mut commands: Vec<Command> = vec!(Command::Rotate(rotation as u8));
+            while controller.do_command(&Command::MoveHorizontal(-1)) {
+                commands.push(Command::MoveHorizontal(-1));
+                out.push((Self::get_dropped_piece(controller), commands.iter().chain([&Command::MoveDrop]).cloned().collect()));
+            }
+            controller.undo();
+
+            if controller.piece.r#type == PIECE_O {
+                // don't generate new trivials for O
+                break;
+            }
+        }
+        out
+    }
+
+    fn get_base_nontrivials(seen: &mut Vec<(Piece, Vec<Command>)>, controller: &mut Controller){
+        let mut dfs_stack: Vec<_> = seen.clone();
+        let mut seen_all: HashSet<_> = seen.iter().map(|(p, _)| p).cloned().collect(); // includes the not-grounded ones
+        while let Some((p, cmd)) = dfs_stack.pop() {
+            for command in COMMANDS.into_iter() {
+                controller.update_piece(p);
+                controller.do_command(&command);
+                if seen_all.contains(controller.piece) {
+                    continue;
+                }
+                seen_all.insert(*controller.piece);
+                let to_add = (*controller.piece, cmd.iter().chain([&command]).cloned().collect());
+                dfs_stack.push(to_add.clone());
+                if controller.board.piece_grounded(controller.piece) {
+                    seen.push(to_add.clone());
+                }
+            }
+        }
+    }
+
 }
 
 #[cfg(test)]

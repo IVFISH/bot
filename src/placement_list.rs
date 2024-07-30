@@ -1,6 +1,5 @@
 use crate::placement::*;
 use crate::pruner::*;
-use fumen;
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::prelude::*;

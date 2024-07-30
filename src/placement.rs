@@ -2,19 +2,21 @@
 
 use crate::command::Command;
 use crate::constants::board_constants::*;
-use crate::controller::Controller;
 use crate::game::Game;
 use crate::piece::Piece;
 use fumen;
 
-#[derive(Clone, Debug, Copy)]
+use std::sync::Arc;
+
+#[derive(Clone, Debug)]
 pub struct Placement {
     pub game: Game, // game after the piece has been placed
+    pub base_command: Arc<Vec<Command>>
 }
 
 impl Placement {
     pub fn new(game: Game) -> Self {
-        Self { game }
+        Self { game: game, base_command: Arc::new(Vec::new()) }
     }
 
     pub fn get_last_piece(&self) -> Piece {

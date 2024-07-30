@@ -16,7 +16,7 @@ impl<'a> Controller<'a> {
     // constructor ------------------------------
     /// creates a new controller from a board and piece reference
     pub fn new(piece: &'a mut Piece, board: &'a Board) -> Self {
-        let cp = *piece;
+        let cp = *piece; // copy
         Self {
             piece,
             board,
@@ -107,7 +107,7 @@ impl<'a> Controller<'a> {
     }
 
     /// peeks from the stack without undoing the command
-    pub fn peek(&mut self) -> Option<(Command, Piece)> {
+    pub fn peek(&self) -> Option<(Command, Piece)> {
         if self.is_empty() {
             None
         } else {

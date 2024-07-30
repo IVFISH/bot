@@ -24,25 +24,31 @@ use std::time::Instant;
 #[allow(unused)]
 fn bench() {
     let bot = Bot::<NoPruner>::new();
-    let n = 500_000;
+    let n = 10;
 
     let now = Instant::now();
     for _ in 0..n {
-        bot.move_gen(1);
+        bot.move_gen(4);
     }
-    println!("Averaged {} microseconds", now.elapsed().as_micros() / n);
+    println!("Averaged {} ms", now.elapsed().as_millis() / n);
 }
 
 #[allow(unused)]
 fn test() {
     let bot = Bot::<NoPruner>::with_seed(4);
-    let movegen = bot.move_gen(1).placements;
+    let d = 4;
+    let queue: Vec<u8> = (0..d+1).map(|x| bot.game.queue.peek_ahead(x)).collect();
+    println!("{:?}",queue);
+    let now = Instant::now();
+    let movegen = bot.move_gen(d.into()).placements;
     let mut placements = movegen.iter();
-    println!("{}", placements.clone().count());
-    println!("{}", placements.next().unwrap().game.board);
-    println!("{}", placements.next().unwrap().game.board);
+    println!("time elapsed: {}", now.elapsed().as_millis());
+    println!("placements generated: {}", placements.clone().count());
+    //println!("{}", placements.next().unwrap().game.board);
 }
 
 fn main() {
-    server::init();
+    //bench();
+    test();
+    //server::init();
 }

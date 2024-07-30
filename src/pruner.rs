@@ -3,6 +3,7 @@ use crate::constants::board_constants::*;
 use crate::constants::piece_constants::*;
 use crate::game::*;
 use crate::placement::*;
+use std::sync::Arc;
 
 pub trait Pruner {
     /// constructor method
@@ -168,6 +169,7 @@ mod tests {
         let pruner = AllClearPruner::new();
         let placement1 = Placement {
             game: Game::random(),
+            base_command: Arc::new(vec![])
         };
         assert!(pruner.precondition(&placement1));
 

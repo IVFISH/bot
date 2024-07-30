@@ -55,7 +55,7 @@ impl Board {
 
     /// returns the state (0 or 1) at the grid's row and col
     pub fn get(&self, row: usize, col: usize) -> bool {
-        (self.arr[col] >> row & 1) > 0
+        (self.arr[col] >> row & 1) == 1
     }
 
     // setters ----------------------------------
@@ -245,7 +245,7 @@ impl Board {
     /// rows is the output of clear_lines
     pub fn insert_rows(&mut self, rows: usize) {
         let mut rows = rows;
-        while (rows != 0) {
+        while rows != 0 {
             let row = rows.trailing_zeros();
             self.insert_full_line(row as usize);
             rows &= !(1<< row);
@@ -262,7 +262,7 @@ impl Board {
             let mut col = self.arr[i];
             col &= !((1 << row) - 1);
             col <<= 1;
-            col |= (col & (((1 << row) - 1)));
+            col |= col & (((1 << row) - 1));
             col |= 1 << row;
             self.arr[i] = col;
         }
