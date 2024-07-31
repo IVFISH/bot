@@ -20,15 +20,9 @@ pub fn many_lookahead(start_game: Game, depth: u8) -> Vec<Game> {
     // base call of movegen on start_game, THIS WILL GENERATE BASE PLACEMENTS
 
     let mut b = Bot { game: start_game };
-
-    let placements = b.move_gen(); // TODO use move_gen_1d
-    let mut new_games = Vec::new();
-    place_and_push(placements, &b.game, &mut new_games);
-
-    let mut b = Bot { game: start_game };
+    let mut new_games = place_and_return(b.move_gen(), &b.game);
     b.game.hold();
-    let placements = b.move_gen(); // TODO use move_gen_1d
-    place_and_push(placements, &b.game, &mut new_games);
+    place_and_push(b.move_gen(), &b.game, &mut new_games);
 
     // repeatedly call lookahead, using the output as the input for the next iteration
     //let mut new_games = vec![start_game];
@@ -59,17 +53,6 @@ fn lookahead(games: Vec<Game>) -> Vec<Game> {
 
 // helper methods---------------------------------------------
 
-fn place_and_return(placements: HashSet<Piece>, base_game: &Game) -> Vec<Game> {
-    let mut out: Vec<Game> = Vec::new();
-    for placement in placements {
-        let mut out_game = *base_game; // copy
-        out_game.active = placement;
-        out_game.place_active();
-        out.push(out_game)
-    }
-    out
-}
-
 fn place_and_push(placements: HashSet<Piece>, base_game: &Game, push_to: &mut Vec<Game>) {
     for placement in placements {
         let mut out_game = *base_game; // copy
@@ -77,6 +60,12 @@ fn place_and_push(placements: HashSet<Piece>, base_game: &Game, push_to: &mut Ve
         out_game.place_active();
         push_to.push(out_game);
     }
+}
+
+fn place_and_return(placements: HashSet<Piece>, base_game: &Game) -> Vec<Game> {
+    let mut out: Vec<Game> = Vec::new();
+    place_and_push(placements, base_game, &mut out);
+    out
 }
 
 #[cfg(test)]
