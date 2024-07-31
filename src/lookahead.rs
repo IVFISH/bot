@@ -18,14 +18,20 @@ use rayon::prelude::*;
 /// TODO: linking to base_placement
 pub fn many_lookahead(start_game: Game, depth: u8) -> Vec<Game> {
     // base call of movegen on start_game, THIS WILL GENERATE BASE PLACEMENTS
-    let mut b = Bot { game: start_game };
-    let placements = move_gen_hold(b); // WILL HAVE TO EXTRACT BASE COMMANDS
 
-    let mut base_games = Vec::new();
-    place_and_push(placements, &start_game, &mut base_games);
+    let mut b = Bot { game: start_game };
+
+    let placements = b.move_gen(); // TODO use move_gen_1d
+    let mut new_games = Vec::new();
+    place_and_push(placements, &b.game, &mut new_games);
+
+    let mut b = Bot { game: start_game };
+    b.game.hold();
+    let placements = b.move_gen(); // TODO use move_gen_1d
+    place_and_push(placements, &b.game, &mut new_games);
 
     // repeatedly call lookahead, using the output as the input for the next iteration
-    let mut new_games = base_games;
+    //let mut new_games = vec![start_game];
     for _ in 1..depth {
         new_games = lookahead(new_games);
     }
@@ -39,34 +45,19 @@ pub fn many_lookahead(start_game: Game, depth: u8) -> Vec<Game> {
 /// Return a (larger) list of games, each with their base Placement.
 /// TODO: finalize inputs (game or bot?), implement base Placement Rc, update game, multithreading
 fn lookahead(games: Vec<Game>) -> Vec<Game> {
-    // let mut out = Vec::new();
-    // for game in games {
-    //     let mut bot: Bot = Bot { game };
-    //     place_and_push(move_gen_hold(bot), &game, &mut out);
-    // }
-
     let mut temp = Vec::new();
     games.par_iter()
         .map(|game| {
             let mut bot = Bot { game: *game };
-            place_and_return(move_gen_hold(bot), game)
+            let mut games = place_and_return(bot.move_gen(), &bot.game);
+            bot.game.hold();
+            place_and_push(bot.move_gen(), &bot.game, &mut games);
+            games
         }).collect_into_vec(&mut temp);
     itertools::concat(temp)
 }
 
 // helper methods---------------------------------------------
-
-fn move_gen_hold(mut bot: Bot) -> HashSet<Piece> {
-    let mut placements = bot.move_gen();
-    if bot.game.hold == Some(bot.game.active.r#type) {
-        return placements
-    }
-
-    bot.game.hold();
-
-    placements.extend(bot.move_gen());
-    placements
-}
 
 fn place_and_return(placements: HashSet<Piece>, base_game: &Game) -> Vec<Game> {
     let mut out: Vec<Game> = Vec::new();

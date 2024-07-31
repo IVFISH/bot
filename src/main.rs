@@ -35,10 +35,10 @@ fn main() {
     //bot.game.active = Piece::new(PIECE_T);
     println!("{:?}", bot.game);
     let now = Instant::now();
-    let final_games = many_lookahead(bot.game, 2);
-    // for game in &final_games {
-    //     println!("{}", game.board);
-    // }
+    let final_games = many_lookahead(bot.game, 4);
+    //for game in &final_games {
+       // println!("{}", game.board);
+    //}
     println!("took {} ms", now.elapsed().as_millis());
     println!("found {} placements", final_games.len());
 }
