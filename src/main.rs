@@ -36,7 +36,7 @@ fn bench() {
 #[allow(unused)]
 fn test() {
     let bot = Bot::<NoPruner>::with_seed(4);
-    let d = 4;
+    let d = 2;
     let queue: Vec<u8> = (0..d + 1).map(|x| bot.game.queue.peek_ahead(x)).collect();
     println!("{:?}", queue);
     let now = Instant::now();
@@ -54,6 +54,6 @@ fn test() {
 
 fn main() {
     //bench();
-    //test();
-    server::init();
+    test();
+    //server::init();
 }

@@ -98,12 +98,12 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
 
         // generate the new placements here
         let mut out = seen
-            .iter()
-            .map(|piece| Self::make_placement(*piece, false, placement))
+            .into_iter()
+            .map(|piece| Self::make_placement(piece, false, placement))
             .filter(|piece| pruner.precondition(piece));
 
         // get the starting position to extend placements from
-        let placement = &mut placement.clone();
+        let mut placement = placement.clone();
         placement.game.hold();
         let mut piece = placement.game.active;
         let mut controller = Controller::new(&mut piece, &placement.game.board);
@@ -115,7 +115,7 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         // generate the new placements here
         out.chain(
             seen.into_iter()
-                .map(|piece| Self::make_placement(piece, true, placement))
+                .map(|piece| Self::make_placement(piece, true, &placement))
                 .filter(|piece| pruner.precondition(piece)),
         ).collect()
     }
