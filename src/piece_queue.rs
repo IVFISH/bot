@@ -26,7 +26,7 @@ impl PieceQueue {
     /// pop_front
     pub fn next(&mut self) -> Piece {
         self.n += 1;
-        Piece::new([1, 4, 5, 6, 3, 2, 7][(self.n - 1) % 7])
+        Piece::new([2, 1, 4, 5, 6, 3, 7][(self.n - 1) % 7])
     }
 }
 
