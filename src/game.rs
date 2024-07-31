@@ -55,6 +55,6 @@ impl Game {
     pub fn hold(&mut self) {
         let h = self.hold;
         self.hold = Some(self.active.r#type);
-        self.active = Piece::new(h.unwrap_or(self.queue.next().r#type));
+        self.active = Piece::new(h.unwrap_or_else(|| self.queue.next().r#type));
     }
 }
