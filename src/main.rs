@@ -37,18 +37,23 @@ fn bench() {
 fn test() {
     let bot = Bot::<NoPruner>::with_seed(4);
     let d = 4;
-    let queue: Vec<u8> = (0..d+1).map(|x| bot.game.queue.peek_ahead(x)).collect();
-    println!("{:?}",queue);
+    let queue: Vec<u8> = (0..d + 1).map(|x| bot.game.queue.peek_ahead(x)).collect();
+    println!("{:?}", queue);
     let now = Instant::now();
     let movegen = bot.move_gen(d.into()).placements;
     let mut placements = movegen.iter();
-    println!("time elapsed: {}", now.elapsed().as_millis());
+    let t = now.elapsed().as_millis();
+    println!("time elapsed: {} ms", t);
     println!("placements generated: {}", placements.clone().count());
+    println!(
+        "placements per ms: {}",
+        placements.clone().count() / t as usize
+    );
     //println!("{}", placements.next().unwrap().game.board);
 }
 
 fn main() {
     //bench();
-    test();
-    //server::init();
+    //test();
+    server::init();
 }

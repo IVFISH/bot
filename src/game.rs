@@ -40,7 +40,7 @@ impl Game {
 
     /// returns a game with a random seed
     pub fn random() -> Self {
-        let random_seed = 1;
+        let random_seed = 4;
         Self::new(random_seed)
     }
 
@@ -120,23 +120,48 @@ mod tests {
         // queue = OISTLJZ
         assert_games_eq(&game.past_states(), &past);
 
-        let o = Piece {r#type: PIECE_O, dir: 0, row: 0, col: 0};
+        let o = Piece {
+            r#type: PIECE_O,
+            dir: 0,
+            row: 0,
+            col: 0,
+        };
         game.set_active(o, false);
         game.place_active(false);
         past.push(game);
-        let i = Piece {r#type: PIECE_I, dir: 0, row: 0, col: 3};
+        let i = Piece {
+            r#type: PIECE_I,
+            dir: 0,
+            row: 0,
+            col: 3,
+        };
         game.set_active(i, false);
         game.place_active(false);
         past.push(game);
-        let s = Piece {r#type: PIECE_S, dir: 1, row: 1, col: 5};
+        let s = Piece {
+            r#type: PIECE_S,
+            dir: 1,
+            row: 1,
+            col: 5,
+        };
         game.set_active(s, false);
         game.place_active(false);
         past.push(game);
-        let t = Piece {r#type: PIECE_T, dir: 0, row: 0, col: 8};
+        let t = Piece {
+            r#type: PIECE_T,
+            dir: 0,
+            row: 0,
+            col: 8,
+        };
         game.set_active(t, false);
         game.place_active(false);
         past.push(game);
-        let l = Piece {r#type: PIECE_L, dir: 0, row: 0, col: 3};
+        let l = Piece {
+            r#type: PIECE_L,
+            dir: 0,
+            row: 0,
+            col: 3,
+        };
         game.set_active(l, false);
         game.place_active(false);
         past.push(game);
@@ -146,6 +171,5 @@ mod tests {
         }
         assert_eq!(game.past_states().len(), 6);
         assert_games_eq(&game.past_states(), &past);
-
     }
 }

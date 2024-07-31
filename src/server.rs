@@ -1,8 +1,8 @@
+use crate::bot::*;
 use crate::constants::piece_constants::*;
 use crate::piece::*;
-use crate::suggestion::*;
-use crate::bot::*;
 use crate::pruner::*;
+use crate::suggestion::*;
 use futures_util::stream::{SplitSink, SplitStream};
 use futures_util::{Sink, SinkExt, Stream, StreamExt};
 use std::time::Duration;
@@ -15,7 +15,7 @@ use tungstenite::{Error, Result};
 
 async fn accept_connection(stream: TcpStream) {
     let ws_stream = accept_async(stream).await.unwrap();
-    let bot = Bot::<AllClearPruner>::new(); 
+    let bot = Bot::<AllClearPruner>::new();
     let _ = handle_connection(ws_stream, bot).await;
 }
 
@@ -70,7 +70,9 @@ where
 
 /// gets the next inputs from the bot
 async fn get_suggestion<P>(interval: &mut Interval, bot: &mut Bot<P>) -> Suggestion
-where P: Pruner + std::marker::Sync {
+where
+    P: Pruner + std::marker::Sync,
+{
     let _ = interval.tick().await;
     bot.r#do()
 }

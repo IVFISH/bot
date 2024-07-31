@@ -114,9 +114,7 @@ impl Pruner for AllClearPruner {
     }
 
     fn prune(&self, placements: Vec<Placement>) -> Vec<Placement> {
-        let (pc, no_pc): (Vec<_>, Vec<_>) = placements
-            .into_iter()
-            .partition(|p| self.is_pc(&p));
+        let (pc, no_pc): (Vec<_>, Vec<_>) = placements.into_iter().partition(|p| self.is_pc(&p));
         if pc.is_empty() {
             no_pc
         } else {
@@ -169,7 +167,7 @@ mod tests {
         let pruner = AllClearPruner::new();
         let placement1 = Placement {
             game: Game::random(),
-            base_command: Arc::new(vec![])
+            base_command: Arc::new(vec![]),
         };
         assert!(pruner.precondition(&placement1));
 

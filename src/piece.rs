@@ -127,7 +127,12 @@ impl Piece {
     /// returns the lowest row this piece is on
     pub fn bottom_row(&self) -> Option<usize> {
         if let Some(pos) = self.abs_locations() {
-            Some(pos.into_iter().map(|[r, _]| r).min_by(|r1, r2| r1.cmp(r2)).unwrap())
+            Some(
+                pos.into_iter()
+                    .map(|[r, _]| r)
+                    .min_by(|r1, r2| r1.cmp(r2))
+                    .unwrap(),
+            )
         } else {
             None
         }

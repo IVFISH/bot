@@ -248,7 +248,7 @@ impl Board {
         while rows != 0 {
             let row = rows.trailing_zeros();
             self.insert_full_line(row as usize);
-            rows &= !(1<< row);
+            rows &= !(1 << row);
         }
     }
 
@@ -262,7 +262,7 @@ impl Board {
             let mut col = self.arr[i];
             col &= !((1 << row) - 1);
             col <<= 1;
-            col |= col & (((1 << row) - 1));
+            col |= col & ((1 << row) - 1);
             col |= 1 << row;
             self.arr[i] = col;
         }
