@@ -35,7 +35,7 @@ fn bench() {
 
 #[allow(unused)]
 fn test() {
-    let bot = Bot::<NoPruner>::with_seed(19);
+    let bot = Bot::<NoPruner>::with_seed(4);
     let d = 3;
     let queue: Vec<u8> = (0..d + 1).map(|x| bot.game.queue.peek_ahead(x)).collect();
     println!("{}, {:?}", bot.game.active.r#type, queue);
@@ -47,10 +47,10 @@ fn test() {
     println!("placements generated: {}", placements.clone().count());
     println!(
         "placements per ms: {}",
-        placements.clone().count() as u128 / (t+1)
+        placements.clone().count() as u128 / (t + 1)
     );
-    for placement in placements{
-      //println!("{}", placement.game.board);
+    for placement in placements {
+        //println!("{}", placement.game.board);
     }
     //println!("{}", placements.next().unwrap().game.board);
 }

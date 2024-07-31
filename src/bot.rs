@@ -11,8 +11,8 @@ use crate::pruner::*;
 use crate::suggestion::*;
 use rayon::prelude::*;
 use std::collections::HashSet;
-use std::sync::Arc;
 use std::iter::once;
+use std::sync::Arc;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Bot<P: Pruner> {
@@ -89,7 +89,7 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
     /// note that this ruins placement
     fn extend_placement(placement: &Placement, pruner: &P) -> Vec<Placement> {
         // get the starting position to extend placements from
-        let mut piece = placement.game.active;
+        let mut piece = placement.game.active; // implicit copy
         let mut controller = Controller::new(&mut piece, &placement.game.board);
         // find all the new pieces
         let mut seen = Vec::new();
@@ -102,9 +102,13 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
             .map(|piece| Self::make_placement(piece, false, placement))
             .filter(|piece| pruner.precondition(piece));
 
+        if (placement.game.get_hold_piece().r#type == placement.game.active.r#type) {
+            return out.collect();
+        }
+
         // get the starting position to extend placements from
         let mut piece = placement.game.get_hold_piece();
-        let mut controller = Controller::new(&mut piece, &placement.game.board);
+        controller.update_piece(piece);
         // find all the new pieces
         let mut seen = Vec::new();
         Self::add_trivials(&mut seen, &mut controller);
@@ -115,7 +119,8 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
             seen.into_iter()
                 .map(|piece| Self::make_placement(piece, true, &placement))
                 .filter(|piece| pruner.precondition(piece)),
-        ).collect()
+        )
+        .collect()
     }
 
     fn make_placement(piece: Piece, held: bool, place_before: &Placement) -> Placement {
@@ -186,26 +191,26 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         let pairs = &mut Self::get_base_trivials(controller);
         Self::get_base_nontrivials(pairs, controller);
 
-        let mut out = pairs
-            .iter()
-            .map(|(p, cmds)| Placement {
-                game: Self::make_placement(*p, false, &start).game,
-                base_command: Arc::new(cmds.clone()),
-            });
+        let mut out = pairs.iter().map(|(p, cmds)| Placement {
+            game: Self::make_placement(*p, false, &start).game,
+            base_command: Arc::new(cmds.clone()),
+        });
+
+        if (start.game.get_hold_piece().r#type == start.game.active.r#type) {
+            return out.collect();
+        }
 
         let mut piece = start.game.get_hold_piece();
         let controller = &mut Controller::new(&mut piece, &start.game.board);
 
         let pairs = &mut Self::get_base_trivials(controller);
         Self::get_base_nontrivials(pairs, controller);
-        
-        out.chain(
-            pairs
-                .iter()
-                .map(|(p, cmds)| Placement {
-                    game: Self::make_placement(*p, true, &start).game,
-                    base_command: Arc::new(cmds.clone()),
-                })).collect()
+
+        out.chain(pairs.iter().map(|(p, cmds)| Placement {
+            game: Self::make_placement(*p, true, &start).game,
+            base_command: Arc::new(cmds.clone()),
+        }))
+        .collect()
     }
 
     fn get_base_trivials(controller: &mut Controller) -> Vec<(Piece, Vec<Command>)> {
@@ -383,20 +388,26 @@ mod tests {
     }
 
     #[test]
-    fn test_number_placements_generated() { // NOTE this is dependent on the queue
-      // assumes commit 90232f86f194a8e819f89ea80124da7e01ef9b59 is correct
-      let mut bot = Bot::<NoPruner>::with_seed(4);
-      let desired_q = [1, 4, 5, 6];
-      assert!(bot.game.active.r#type == 2);
-      assert!(desired_q.into_iter().enumerate().all(|(i, p)| p == bot.game.queue.peek_ahead(i as u8)));
-      assert!(bot.move_gen(3).placements.len() == 118_151);
+    fn test_number_placements_generated() {
+        // NOTE this is dependent on the queue
+        // assumes commit 90232f86f194a8e819f89ea80124da7e01ef9b59 is correct
+        let mut bot = Bot::<NoPruner>::with_seed(4);
+        let desired_q = [1, 4, 5, 6];
+        assert!(bot.game.active.r#type == 2);
+        assert!(desired_q
+            .into_iter()
+            .enumerate()
+            .all(|(i, p)| p == bot.game.queue.peek_ahead(i as u8)));
+        assert!(bot.move_gen(3).placements.len() == 118_151);
 
-      let mut bot = Bot::<NoPruner>::with_seed(19);
-      let desired_q = [3, 6, 5, 1];
-      assert!(bot.game.active.r#type == 4);
-      assert!(desired_q.into_iter().enumerate().all(|(i, p)| p == bot.game.queue.peek_ahead(i as u8)));
-      assert!(bot.move_gen(3).placements.len() == 333_078);
-      // add some more stuff to test :D
+        let mut bot = Bot::<NoPruner>::with_seed(19);
+        let desired_q = [3, 6, 5, 1];
+        assert!(bot.game.active.r#type == 4);
+        assert!(desired_q
+            .into_iter()
+            .enumerate()
+            .all(|(i, p)| p == bot.game.queue.peek_ahead(i as u8)));
+        assert!(bot.move_gen(3).placements.len() == 746_204);
+        // add some more stuff to test :D
     }
-
 }
