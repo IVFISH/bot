@@ -16,7 +16,9 @@ pub struct Bot {
 impl Bot {
     // constructors -----------------------------
     pub fn new() -> Self {
-        Default::default()
+        Self{
+          game: Game::new(1)
+        }
     }
 
     // move generation --------------------------

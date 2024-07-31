@@ -18,8 +18,9 @@ impl Game {
     pub fn new(seed: usize) -> Self {
         let mut queue = PieceQueue::new(seed);
         Self {
+            board: Board::default(),
             active: queue.next(),
-            queue,
+            queue: queue,
             ..Default::default()
         }
     }
