@@ -18,15 +18,15 @@ pub struct PieceQueue {
 impl PieceQueue {
     /// creates a new piece_queue with the given seed
     /// and sets the first 14 pieces
-    pub fn new(_seed: usize) -> Self {
-        Default::default()
+    pub fn new(seed: usize) -> Self {
+        Self { n: seed }
     }
 
     /// returns the next piece in queue and shifts the queue
     /// pop_front
     pub fn next(&mut self) -> Piece {
         self.n += 1;
-        Piece::new([5, 4, 1, 3, 6, 2, 7][(self.n - 1) % 7])
+        Piece::new([1, 4, 5, 6, 3, 2, 7][(self.n - 1) % 7])
     }
 }
 

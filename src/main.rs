@@ -35,7 +35,7 @@ fn main() {
     //bot.game.active = Piece::new(PIECE_T);
     println!("{:?}", bot.game);
     let now = Instant::now();
-    let final_games = many_lookahead(bot.game, 4);
+    let final_games = many_lookahead(bot.game, 3);
     // for game in &final_games {
     //     println!("{}", game.board);
     // }
