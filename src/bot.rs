@@ -103,9 +103,7 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
             .filter(|piece| pruner.precondition(piece));
 
         // get the starting position to extend placements from
-        let mut placement = placement.clone();
-        placement.game.hold();
-        let mut piece = placement.game.active;
+        let mut piece = placement.game.get_hold_piece();
         let mut controller = Controller::new(&mut piece, &placement.game.board);
         // find all the new pieces
         let mut seen = Vec::new();
@@ -195,9 +193,7 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
                 base_command: Arc::new(cmds.clone()),
             });
 
-        let mut start = start.clone();
-        start.game.hold();
-        let mut piece = start.game.active;
+        let mut piece = start.game.get_hold_piece();
         let controller = &mut Controller::new(&mut piece, &start.game.board);
 
         let pairs = &mut Self::get_base_trivials(controller);
