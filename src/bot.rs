@@ -88,34 +88,30 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
     /// of depth i+1 (with and without hold)
     /// note that this ruins placement
     fn extend_placement(placement: &Placement, pruner: &P) -> Vec<Placement> {
-        // get the starting position to extend placements from
-        let mut piece = placement.game.active; // implicit copy
+        let mut piece = placement.game.active;
         let mut controller = Controller::new(&mut piece, &placement.game.board);
-        // find all the new pieces
         let mut seen = Vec::new();
+
         Self::add_trivials(&mut seen, &mut controller);
         Self::add_nontrivials(&mut seen, &mut controller);
 
-        // generate the new placements here
-        let mut out = seen
+        let mut out = seen // turn the pieces into placements
             .into_iter()
             .map(|piece| Self::make_placement(piece, false, placement))
             .filter(|piece| pruner.precondition(piece));
 
-        if (placement.game.get_hold_piece().r#type == placement.game.active.r#type) {
+        if placement.game.get_hold_piece().r#type == placement.game.active.r#type {
             return out.collect();
         }
 
-        // get the starting position to extend placements from
         let mut piece = placement.game.get_hold_piece();
-        controller.update_piece(piece);
-        // find all the new pieces
+        let mut controller = Controller::new(&mut piece, &placement.game.board); 
         let mut seen = Vec::new();
+
         Self::add_trivials(&mut seen, &mut controller);
         Self::add_nontrivials(&mut seen, &mut controller);
 
-        // add to the list of placements
-        out.chain(
+        out.chain( // turn the pieces into placements
             seen.into_iter()
                 .map(|piece| Self::make_placement(piece, true, &placement))
                 .filter(|piece| pruner.precondition(piece)),
@@ -196,7 +192,7 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
             base_command: Arc::new(cmds.clone()),
         });
 
-        if (start.game.get_hold_piece().r#type == start.game.active.r#type) {
+        if start.game.get_hold_piece().r#type == start.game.active.r#type {
             return out.collect();
         }
 
@@ -407,7 +403,7 @@ mod tests {
             .into_iter()
             .enumerate()
             .all(|(i, p)| p == bot.game.queue.peek_ahead(i as u8)));
-        assert!(bot.move_gen(3).placements.len() == 746_204);
+        assert!(bot.move_gen(3).placements.len() == 333_078);
         // add some more stuff to test :D
     }
 }
