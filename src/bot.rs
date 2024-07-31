@@ -110,7 +110,7 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         Self::add_trivials(&mut seen, &mut controller);
         Self::add_nontrivials(&mut seen, &mut controller);
 
-        // generate the new placements here
+        // add to the list of placements
         out.chain(
             seen.into_iter()
                 .map(|piece| Self::make_placement(piece, true, &placement))
@@ -381,4 +381,22 @@ mod tests {
         };
         assert_placement_contains(&placements, piece);
     }
+
+    #[test]
+    fn test_number_placements_generated() { // NOTE this is dependent on the queue
+      // assumes commit 90232f86f194a8e819f89ea80124da7e01ef9b59 is correct
+      let mut bot = Bot::<NoPruner>::with_seed(4);
+      let desired_q = [1, 4, 5, 6];
+      assert!(bot.game.active.r#type == 2);
+      assert!(desired_q.into_iter().enumerate().all(|(i, p)| p == bot.game.queue.peek_ahead(i as u8)));
+      assert!(bot.move_gen(3).placements.len() == 118_151);
+
+      let mut bot = Bot::<NoPruner>::with_seed(19);
+      let desired_q = [3, 6, 5, 1];
+      assert!(bot.game.active.r#type == 4);
+      assert!(desired_q.into_iter().enumerate().all(|(i, p)| p == bot.game.queue.peek_ahead(i as u8)));
+      assert!(bot.move_gen(3).placements.len() == 333_078);
+      // add some more stuff to test :D
+    }
+
 }

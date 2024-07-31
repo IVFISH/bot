@@ -35,7 +35,7 @@ fn bench() {
 
 #[allow(unused)]
 fn test() {
-    let bot = Bot::<NoPruner>::with_seed(4);
+    let bot = Bot::<NoPruner>::with_seed(19);
     let d = 3;
     let queue: Vec<u8> = (0..d + 1).map(|x| bot.game.queue.peek_ahead(x)).collect();
     println!("{}, {:?}", bot.game.active.r#type, queue);
