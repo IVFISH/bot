@@ -12,6 +12,7 @@ use crate::suggestion::*;
 use rayon::prelude::*;
 use std::collections::HashSet;
 use std::sync::Arc;
+use std::iter::once;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Bot<P: Pruner> {
@@ -96,11 +97,10 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         Self::add_nontrivials(&mut seen, &mut controller);
 
         // generate the new placements here
-        let mut out: Vec<_> = seen
+        let mut out = seen
             .iter()
             .map(|piece| Self::make_placement(*piece, false, placement))
-            .filter(|piece| pruner.precondition(piece))
-            .collect();
+            .filter(|piece| pruner.precondition(piece));
 
         // get the starting position to extend placements from
         let placement = &mut placement.clone();
@@ -113,12 +113,11 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         Self::add_nontrivials(&mut seen, &mut controller);
 
         // generate the new placements here
-        out.extend(
+        out.chain(
             seen.into_iter()
                 .map(|piece| Self::make_placement(piece, true, placement))
                 .filter(|piece| pruner.precondition(piece)),
-        );
-        out
+        ).collect()
     }
 
     fn make_placement(piece: Piece, held: bool, place_before: &Placement) -> Placement {
@@ -189,13 +188,12 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         let pairs = &mut Self::get_base_trivials(controller);
         Self::get_base_nontrivials(pairs, controller);
 
-        let mut out: Vec<Placement> = pairs
+        let mut out = pairs
             .iter()
             .map(|(p, cmds)| Placement {
                 game: Self::make_placement(*p, false, &start).game,
                 base_command: Arc::new(cmds.clone()),
-            })
-            .collect();
+            });
 
         let mut start = start.clone();
         start.game.hold();
@@ -204,17 +202,14 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
 
         let pairs = &mut Self::get_base_trivials(controller);
         Self::get_base_nontrivials(pairs, controller);
-        out.extend(
+        
+        out.chain(
             pairs
                 .iter()
                 .map(|(p, cmds)| Placement {
                     game: Self::make_placement(*p, true, &start).game,
                     base_command: Arc::new(cmds.clone()),
-                })
-                .collect::<Vec<Placement>>(),
-        );
-
-        out
+                })).collect()
     }
 
     fn get_base_trivials(controller: &mut Controller) -> Vec<(Piece, Vec<Command>)> {
@@ -228,7 +223,7 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
                 Self::get_dropped_piece(controller),
                 commands
                     .iter()
-                    .chain([&Command::MoveDrop])
+                    .chain(once(&Command::MoveDrop))
                     .cloned()
                     .collect(),
             ));
@@ -238,7 +233,7 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
                     Self::get_dropped_piece(controller),
                     commands
                         .iter()
-                        .chain([&Command::MoveDrop])
+                        .chain(once(&Command::MoveDrop))
                         .cloned()
                         .collect(),
                 ));
@@ -251,7 +246,7 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
                     Self::get_dropped_piece(controller),
                     commands
                         .iter()
-                        .chain([&Command::MoveDrop])
+                        .chain(once(&Command::MoveDrop))
                         .cloned()
                         .collect(),
                 ));
@@ -279,7 +274,7 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
                 seen_all.insert(*controller.piece);
                 let to_add = (
                     *controller.piece,
-                    cmd.iter().chain([&command]).cloned().collect(),
+                    cmd.iter().chain(once(&command)).cloned().collect(),
                 );
                 dfs_stack.push(to_add.clone());
                 if controller.board.piece_grounded(controller.piece) {
