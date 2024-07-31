@@ -39,7 +39,6 @@ pub fn many_lookahead(start_game: Game, depth: u8) -> Vec<Game> {
 /// Return a (larger) list of games, each with their base Placement.
 /// TODO: finalize inputs (game or bot?), implement base Placement Rc, update game, multithreading
 fn lookahead(games: Vec<Game>) -> Vec<Game> {
-    let mut temp = Vec::new();
     games.par_iter()
         .map(|game| {
             let mut bot = Bot { game: *game };
@@ -47,12 +46,10 @@ fn lookahead(games: Vec<Game>) -> Vec<Game> {
             bot.game.hold();
             place_and_push(bot.move_gen(), &bot.game, &mut games);
             games
-        }).collect_into_vec(&mut temp);
-    itertools::concat(temp)
+        }).flatten().collect()
 }
 
 // helper methods---------------------------------------------
-
 fn place_and_push(placements: HashSet<Piece>, base_game: &Game, push_to: &mut Vec<Game>) {
     for placement in placements {
         let mut out_game = *base_game; // copy
