@@ -49,7 +49,7 @@ impl CostFunction for Trainer {
         // Simulate without garbage
         let mut bot = Bot::with_weights(Weights::from_params(param), false);
 
-        while !bot.get_game().get_game_over() && bot.get_game().game_data.pieces_placed < 2000 {
+        while !bot.get_game().get_game_over() && bot.get_game().game_data.pieces_placed < 1000 {
             bot.make_move();
         }
 
@@ -62,7 +62,7 @@ impl CostFunction for Trainer {
 
         // Simulate with garbage
         bot = Bot::with_weights(Weights::from_params(param), true);
-        while !bot.get_game().get_game_over() && bot.get_game().game_data.pieces_placed < 2000 {
+        while !bot.get_game().get_game_over() && bot.get_game().game_data.pieces_placed < 500 {
             bot.make_move();
         }
 
@@ -70,7 +70,7 @@ impl CostFunction for Trainer {
             + 0.001 * bot.get_game().game_data.pieces_placed as f32;
         out2 *= -1.0;
         if bot.get_game().get_game_over() {
-            out2 += 500.0; // We hate dying a little less
+            out2 += 800.0; // We hate dying a little less
         }
 
         //println!("Bot scored {}, {} solo and {} with garbage", out1+out2, out1, out2);
@@ -92,28 +92,28 @@ fn bot_train() -> Result<(), Error> {
         (
             vec![
                 -100.0, -100.0, -100.0, -100.0, -100.0, -100.0, -100.0, -100.0, -100.0, -100.0,
-                -100.0, -100.0, -100.0, -100.0, -100.0, -100.0, -100.0, -100.0, -100.0, -100.0,
+                -100.0, -100.0, -100.0, -100.0, -100.0, -100.0, -100.0, -100.0, -100.0,
             ],
             vec![
                 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0,
-                100.0, 0.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0,
+                0.0, 100.0, 100.0, 100.0, 100.0, 100.0, 100.0,
             ],
         ),
-        24,
+        256,
     )
-    .with_rng_generator(rand_xoshiro::Xoroshiro128Plus::seed_from_u64(12213328));
+    .with_rng_generator(rand_xoshiro::Xoroshiro128Plus::seed_from_u64(1238));
 
     let checkpoint = FileCheckpoint::new(
         ".checkpoints",
-        "test3",
+        "no_penalty",
         CheckpointingFrequency::Always,
     );
 
     let res = Executor::new(cost_function, solver)
-        .configure(|state| state.max_iters(200))
+        .configure(|state| state.max_iters(100))
         .add_observer(SlogLogger::term_noblock(), ObserverMode::Always)
         .add_observer(
-            ParamWriter::new("params", "writer", ParamWriterFormat::JSON),
+            ParamWriter::new("params", "no_penalty", ParamWriterFormat::JSON),
             ObserverMode::NewBest,
         )
         .checkpointing(checkpoint)

@@ -314,18 +314,18 @@ impl Board {
         // 1 0 1
 
         // Check t shapes
-        let arr: Vec<usize> = arr.iter().map(|x| x & 0b011).collect();
-        let is_shape = arr == [0b01, 0b00, 0b01];
+        // let arr: Vec<usize> = arr.iter().map(|x| x & 0b011).collect();
+        // let is_shape = arr == [0b01, 0b00, 0b01];
 
-        // There cannot be a slot if there is no shape
-        if !is_shape {
-            return (false, false);
-        }
+        // // There cannot be a slot if there is no shape
+        // if !is_shape {
+        //     return (false, false);
+        // }
 
         // Check t slots
         let is_slot = arr == [0b101, 0b000, 0b001] || arr == [0b001, 0b000, 0b101];
 
-        (is_shape, is_slot)
+        (is_slot, is_slot)
     }
     pub fn t_slot(&self) -> (usize, usize, usize) {
         let h = self.get_max_height();

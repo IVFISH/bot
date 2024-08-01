@@ -82,7 +82,7 @@ impl Weights {
             clear_double_weight: param[16],
             clear_triple_weight: param[17],
             clear_tetris_weight: param[18],
-            t_shape_weight: param[19],
+            t_shape_weight: 0.0,
         }
     }
 }
