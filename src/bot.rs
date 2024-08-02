@@ -17,7 +17,7 @@ impl Bot {
     // constructors -----------------------------
     pub fn new() -> Self {
         Self{
-          game: Game::new(0)
+          game: Game::default()
         }
     }
 

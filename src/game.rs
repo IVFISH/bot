@@ -4,12 +4,24 @@ use crate::board::Board;
 use crate::piece::Piece;
 use crate::piece_queue::PieceQueue;
 
-#[derive(Default, Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct Game {
     pub board: Board,
     pub active: Piece,
     pub hold: Option<u8>,
     pub queue: PieceQueue,
+}
+
+impl Default for Game {
+    fn default() -> Self {
+        let mut queue = PieceQueue::default();
+        Self {
+            board: Board::default(),
+            active: queue.next(),
+            hold: None,
+            queue,
+        }
+    }
 }
 
 impl Game {
@@ -18,7 +30,6 @@ impl Game {
     pub fn new(seed: usize) -> Self {
         let mut queue = PieceQueue::new(seed);
         Self {
-            board: Board::default(),
             active: queue.next(),
             queue: queue,
             ..Default::default()

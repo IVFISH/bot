@@ -143,3 +143,12 @@ pub mod piece_constants {
         [[0, -1], [1, -1], [1, 0]],
     ];
 }
+
+pub mod queue_constants {
+    pub const QUEUE_SIZE: usize = 14;
+
+    // lehmer RNG (MINSTD)
+    pub const MULTIPLIER: usize = 16807;
+    pub const MODULUS: usize = 2147483647;
+
+}
