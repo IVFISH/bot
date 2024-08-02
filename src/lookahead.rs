@@ -1,11 +1,7 @@
 use std::collections::HashSet;
 use crate::bot::Bot;
-use crate::constants::piece_constants::PIECE_L;
 use crate::game::Game;
-use crate::piece;
 use crate::piece::Piece;
-use crate::placement::{Placement, PlacementList};
-use itertools::Itertools;
 
 use rayon::prelude::*;
 
@@ -67,8 +63,8 @@ fn place_and_return(placements: HashSet<Piece>, base_game: &Game) -> Vec<Game> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::test_api::functions::*;
+    // use super::*;
+    // use crate::test_api::functions::*;
 
     // build and execute T spin
 

@@ -10,15 +10,11 @@ mod placement;
 mod test_api;
 mod piece_queue;
 
-use crate::board::Board;
 use crate::bot::*;
-use crate::constants::piece_constants::*;
-use crate::game::Game;
 use crate::lookahead::many_lookahead;
-use crate::piece::*;
-use crate::piece_queue::PieceQueue;
-use std::time::{Instant, SystemTime};
+use std::time::Instant;
 
+#[allow(dead_code)]
 fn bench() {
     let bot = Bot::new();
     let n = 500_000;
@@ -31,7 +27,7 @@ fn bench() {
 }
 
 fn main() {
-    let mut bot = Bot::new();
+    let bot = Bot::new();
     //bot.game.active = Piece::new(PIECE_T);
     println!("{:?}", bot.game);
     let now = Instant::now();
