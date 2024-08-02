@@ -9,3 +9,4 @@ pub mod piece;
 pub mod placement;
 pub mod test_api;
 pub mod piece_queue;
+pub mod garbage_queue;
