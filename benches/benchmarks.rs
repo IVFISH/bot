@@ -2,6 +2,8 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use tetris::board::*;
 use tetris::bot::*;
 use tetris::constants::board_constants::*;
+use tetris::piece;
+use tetris::piece_queue::PieceQueue;
 use tetris::test_api::functions::l_spin_board_5;
 use tetris::lookahead::many_lookahead;
 
@@ -48,6 +50,17 @@ fn add_list(board: &mut Board, list: Vec<[usize; 2]>) {
     }
 }
 
+pub fn piece_queue_benchmark(c: &mut Criterion) {
+    let mut q = PieceQueue::new(3);
+    c.bench_function("piece queue generation", |b| {
+        b.iter(|| black_box(q.next()))
+    });
+
+    c.bench_function("piece queue copy", |b| {
+        b.iter(|| black_box(q.clone()))
+    });
+}
 criterion_group!(benches, movegen_benchmark);
 // criterion_group!(benches, clearlines_benchmark);
+// criterion_group!(benches, piece_queue_benchmark);
 criterion_main!(benches);

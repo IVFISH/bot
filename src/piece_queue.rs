@@ -56,7 +56,13 @@ impl PieceQueue {
 
     fn next_num(&mut self) -> f32 {
         self.seed = self.seed * MULTIPLIER % MODULUS;
-        (self.seed - 1) as f32 / MODULUS as f32
+        let a = (self.seed - 1) as f32 / (MODULUS+1) as f32;
+        // Floating point error :(
+        if a == 1.0 {
+            0.9999
+        } else {
+            a
+        }
     }
 
     fn shuffle_seven(&mut self) -> [PieceType; 7] {
@@ -84,7 +90,7 @@ mod tests {
     #[test]
     fn test_seven_bag() {
         let mut queue = PieceQueue::new(124274);
-        for _ in 0..10 {
+        for _ in 0..100000 {
             let mut sum = 0;
             for _ in 0..7 {
                 sum += queue.next().r#type;
