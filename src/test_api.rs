@@ -3,7 +3,7 @@ pub mod functions {
     use crate::board::*;
     use crate::game::*;
     use crate::piece::*;
-    use crate::placement::*;
+
     use crate::placement_list::*;
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
@@ -36,11 +36,11 @@ pub mod functions {
             locs.sort();
             assert_eq!(locs, sols)
         } else {
-            assert!(false)
+            panic!()
         }
     }
 
-    pub fn assert_games_eq(v1: &Vec<Game>, v2: &Vec<Game>) {
+    pub fn assert_games_eq(v1: &[Game], v2: &[Game]) {
         assert_eq!(v1.len(), v2.len());
         for i in 0..v1.len() {
             println!("{}", i);

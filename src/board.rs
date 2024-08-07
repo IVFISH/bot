@@ -20,7 +20,7 @@ impl Display for Board {
                     write!(f, "□ ")?
                 }
             }
-            write!(f, "\n")?
+            writeln!(f)?
         }
         Ok(())
     }
@@ -36,11 +36,11 @@ impl Board {
     // getters ----------------------------------
     /// returns the indices of the first empty row in each column
     pub fn get_heights(&self) -> [usize; BOARD_WIDTH] {
-        let mut out = [0; BOARD_WIDTH];
-        for col in 0..BOARD_WIDTH {
-            out[col] = self.get_height(col);
+        let mut heights = [0; BOARD_WIDTH];
+        for (col, height) in heights.iter_mut().enumerate().take(BOARD_WIDTH) {
+            *height = self.get_height(col);
         }
-        out
+        heights
     }
 
     /// returns the index of the first empty row in column col

@@ -45,21 +45,21 @@ impl<'a> Controller<'a> {
 
     /// tries to execute the command on the piece
     pub fn do_command(&mut self, command: &Command) -> bool {
-        match command {
-            &Command::Null => true, // do nothing
-            &Command::MoveHorizontal(mag) => {
+        match *command {
+            Command::Null => true, // do nothing
+            Command::MoveHorizontal(mag) => {
                 let [dir_row, dir_col] = [0, mag];
                 Self::can_move_piece(self.board, self.piece, [dir_row, dir_col])
                     .then(|| self.piece.r#move(dir_row, dir_col))
                     .is_some()
             }
-            &Command::MoveDrop => {
+            Command::MoveDrop => {
                 let max_down = self.board.piece_max_down(self.piece);
                 (max_down > 0)
                     .then(|| self.piece.r#move(-max_down, 0))
                     .is_some()
             }
-            &Command::Rotate(dir) => {
+            Command::Rotate(dir) => {
                 for [dir_row, dir_col] in self.piece.get_kicks(dir).into_iter() {
                     if Self::can_rotate_kick_piece(self.board, self.piece, dir, [dir_row, dir_col])
                     {
@@ -69,7 +69,7 @@ impl<'a> Controller<'a> {
                 }
                 false
             }
-            &Command::Backtrack(mag) => {
+            Command::Backtrack(mag) => {
                 *self.piece = self.pieces[self.size() - mag - 1]; // revert piece
                 true
             }
@@ -94,8 +94,8 @@ impl<'a> Controller<'a> {
     }
 
     /// executes a list of commands onto a piece
-    pub fn do_commands(&mut self, commands: &Vec<Command>) -> bool {
-        commands.iter().all(|command| self.do_command(&command))
+    pub fn do_commands(&mut self, commands: &[Command]) -> bool {
+        commands.iter().all(|command| self.do_command(command))
     }
 
     /// does the actions specified by vector of commands

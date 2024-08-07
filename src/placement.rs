@@ -4,7 +4,6 @@ use crate::command::Command;
 use crate::constants::board_constants::*;
 use crate::game::Game;
 use crate::piece::Piece;
-use fumen;
 
 use std::sync::Arc;
 
@@ -17,7 +16,7 @@ pub struct Placement {
 impl Placement {
     pub fn new(game: Game) -> Self {
         Self {
-            game: game,
+            game,
             base_command: Arc::new(Vec::new()),
         }
     }

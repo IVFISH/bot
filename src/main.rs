@@ -13,12 +13,8 @@ mod server;
 mod suggestion;
 mod test_api;
 
-use crate::board::*;
 use crate::bot::*;
-use crate::game::*;
-use crate::piece::*;
 use crate::pruner::*;
-use crate::test_api::functions::*;
 use std::time::Instant;
 
 #[allow(unused)]

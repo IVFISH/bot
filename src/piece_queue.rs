@@ -34,6 +34,7 @@ impl PieceQueue {
     }
 
     /// returns the next piece in queue and shifts the queue
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Piece {
         Piece::new(self.next_piece_type())
     }
@@ -69,7 +70,7 @@ impl PieceQueue {
 
         // append bag to queue
         for (i, piece) in self.shuffle_seven().into_iter().enumerate() {
-            self.data |= piece << (14 + i) * PIECE_BITS;
+            self.data |= piece << ((14 + i) * PIECE_BITS);
         }
     }
 

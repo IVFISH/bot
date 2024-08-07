@@ -1,15 +1,11 @@
 use crate::bot::*;
-use crate::constants::piece_constants::*;
-use crate::piece::*;
 use crate::pruner::*;
 use crate::suggestion::*;
-use futures_util::stream::{SplitSink, SplitStream};
 use futures_util::{Sink, SinkExt, Stream, StreamExt};
 use std::time::Duration;
-use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::time::{interval, Interval};
-use tokio_tungstenite::{accept_async, WebSocketStream};
+use tokio_tungstenite::accept_async;
 use tungstenite::protocol::Message;
 use tungstenite::{Error, Result};
 
@@ -32,7 +28,7 @@ where
         tokio::select! {
             // branch 1: receiving updates from client
             msg = poll_next(&mut ws_receiver) => {
-                if let Err(_) = msg {
+                if msg.is_err() {
                     break;
                 }
                 // idk what updates are here yet
@@ -78,6 +74,7 @@ where
 }
 
 /// driver function
+#[allow(unused)]
 #[tokio::main]
 pub async fn init() {
     let addr = "127.0.0.1:23512";

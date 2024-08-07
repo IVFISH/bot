@@ -1,8 +1,5 @@
 use crate::board::*;
-use crate::piece::*;
-use crate::placement::*;
 use serde::{Deserialize, Serialize};
-use serde_json;
 
 #[derive(Serialize, Deserialize)]
 pub struct Suggestion {

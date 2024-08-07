@@ -1,9 +1,7 @@
 use crate::placement::*;
 use crate::pruner::*;
-use std::collections::HashSet;
 use std::fs::File;
 use std::io::prelude::*;
-use std::iter::zip;
 use std::path::Path;
 
 #[derive(Default)]
@@ -23,7 +21,7 @@ impl PlacementList {
 
     /// extends each vector field within the placement list
     pub fn extend(&mut self, other: PlacementList) {
-        self.placements.extend(other.placements.into_iter());
+        self.placements.extend(other.placements);
     }
 
     /// adds a placement onto this placement list if it should not be pruned
@@ -38,7 +36,7 @@ impl PlacementList {
     where
         T: IntoIterator<Item = Placement>,
     {
-        self.placements.extend(placements.into_iter())
+        self.placements.extend(placements)
     }
 
     /// debugging tool to write all the fumens to a json file
@@ -50,7 +48,7 @@ impl PlacementList {
             .collect::<Vec<_>>()
             .join("\n");
         let path = Path::new(filename);
-        let mut file = File::create(&path).unwrap();
+        let mut file = File::create(path).unwrap();
         let _ = file.write_all(fumens.as_bytes());
     }
 }

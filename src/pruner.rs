@@ -1,9 +1,7 @@
 use crate::board::*;
-use crate::constants::board_constants::*;
 use crate::constants::piece_constants::*;
 use crate::game::*;
 use crate::placement::*;
-use std::sync::Arc;
 
 pub trait Pruner {
     /// constructor method
@@ -34,13 +32,13 @@ impl AllClearPruner {
     /// https://docs.google.com/document/d/1udtq235q2SdoFYwMZNu-GRYR-4dCYMkp0E8_Hw1XTyg/edit
     fn checkerboard_rule(&self, board: &[u64], game: &Game, height: usize) -> bool {
         // checkerboard rule is only for areas of multiples of 2
-        if board.len() * height & 1 != 0 {
+        if (board.len() * height) & 1 != 0 {
             return true;
         }
 
         // return if there are enough T-pieces or [odd] line clears left to correct for the parity
         let parity = Board::checkerboard_parity(board).abs();
-        let n = (board.len() * height) as u32 - Board::cell_count(board) >> 2;
+        let n = ((board.len() * height) as u32 - Board::cell_count(board)) >> 2;
         let count_t = (0..=n)
             .filter(|i| game.queue.peek_ahead(*i as u8) == PIECE_T)
             .count();
@@ -51,12 +49,12 @@ impl AllClearPruner {
     /// https://docs.google.com/document/d/1udtq235q2SdoFYwMZNu-GRYR-4dCYMkp0E8_Hw1XTyg/edit
     fn columnar_rule(&self, board: &[u64], game: &Game, height: usize) -> bool {
         // columnar rule is only for areas of multiples of 4
-        if board.len() * height & 0b11 != 0 {
+        if (board.len() * height) & 0b11 != 0 {
             return true;
         }
 
         let parity = Board::columnar_parity(board).abs();
-        let n = (board.len() * height) as u32 - Board::cell_count(board) >> 2;
+        let n = ((board.len() * height) as u32 - Board::cell_count(board)) >> 2;
         let count = (0..=n)
             .filter(|i| {
                 let piece = game.queue.peek_ahead(*i as u8);
@@ -69,6 +67,8 @@ impl AllClearPruner {
     /// returns if there are any piece dependencies
     /// that are not in the queue
     /// (not sure how this one works yet)
+    // TODO: Figure this out
+    #[allow(unused)]
     fn piece_dependencies(&self, board: &[u64], height: usize) -> bool {
         true
     }
@@ -97,6 +97,8 @@ impl AllClearPruner {
     }
 
     /// do conditions for partials
+    // TODO: Figure out if we need game here
+    #[allow(unused)]
     fn partition_rules(&self, board: &[u64], game: &Game, height: usize) -> bool {
         self.mino_rule(board, height)
     }
@@ -114,7 +116,7 @@ impl Pruner for AllClearPruner {
     }
 
     fn prune(&self, placements: Vec<Placement>) -> Vec<Placement> {
-        let (pc, no_pc): (Vec<_>, Vec<_>) = placements.into_iter().partition(|p| self.is_pc(&p));
+        let (pc, no_pc): (Vec<_>, Vec<_>) = placements.into_iter().partition(|p| self.is_pc(p));
         if pc.is_empty() {
             no_pc
         } else {
@@ -161,8 +163,9 @@ mod tests {
     use super::*;
     use crate::piece::*;
     use crate::test_api::functions::*;
+    use std::sync::Arc;
 
-    // #[test]
+    #[test]
     fn placing_above_height() {
         let pruner = AllClearPruner::new();
         let placement1 = Placement {

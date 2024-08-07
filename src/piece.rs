@@ -114,28 +114,22 @@ impl Piece {
         } else if self.r#type == 2 {
             // O piece is the other special child
             kicks = vec![O_OFFSETS[d][dir - 1]];
+        } else if dir == 2 {
+            kicks = THREE_180_OFFSETS[d].to_vec()
         } else {
-            if dir == 2 {
-                kicks = THREE_180_OFFSETS[d].to_vec()
-            } else {
-                kicks = THREE_OFFSETS[d][dir / 2].to_vec();
-            }
+            kicks = THREE_OFFSETS[d][dir / 2].to_vec();
         }
         kicks
     }
 
     /// returns the lowest row this piece is on
     pub fn bottom_row(&self) -> Option<usize> {
-        if let Some(pos) = self.abs_locations() {
-            Some(
-                pos.into_iter()
-                    .map(|[r, _]| r)
-                    .min_by(|r1, r2| r1.cmp(r2))
-                    .unwrap(),
-            )
-        } else {
-            None
-        }
+        self.abs_locations().map(|pos| {
+            pos.into_iter()
+                .map(|[r, _]| r)
+                .min_by(|r1, r2| r1.cmp(r2))
+                .unwrap()
+        })
     }
 
     /// encodes the piece into a u16

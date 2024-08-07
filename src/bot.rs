@@ -20,6 +20,12 @@ pub struct Bot<P: Pruner> {
     pub pruner: P,
 }
 
+impl<P: Pruner + std::marker::Sync> Default for Bot<P> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<P: Pruner + std::marker::Sync> Bot<P> {
     // constructors -----------------------------
     pub fn new() -> Self {
@@ -43,7 +49,7 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         // todo fix magic numbers
         let depth = 4;
         let placements = self.move_gen(depth);
-        assert!(placements.placements.len() > 0);
+        assert!(!placements.placements.is_empty());
         let chosen = &placements.placements[0]; // check for out of bounds!
         let piece_encoding = (chosen.game.history >> (16 * (depth - 1)) & 0xFFFF) as u16;
         let piece = Piece::decode(piece_encoding);
@@ -95,7 +101,7 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         Self::add_trivials(&mut seen, &mut controller);
         Self::add_nontrivials(&mut seen, &mut controller);
 
-        let mut out = seen // turn the pieces into placements
+        let out = seen // turn the pieces into placements
             .into_iter()
             .map(|piece| Self::make_placement(piece, false, placement))
             .filter(|piece| pruner.precondition(piece));
@@ -105,15 +111,16 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         }
 
         let mut piece = placement.game.get_hold_piece();
-        let mut controller = Controller::new(&mut piece, &placement.game.board); 
+        let mut controller = Controller::new(&mut piece, &placement.game.board);
         let mut seen = Vec::new();
 
         Self::add_trivials(&mut seen, &mut controller);
         Self::add_nontrivials(&mut seen, &mut controller);
 
-        out.chain( // turn the pieces into placements
+        out.chain(
+            // turn the pieces into placements
             seen.into_iter()
-                .map(|piece| Self::make_placement(piece, true, &placement))
+                .map(|piece| Self::make_placement(piece, true, placement))
                 .filter(|piece| pruner.precondition(piece)),
         )
         .collect()
@@ -187,8 +194,8 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         let pairs = &mut Self::get_base_trivials(controller);
         Self::get_base_nontrivials(pairs, controller);
 
-        let mut out = pairs.iter().map(|(p, cmds)| Placement {
-            game: Self::make_placement(*p, false, &start).game,
+        let out = pairs.iter().map(|(p, cmds)| Placement {
+            game: Self::make_placement(*p, false, start).game,
             base_command: Arc::new(cmds.clone()),
         });
 
@@ -203,7 +210,7 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         Self::get_base_nontrivials(pairs, controller);
 
         out.chain(pairs.iter().map(|(p, cmds)| Placement {
-            game: Self::make_placement(*p, true, &start).game,
+            game: Self::make_placement(*p, true, start).game,
             base_command: Arc::new(cmds.clone()),
         }))
         .collect()
