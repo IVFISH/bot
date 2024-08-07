@@ -35,6 +35,7 @@ impl Board {
 
     // getters ----------------------------------
     /// returns the indices of the first empty row in each column
+    #[inline]
     pub fn get_heights(&self) -> [usize; BOARD_WIDTH] {
         let mut heights = [0; BOARD_WIDTH];
         for (col, height) in heights.iter_mut().enumerate().take(BOARD_WIDTH) {
@@ -44,22 +45,26 @@ impl Board {
     }
 
     /// returns the index of the first empty row in column col
+    #[inline]
     pub fn get_height(&self, col: usize) -> usize {
         Self::height(self.arr[col])
     }
 
     /// returns the index of the first empty row in a col below the given row
+    #[inline]
     pub fn get_height_below(&self, col: usize, row: usize) -> usize {
         Self::height(self.arr[col] & !(u64::MAX << row))
     }
 
     /// returns the state (0 or 1) at the grid's row and col
+    #[inline]
     pub fn get(&self, row: usize, col: usize) -> bool {
         (self.arr[col] >> row & 1) == 1
     }
 
     // setters ----------------------------------
     /// sets the cell at the row and col to the specified state
+    #[inline]
     pub fn set(&mut self, row: usize, col: usize, state: usize) {
         if state == 0 {
             self.remove(row, col)
@@ -68,18 +73,21 @@ impl Board {
         }
     }
 
+    #[inline]
     pub fn set_row(&mut self, row: usize, data: [bool; BOARD_WIDTH]) {
         for (col, state) in data.into_iter().enumerate() {
             self.set(row, col, state as usize);
         }
     }
 
+    #[inline]
     pub fn remove_row(&mut self, row: usize) {
         self.set_row(row, [false; BOARD_WIDTH]);
     }
 
     // piece API --------------------------------
     /// sets the four minos of the piece
+    #[inline]
     pub fn set_piece(&mut self, piece: &Piece) {
         if let Some(locs) = piece.abs_locations() {
             for [row, col] in locs {
@@ -89,6 +97,7 @@ impl Board {
     }
 
     /// removes the minos that occupy the piece's location
+    #[inline]
     pub fn remove_piece(&mut self, piece: &Piece) {
         if let Some(locs) = piece.abs_locations() {
             for [row, col] in locs {
@@ -98,6 +107,7 @@ impl Board {
     }
 
     /// returns whether the piece minos can be shifted downwards
+    #[inline]
     pub fn piece_grounded(&self, piece: &Piece) -> bool {
         if let Some(locs) = piece.abs_locations() {
             locs.iter()
@@ -108,6 +118,7 @@ impl Board {
     }
 
     /// returns whether the piece has a collision inside the grid
+    #[inline]
     pub fn piece_collision(&self, piece: &Piece) -> bool {
         if let Some(locs) = piece.abs_locations() {
             locs.iter().any(|&[row, col]| self.get(row, col))
@@ -117,12 +128,14 @@ impl Board {
     }
 
     /// returns whether the piece has no collision and is grounded
+    #[inline]
     pub fn piece_can_set(&self, piece: &Piece) -> bool {
         !self.piece_collision(piece) && self.piece_grounded(piece)
     }
 
     /// returns the max amount of rows that a piece can move down
     /// (as a negative number), output is from (-height, 0]
+    #[inline]
     pub fn piece_max_down(&self, piece: &Piece) -> i8 {
         if let Some(locs) = piece.abs_locations() {
             locs.into_iter()
@@ -136,17 +149,20 @@ impl Board {
 
     // statistics -------------------------------
     /// the row of the highest placed mino
+    #[inline]
     pub fn get_max_height(arr: &[u64]) -> usize {
         Self::height(*arr.iter().max().unwrap())
     }
 
     /// the row of the lowest placed mino
+    #[inline]
     pub fn get_min_height(arr: &[u64]) -> usize {
         Self::height(*arr.iter().min().unwrap())
     }
 
     /// returns the amount of t-slots (with an accessible overhang)
     /// present in the current board
+    #[inline]
     pub fn t_slot(arr: &[u64]) -> usize {
         const SIZE: usize = 3;
         (Self::get_min_height(arr)..=(Self::get_max_height(arr) - SIZE))
@@ -160,6 +176,7 @@ impl Board {
 
     /// returns a vector of size=9 of the adjacent
     /// differences between column heights
+    #[inline]
     pub fn get_adjacent_height_differences(arr: &[u64]) -> Vec<usize> {
         arr.windows(2)
             .map(|w| Self::height(w[0]).abs_diff(Self::height(w[1])))
@@ -169,6 +186,7 @@ impl Board {
     /// returns the checkerboard parity of the board (differences between checkerboard)
     /// see https://docs.google.com/document/d/1udtq235q2SdoFYwMZNu-GRYR-4dCYMkp0E8_Hw1XTyg/edit
     /// for an explanation of parity and PC theory
+    #[inline]
     pub fn checkerboard_parity(arr: &[u64]) -> i8 {
         const MASK: u64 = 0xAAAAAAAAAA; // 1010..
         arr.chunks(2)
@@ -183,6 +201,7 @@ impl Board {
     /// returns the columnar parity of the board (differences between columns)
     /// see https://docs.google.com/document/d/1udtq235q2SdoFYwMZNu-GRYR-4dCYMkp0E8_Hw1XTyg/edit
     /// for an explanation of parity and PC theory
+    #[inline]
     pub fn columnar_parity(arr: &[u64]) -> i8 {
         arr.chunks(2)
             .map(|cols| ((cols[0]).count_ones() as i8) - (cols[1].count_ones() as i8))
@@ -190,6 +209,7 @@ impl Board {
     }
 
     /// returns the amount of non-empty cells on the board
+    #[inline]
     pub fn cell_count(arr: &[u64]) -> u32 {
         arr.iter().map(|c| c.count_ones()).sum()
     }
@@ -197,6 +217,7 @@ impl Board {
     /// partitions the board into sections that are split by columns of height row
     /// the full columns are not included in the partition
     /// includes the range of the included columns by
+    #[inline]
     pub fn partition(&self, row: usize) -> Vec<&[u64]> {
         let mut out = Vec::new();
         let mut prev = 0;
@@ -219,12 +240,14 @@ impl Board {
 
     // versus -----------------------------------
     /// returns whether the board is empty
+    #[inline]
     pub fn all_clear(&self) -> bool {
         self.arr.iter().sum::<u64>() == 0
     }
 
     /// clears all filled lines on the board and moves down
     /// the blocks above those lines
+    #[inline]
     pub fn clear_lines(&mut self) -> u64 {
         let full_rows = self.arr.into_iter().reduce(|x, y| x & y).unwrap();
         for i in 0..BOARD_WIDTH {
@@ -243,6 +266,7 @@ impl Board {
 
     /// method for undoing a clear_lines
     /// rows is the output of clear_lines
+    #[inline]
     pub fn insert_rows(&mut self, rows: usize) {
         let mut rows = rows;
         while rows != 0 {
@@ -253,6 +277,7 @@ impl Board {
     }
 
     /// inserts a line on the row and moves everything above up
+    #[inline]
     pub fn insert_full_line(&mut self, row: usize) {
         // move all the rows up by 1
         // clear the first row lines
@@ -270,16 +295,19 @@ impl Board {
 
     // private methods --------------------------
     /// sets the state at the row and col to 0
+    #[inline]
     fn remove(&mut self, row: usize, col: usize) {
         self.arr[col] &= !(1 << row);
     }
 
     /// sets the state at the row and col to 1
+    #[inline]
     fn add(&mut self, row: usize, col: usize) {
         self.arr[col] |= 1 << row;
     }
 
     /// the height of a col
+    #[inline]
     fn height(col: u64) -> usize {
         (u64::BITS - col.leading_zeros()) as usize
     }
@@ -289,6 +317,7 @@ impl Board {
     /// 1 0 0  |  0 0 1
     /// 0 0 0  |  0 0 0
     /// 1 0 1  |  1 0 1
+    #[inline]
     fn check_hor_t(arr: &[u64], row: usize) -> bool {
         const MASK: u64 = 0b111;
         let c1 = arr[0] >> row & MASK;

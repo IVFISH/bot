@@ -146,8 +146,8 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
     /// extends the seen hashset by the trivials
     /// note: if the max placed height < 16, then there is no need to check for valid placements
     fn add_trivials(seen: &mut Vec<Piece>, controller: &mut Controller) {
-        for rotation in 0..NUM_ROTATE_STATES {
-            if !controller.do_command_mut(Command::Rotate(rotation as u8)) {
+        for rotation in 0..NUM_ROTATE_STATES as u8 {
+            if !controller.do_command_mut(Command::Rotate(rotation)) {
                 continue;
             }
             seen.push(Self::get_dropped_piece(controller));
