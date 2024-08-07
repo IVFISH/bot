@@ -172,9 +172,9 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         let mut dfs_stack: Vec<_> = seen.clone();
         let mut seen_all: HashSet<_> = seen.iter().cloned().collect(); // includes the not-grounded ones
         while let Some(p) = dfs_stack.pop() {
-            for command in COMMANDS.into_iter() {
+            for command in COMMANDS.iter() {
                 controller.update_piece(p);
-                controller.do_command(&command);
+                controller.do_command(command);
                 if seen_all.contains(controller.piece) {
                     continue;
                 }
@@ -269,16 +269,16 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         let mut dfs_stack: Vec<_> = seen.clone();
         let mut seen_all: HashSet<_> = seen.iter().map(|(p, _)| p).cloned().collect(); // includes the not-grounded ones
         while let Some((p, cmd)) = dfs_stack.pop() {
-            for command in COMMANDS.into_iter() {
+            for command in COMMANDS.iter() {
                 controller.update_piece(p);
-                controller.do_command(&command);
+                controller.do_command(command);
                 if seen_all.contains(controller.piece) {
                     continue;
                 }
                 seen_all.insert(*controller.piece);
                 let to_add = (
                     *controller.piece,
-                    cmd.iter().chain(once(&command)).cloned().collect(),
+                    cmd.iter().chain(once(command)).cloned().collect(),
                 );
                 dfs_stack.push(to_add.clone());
                 if controller.board.piece_grounded(controller.piece) {

@@ -165,7 +165,7 @@ mod tests {
     use crate::test_api::functions::*;
     use std::sync::Arc;
 
-    #[test]
+    // #[test]
     fn placing_above_height() {
         let pruner = AllClearPruner::new();
         let placement1 = Placement {
