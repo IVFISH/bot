@@ -10,7 +10,7 @@ use crate::placement_list::*;
 use crate::pruner::*;
 use crate::suggestion::*;
 use rayon::prelude::*;
-use std::collections::HashSet;
+use rustc_hash::FxHashSet;
 use std::iter::once;
 use std::sync::Arc;
 
@@ -170,7 +170,7 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
     /// extends the seen hashset by the grounded nontrivials
     fn add_nontrivials(seen: &mut Vec<Piece>, controller: &mut Controller) {
         let mut dfs_stack: Vec<_> = seen.clone();
-        let mut seen_all: HashSet<_> = seen.iter().cloned().collect(); // includes the not-grounded ones
+        let mut seen_all: FxHashSet<_> = seen.iter().cloned().collect(); // includes the not-grounded ones
         while let Some(p) = dfs_stack.pop() {
             for command in COMMANDS.iter() {
                 controller.update_piece(p);
@@ -267,7 +267,7 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
 
     fn get_base_nontrivials(seen: &mut Vec<(Piece, Vec<Command>)>, controller: &mut Controller) {
         let mut dfs_stack: Vec<_> = seen.clone();
-        let mut seen_all: HashSet<_> = seen.iter().map(|(p, _)| p).cloned().collect(); // includes the not-grounded ones
+        let mut seen_all: FxHashSet<_> = seen.iter().map(|(p, _)| p).cloned().collect(); // includes the not-grounded ones
         while let Some((p, cmd)) = dfs_stack.pop() {
             for command in COMMANDS.iter() {
                 controller.update_piece(p);
@@ -312,7 +312,7 @@ mod tests {
         assert_eq!(pieces.len(), 48);
 
         // checking for any duplicate pieces
-        let pieces: HashSet<_> = pieces.into_iter().collect();
+        let pieces: FxHashSet<_> = pieces.into_iter().collect();
         assert_eq!(pieces.len(), 48);
         // checking for any invalid pieces
         let b = &mut bot.game.board;
@@ -337,7 +337,7 @@ mod tests {
         assert_eq!(pieces.len(), 15);
 
         // checking for any duplicate pieces
-        let pieces: HashSet<_> = pieces.into_iter().collect();
+        let pieces: FxHashSet<_> = pieces.into_iter().collect();
         assert_eq!(pieces.len(), 15);
         // checking for any invalid pieces
         let b = &mut bot.game.board;
