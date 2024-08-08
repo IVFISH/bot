@@ -1,48 +1,40 @@
-mod board;
-mod bot;
-mod command;
-mod constants;
-mod controller;
 mod game;
-mod piece;
-mod piece_queue;
-mod placement;
-mod placement_list;
-mod pruner;
-mod server;
-mod suggestion;
-mod test_api;
 
-use crate::board::*;
-use crate::bot::*;
-use crate::game::*;
-use crate::piece::*;
-use crate::pruner::*;
-use crate::test_api::functions::*;
-use std::time::Instant;
+use drain_while::*;
+use game::*;
+use std::time;
 
-#[allow(unused)]
-fn bench() {
-    let bot = Bot::<NoPruner>::new();
-    let n = 500_000;
+/// Does a BFS to find all future game states from a given Game.
+/// Searches until the queue is empty.
+fn search(game: Game) -> Vec<Game> {
+    let mut res = Vec::new();
+    let mut bfs = vec![game];
 
-    let now = Instant::now();
-    for _ in 0..n {
-        bot.move_gen(1);
+    while !bfs.is_empty()
+    {
+        // take all from que with the same Game.queue
+        // iterate the placements with SIMD
+        let queue = bfs[0].queue;
+        let (piece, new_queue) = Game::next(queue);
+        let me: Vec<_> = bfs.drain_while(|x| x.queue == queue).collect();
+
+        for rot in 0..4 {
+            for col in 1..9 {
+                for g in &me {
+                    res.push(g.place(piece, rot, col, new_queue));
+                }
+            }
+        }
     }
-    println!("Averaged {} microseconds", now.elapsed().as_micros() / n);
-}
 
-#[allow(unused)]
-fn test() {
-    let bot = Bot::<NoPruner>::with_seed(4);
-    let movegen = bot.move_gen(1).placements;
-    let mut placements = movegen.iter();
-    println!("{}", placements.clone().count());
-    println!("{}", placements.next().unwrap().game.board);
-    println!("{}", placements.next().unwrap().game.board);
+    res
 }
 
 fn main() {
-    server::init();
+    let game = Game::new(0x12345_54321);
+
+    let now = time::Instant::now();
+    let res = search(game);
+    println!("found {} boards in {}", res.len(), now.elapsed().as_micros());
+    // println!("Hello, world!");
 }

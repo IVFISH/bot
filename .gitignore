@@ -4,3 +4,8 @@ target*
 .DS_Store
 weights*
 Cargo.lock
+
+
+# Added by cargo
+
+/target

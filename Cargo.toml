@@ -1,24 +1,9 @@
 [package]
-name = "tetris"
+name = "bot"
 version = "0.1.0"
 edition = "2021"
 
-[dev-dependencies]
-criterion = "0.3"
-
-[[bench]]
-name = "benchmarks"
-harness = false
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-fumen = "0.1.2"
-futures-util = { version = "0.3.28", features = ["sink"] }
-itertools = "0.11.0"
-rand = "0.8.5"
-rayon = "1.7.0"
-
-serde = { version = "1.0.78", features = ["derive"] }
-serde_json = "1.0.78"
-tokio = { version = "1.31.0", features = ["macros", "time", "rt", "rt-multi-thread"] }
-tokio-tungstenite = "0.20.0"
-tungstenite = "0.20.0"
+drain-while = "0.1.0"
