@@ -1,7 +1,7 @@
 use crate::game::*;
-use std::cmp::*;
-use std::collections::*;
 
+use std::collections::*;
+use std::ops::*;
 use std::simd::prelude::*;
 
 /// Does a BFS to find all future game states from a given Game.
@@ -28,38 +28,79 @@ pub fn search_simd(game: Game) -> Vec<Game> {
             // generate the bitmask for piece and rot
             let p_bitmask = PIECES[piece - 1][rot];
 
+            // TODO: handle the remainder
+
+            let ii = i16x64::splat(p_bitmask[0].trailing_zeros() as i16);
+            let jj = i16x64::splat(p_bitmask[1].trailing_zeros() as i16);
+            let kk = i16x64::splat(p_bitmask[2].trailing_zeros() as i16);
+
             // TODO: include col 0, 9 :)
             for col in 1..9 {
-                for &(mut g) in &me {
-                    // mask the piece onto the game's board
+                let x = me
+                    .iter()
+                    .map(|g| g.board[col - 1])
+                    .array_chunks::<64>()
+                    .map(|x| u16x64::from_array(x));
+                let y = me
+                    .iter()
+                    .map(|g| g.board[col + 0])
+                    .array_chunks::<64>()
+                    .map(|y| u16x64::from_array(y));
+                let z = me
+                    .iter()
+                    .map(|g| g.board[col + 1])
+                    .array_chunks::<64>()
+                    .map(|z| u16x64::from_array(z));
 
-                    let x = g.board[col - 1];
-                    let y = g.board[col];
-                    let z = g.board[col + 1];
+                let sixteen = u16x64::splat(16);
 
-                    let i = (16 - x.leading_zeros() as i8) - (p_bitmask[0].trailing_zeros() as i8);
-                    let j = (16 - y.leading_zeros() as i8) - (p_bitmask[1].trailing_zeros() as i8);
-                    let k = (16 - z.leading_zeros() as i8) - (p_bitmask[2].trailing_zeros() as i8);
+                let i = x.clone().map(|x| sixteen - x.leading_zeros());
+                let j = y.clone().map(|y| sixteen - y.leading_zeros());
+                let k = z.clone().map(|z| sixteen - z.leading_zeros());
 
-                    let n = max(max(i, j), k);
+                let n = i.zip(j).zip(k).map(|((i, j), k)| {
+                    (i.cast::<i16>() - ii)
+                        .simd_max(j.cast::<i16>() - jj)
+                        .simd_max(k.cast::<i16>() - kk)
+                });
 
-                    g.board[col - 1] |= (p_bitmask[0] << n) as u16;
-                    g.board[col] |= (p_bitmask[1] << n) as u16;
-                    g.board[col + 1] |= (p_bitmask[2] << n) as u16;
+                let p0 = i16x64::splat(p_bitmask[0] as i16);
+                let p1 = i16x64::splat(p_bitmask[1] as i16);
+                let p2 = i16x64::splat(p_bitmask[2] as i16);
 
-                    res.push(Game {
-                        board: g.board,
-                        queue: new_queue,
+                let g = x.zip(y).zip(z).zip(n).map(|(((x, y), z), n)| {
+                    (
+                        p0.shl(n).cast::<u16>().bitor(x).to_array(),
+                        p1.shl(n).cast::<u16>().bitor(y).to_array(),
+                        p2.shl(n).cast::<u16>().bitor(z).to_array(),
+                    )
+                });
+
+                let gg = me
+                    .array_chunks::<64>()
+                    .zip(g)
+                    .flat_map(|(m, (p0, p1, p2))| {
+                        m.iter()
+                            .zip(p0)
+                            .zip(p1)
+                            .zip(p2)
+                            .map(|(((&(mut m), p0), p1), p2)| {
+                                m.board[col - 1] |= p0;
+                                m.board[col - 0] |= p1;
+                                m.board[col + 1] |= p2;
+                                Game {
+                                    board: m.board,
+                                    queue: new_queue,
+                                }
+                            })
                     });
 
-                    next.push(Game {
-                        board: g.board,
-                        queue: new_queue,
-                    });
-                }
+                let gg: Vec<Game> = gg.collect();
+                next.extend(gg);
             }
         }
         bfs.push_back(next);
+        res.extend(me);
     }
 
     res
