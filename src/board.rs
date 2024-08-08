@@ -38,7 +38,7 @@ impl Board {
     #[inline]
     pub fn get_heights(&self) -> [usize; BOARD_WIDTH] {
         let mut heights = [0; BOARD_WIDTH];
-        for (col, height) in heights.iter_mut().enumerate().take(BOARD_WIDTH) {
+        for (col, height) in heights.iter_mut().enumerate() {
             *height = self.get_height(col);
         }
         heights
@@ -470,7 +470,7 @@ mod tests {
 
     #[test]
     fn test_partition() {
-        let mut board = Board {
+        let board = Board {
             arr: [1, 42, 3, 31, 4, 8, 2, 3, 18, 7],
         };
         let boards = board.partition(4);

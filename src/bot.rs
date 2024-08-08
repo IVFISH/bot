@@ -70,6 +70,10 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         let mut placements = PlacementList {
             placements: Self::get_base_placements(&start),
         }; // depth 1
+
+        // placements = (1..depth).fold(placements, |p, _| {
+        //     Self::iterate_move_gen(p, &self.pruner)
+        // });
         for _ in 1..depth {
             placements = Self::iterate_move_gen(placements, &self.pruner);
         }
@@ -394,7 +398,7 @@ mod tests {
     fn test_number_placements_generated() {
         // NOTE this is dependent on the queue
         // assumes commit 90232f86f194a8e819f89ea80124da7e01ef9b59 is correct
-        let mut bot = Bot::<NoPruner>::with_seed(4);
+        let bot = Bot::<NoPruner>::with_seed(4);
         let desired_q = [1, 4, 5, 6];
         assert!(bot.game.active.r#type == 2);
         assert!(desired_q
@@ -403,7 +407,7 @@ mod tests {
             .all(|(i, p)| p == bot.game.queue.peek_ahead(i as u8)));
         assert!(bot.move_gen(3).placements.len() == 118_151);
 
-        let mut bot = Bot::<NoPruner>::with_seed(19);
+        let bot = Bot::<NoPruner>::with_seed(19);
         let desired_q = [3, 6, 5, 1];
         assert!(bot.game.active.r#type == 4);
         assert!(desired_q

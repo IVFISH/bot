@@ -161,11 +161,11 @@ impl Pruner for NoPruner {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::piece::*;
     use crate::test_api::functions::*;
     use std::sync::Arc;
 
     // #[test]
+    #[allow(dead_code)]
     fn placing_above_height() {
         let pruner = AllClearPruner::new();
         let placement1 = Placement {
