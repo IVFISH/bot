@@ -1,4 +1,5 @@
 use crate::game::*;
+use crate::scalar::process_scalar;
 
 use std::collections::*;
 use std::ops::*;
@@ -22,13 +23,13 @@ pub fn search_simd(game: Game) -> Vec<Game> {
             continue;
         };
 
-        let mut next = Vec::new();
+        let len64 = (me.len() / 64) * 64;
+        let rem = &me[len64..];
+        let mut next = process_scalar(rem, piece, new_queue);
 
         for rot in 0..4 {
             // generate the bitmask for piece and rot
             let p_bitmask = PIECES[piece - 1][rot];
-
-            // TODO: handle the remainder
 
             let ii = i16x64::splat(p_bitmask[0].trailing_zeros() as i16);
             let jj = i16x64::splat(p_bitmask[1].trailing_zeros() as i16);
@@ -99,8 +100,8 @@ pub fn search_simd(game: Game) -> Vec<Game> {
                 next.extend(gg);
             }
         }
-        bfs.push_back(next);
-        res.extend(me);
+        bfs.push_back(next.clone());
+        res.extend(next);
     }
 
     res

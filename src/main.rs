@@ -14,7 +14,7 @@ use scalar::*;
 
 fn main() {
     // note: the queue is backwards (also 1-indexed)
-    let game = Game::new(0x1);
+    let game = Game::new(0x21_321);
 
     // let now = time::Instant::now();
     // let res1 = search_scalar(game);

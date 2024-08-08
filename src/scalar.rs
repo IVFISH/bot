@@ -20,45 +20,50 @@ pub fn search_scalar(game: Game) -> Vec<Game> {
             continue;
         };
 
-        let mut next = Vec::new();
+        let next = process_scalar(&me, piece, new_queue);
 
-        for rot in 0..4 {
-            // generate the bitmask for piece and rot
-            let p_bitmask = PIECES[piece - 1][rot];
+        bfs.push_back(next.clone());
+        res.extend(next);
+    }
+    res
+}
 
-            // TODO: include col 0, 9 :)
-            for col in 1..9 {
-                for &(mut g) in &me {
-                    // mask the piece onto the game's board
+pub fn process_scalar(work: &[Game], piece: usize, new_queue: usize) -> Vec<Game> {
+    let mut next = Vec::new();
+    for rot in 0..4 {
+        // generate the bitmask for piece and rot
+        let p_bitmask = PIECES[piece - 1][rot];
 
-                    let x = g.board[col - 1];
-                    let y = g.board[col];
-                    let z = g.board[col + 1];
+        // TODO: include col 0, 9 :)
+        for col in 1..9 {
+            for &g in work {
+                // mask the piece onto the game's board
 
-                    let i = (16 - x.leading_zeros() as i8) - (p_bitmask[0].trailing_zeros() as i8);
-                    let j = (16 - y.leading_zeros() as i8) - (p_bitmask[1].trailing_zeros() as i8);
-                    let k = (16 - z.leading_zeros() as i8) - (p_bitmask[2].trailing_zeros() as i8);
-
-                    let n = max(max(i, j), k);
-
-                    g.board[col - 1] |= (p_bitmask[0] << n) as u16;
-                    g.board[col] |= (p_bitmask[1] << n) as u16;
-                    g.board[col + 1] |= (p_bitmask[2] << n) as u16;
-
-                    res.push(Game {
-                        board: g.board,
-                        queue: new_queue,
-                    });
-
-                    next.push(Game {
-                        board: g.board,
-                        queue: new_queue,
-                    });
-                }
+                let g = process_game(g, p_bitmask, col, new_queue);
+                next.push(g);
             }
         }
-        bfs.push_back(next);
     }
+    next
+}
 
-    res
+fn process_game(mut g: Game, p_bitmask: [usize; 3], col: usize, new_queue: usize) -> Game {
+    let x = g.board[col - 1];
+    let y = g.board[col];
+    let z = g.board[col + 1];
+
+    let i = (16 - x.leading_zeros() as i8) - (p_bitmask[0].trailing_zeros() as i8);
+    let j = (16 - y.leading_zeros() as i8) - (p_bitmask[1].trailing_zeros() as i8);
+    let k = (16 - z.leading_zeros() as i8) - (p_bitmask[2].trailing_zeros() as i8);
+
+    let n = max(max(i, j), k);
+
+    g.board[col - 1] |= (p_bitmask[0] << n) as u16;
+    g.board[col] |= (p_bitmask[1] << n) as u16;
+    g.board[col + 1] |= (p_bitmask[2] << n) as u16;
+
+    Game {
+        board: g.board,
+        queue: new_queue,
+    }
 }
