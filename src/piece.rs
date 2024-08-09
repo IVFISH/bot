@@ -104,22 +104,25 @@ impl Piece {
         if dir != 0 {
             // match isn't faster than if, but i like it more
             match self.r#type {
-                PIECE_O => return &O_OFFSETS[d][dir - 1],
-                PIECE_I => if dir != 2 {
-                            return &FIVE_OFFSETS[d][dir / 2]
-                        } else {
-                            return &FIVE_180_OFFSETS[d]
-                        }
-                _ => if dir != 2 {
-                    return &THREE_OFFSETS[d][dir / 2]
-                } else {
-                    return &THREE_180_OFFSETS[d]
+                PIECE_O => &O_OFFSETS[d][dir - 1],
+                PIECE_I => {
+                    if dir != 2 {
+                        &FIVE_OFFSETS[d][dir / 2]
+                    } else {
+                        &FIVE_180_OFFSETS[d]
+                    }
                 }
-
+                _ => {
+                    if dir != 2 {
+                        &THREE_OFFSETS[d][dir / 2]
+                    } else {
+                        &THREE_180_OFFSETS[d]
+                    }
+                }
             }
-        }
-        else { // No rotation; no kicks
-            return &[]
+        } else {
+            // No rotation; no kicks
+            &[]
         }
     }
 

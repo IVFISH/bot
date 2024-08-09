@@ -61,8 +61,12 @@ impl<'a> Controller<'a> {
             }
             Command::Rotate(dir) => {
                 for [dir_row, dir_col] in self.piece.get_kicks(dir).iter() {
-                    if Self::can_rotate_kick_piece(self.board, self.piece, dir, [*dir_row, *dir_col])
-                    {
+                    if Self::can_rotate_kick_piece(
+                        self.board,
+                        self.piece,
+                        dir,
+                        [*dir_row, *dir_col],
+                    ) {
                         self.piece.rotate_with_kicks(dir, *dir_row, *dir_col);
                         return true;
                     }
