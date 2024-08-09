@@ -96,30 +96,31 @@ impl Piece {
     /// when the piece is rotated direction dir
     /// this must be used with the initial rotation state
     /// (call this before doing rotate)
-    pub fn get_kicks(&self, dir: u8) -> Vec<[i8; 2]> {
+    pub fn get_kicks(&self, dir: u8) -> &[[i8; 2]] {
         let d = self.dir as usize;
         let dir = dir as usize;
-        if dir == 0 {
-            return vec![[0, 0]];
-        }
 
-        let kicks;
-        if self.r#type == 4 {
-            // I piece is the special child
-            if dir == 2 {
-                kicks = FIVE_180_OFFSETS[d].to_vec()
-            } else {
-                kicks = FIVE_OFFSETS[d][dir / 2].to_vec();
+        // Order cases in most likely order to minimize branch mispredictions
+        if dir != 0 {
+            // match isn't faster than if, but i like it more
+            match self.r#type {
+                PIECE_O => return &O_OFFSETS[d][dir - 1],
+                PIECE_I => if dir != 2 {
+                            return &FIVE_OFFSETS[d][dir / 2]
+                        } else {
+                            return &FIVE_180_OFFSETS[d]
+                        }
+                _ => if dir != 2 {
+                    return &THREE_OFFSETS[d][dir / 2]
+                } else {
+                    return &THREE_180_OFFSETS[d]
+                }
+
             }
-        } else if self.r#type == 2 {
-            // O piece is the other special child
-            kicks = vec![O_OFFSETS[d][dir - 1]];
-        } else if dir == 2 {
-            kicks = THREE_180_OFFSETS[d].to_vec()
-        } else {
-            kicks = THREE_OFFSETS[d][dir / 2].to_vec();
         }
-        kicks
+        else { // No rotation; no kicks
+            return &[]
+        }
     }
 
     /// returns the lowest row this piece is on

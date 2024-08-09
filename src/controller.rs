@@ -60,10 +60,10 @@ impl<'a> Controller<'a> {
                     .is_some()
             }
             Command::Rotate(dir) => {
-                for [dir_row, dir_col] in self.piece.get_kicks(dir).into_iter() {
-                    if Self::can_rotate_kick_piece(self.board, self.piece, dir, [dir_row, dir_col])
+                for [dir_row, dir_col] in self.piece.get_kicks(dir).iter() {
+                    if Self::can_rotate_kick_piece(self.board, self.piece, dir, [*dir_row, *dir_col])
                     {
-                        self.piece.rotate_with_kicks(dir, dir_row, dir_col);
+                        self.piece.rotate_with_kicks(dir, *dir_row, *dir_col);
                         return true;
                     }
                 }
