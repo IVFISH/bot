@@ -1,6 +1,5 @@
 #![allow(dead_code)]
 
-use std::cmp::max;
 use std::fmt::{Display, Formatter};
 
 use crate::board::Board;
@@ -64,7 +63,9 @@ impl<'a> Controller<'a> {
                 .then(|| self.piece.move_unchecked(0, mag))
                 .is_some(),
             Command::MoveDrop => {
-                let max_down = self.cmaps.max_down(self.piece.dir, self.piece.row, self.piece.col);
+                let max_down = self
+                    .cmaps
+                    .max_down(self.piece.dir, self.piece.row, self.piece.col);
                 (max_down > 0)
                     .then(|| self.piece.move_unchecked(-max_down, 0))
                     .is_some()
@@ -76,7 +77,8 @@ impl<'a> Controller<'a> {
                         self.piece.row as i8 + dir_row,
                         self.piece.col as i8 + dir_col,
                     ) {
-                        self.piece.rotate_with_kicks_unchecked(dir, *dir_row, *dir_col);
+                        self.piece
+                            .rotate_with_kicks_unchecked(dir, *dir_row, *dir_col);
                         return true;
                     }
                 }
@@ -251,7 +253,9 @@ impl CollisionMaps {
     }
 
     fn max_down(&self, dir: u8, row: usize, col: usize) -> i8 {
-        row as i8 - (u64::BITS - (self.boards[dir as usize][col] & !(u64::MAX << row)).leading_zeros()) as i8
+        row as i8
+            - (u64::BITS - (self.boards[dir as usize][col] & !(u64::MAX << row)).leading_zeros())
+                as i8
     }
 }
 
