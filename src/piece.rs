@@ -121,8 +121,8 @@ impl Piece {
                 }
             }
         } else {
-            // No rotation; no kicks
-            &[]
+            // No rotation, don't kick
+            &[[0, 0]]
         }
     }
 
