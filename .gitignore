@@ -5,6 +5,7 @@ target*
 weights*
 Cargo.lock
 
+*.s
 
 # Added by cargo
 
