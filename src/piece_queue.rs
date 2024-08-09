@@ -1,3 +1,6 @@
+use std::fmt::Display;
+
+use crate::constants::piece_constants::PIECE_NAME;
 use crate::constants::queue_constants::*;
 use crate::piece::Piece;
 use itertools::chain;
@@ -7,6 +10,15 @@ pub struct PieceQueue {
     data: u64,
     seed: usize,
     index: u8,
+}
+
+impl Display for PieceQueue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for i in 0..5 {
+            write!(f, "{} ", PIECE_NAME[self.peek_ahead(i) as usize])?
+        }
+        Ok(())
+    }
 }
 
 impl PieceQueue {

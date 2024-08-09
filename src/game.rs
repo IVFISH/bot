@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use crate::board::Board;
+use crate::constants::piece_constants::PIECE_NAME;
 use crate::piece::Piece;
 use crate::piece_queue::PieceQueue;
 use std::fmt::{Display, Formatter};
@@ -18,6 +19,15 @@ pub struct Game {
 impl Display for Game {
     /// returns a string representation of the board
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(
+            f,
+            "{} | [{}] {}",
+            PIECE_NAME
+                .get(self.hold.unwrap_or(255) as usize)
+                .unwrap_or(&'-'),
+            PIECE_NAME[self.active.r#type as usize],
+            self.queue
+        )?;
         write!(f, "{}", self.board)?;
         Ok(())
     }

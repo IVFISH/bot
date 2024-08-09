@@ -25,6 +25,8 @@ pub mod piece_constants {
     pub const PIECE_J: u8 = 5;
     pub const PIECE_T: u8 = 6;
 
+    pub const PIECE_NAME: [char; 7] = ['Z', 'L', 'O', 'S', 'I', 'J', 'T'];
+
     pub const PIECE_ROTATIONS: [[[[i8; 2]; PIECE_SIZE]; NUM_ROTATE_STATES]; NUM_PIECES] = [
         Z_ROTATIONS,
         L_ROTATIONS,
