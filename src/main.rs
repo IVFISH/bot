@@ -6,11 +6,13 @@
 pub mod game;
 pub mod scalar;
 pub mod simd;
+pub mod simd2;
 
 use game::*;
-use std::time;
-use simd::*;
 use scalar::*;
+use simd::*;
+use simd2::*;
+use std::time;
 
 fn main() {
     // note: the queue is backwards (also 1-indexed)
@@ -19,7 +21,7 @@ fn main() {
     let now1 = time::Instant::now();
     let res1 = search_scalar(game);
     println!(
-        "found {} boards in {} microseconds",
+        "scalar found {} boards in {} microseconds",
         res1.len(),
         now1.elapsed().as_micros()
     );
@@ -31,6 +33,14 @@ fn main() {
     //     res2.len(),
     //     now2.elapsed().as_micros()
     // );
+
+    let now3 = time::Instant::now();
+    let res3 = search_simd2(game);
+    println!(
+        "simd found {} boards in {} microseconds",
+        res3[0].len(),
+        now3.elapsed().as_micros()
+    );
 
     // println!("{:?}", res2.last().unwrap().board);
 }

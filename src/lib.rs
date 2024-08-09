@@ -5,5 +5,6 @@
 
 pub mod game;
 pub mod simd;
+pub mod simd2;
 pub mod scalar;
 pub mod dotproduct;

@@ -5,26 +5,21 @@ use std::collections::*;
 /// Does a BFS to find all future game states from a given Game.
 /// Searches until the queue is empty.
 pub fn search_scalar(game: Game) -> Vec<Game> {
-    let mut res = Vec::new();
-    let mut bfs = VecDeque::new();
-    bfs.push_front(vec![game]);
+    let mut bfs = vec![game];
 
     while !bfs.is_empty() {
         // take all from que with the same Game.queue
         // iterate the placements with SIMD
-        let me = bfs.pop_front().unwrap();
-        let (piece, new_queue) = Game::next(me[0].queue);
+        let (piece, new_queue) = Game::next(bfs[0].queue);
 
         if piece == 0 {
             break;
         };
 
-        let next = process_scalar(&me, piece, new_queue);
-
-        // res.extend(next.clone());
-        bfs.push_back(next);
+        bfs = process_scalar(&bfs, piece, new_queue);
     }
-    res
+
+    bfs
 }
 
 pub fn process_scalar(work: &[Game], piece: usize, new_queue: usize) -> Vec<Game> {
