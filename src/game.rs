@@ -19,7 +19,7 @@ impl Game {
     }
 }
 
-pub const PIECES: [[[usize; 3]; 4]; 3] = [
+pub const PIECES: [[[u16; 3]; 4]; 3] = [
     // T
     [
         // N

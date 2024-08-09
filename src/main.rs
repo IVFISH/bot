@@ -3,9 +3,9 @@
 #![feature(array_chunks)]
 #![feature(slice_as_chunks)]
 
-mod game;
-mod scalar;
-mod simd;
+pub mod game;
+pub mod scalar;
+pub mod simd;
 
 use game::*;
 use std::time;
@@ -16,21 +16,21 @@ fn main() {
     // note: the queue is backwards (also 1-indexed)
     let game = Game::new(0x21_321);
 
-    // let now = time::Instant::now();
-    // let res1 = search_scalar(game);
-    // println!(
-    //     "found {} boards in {} microseconds",
-    //     res1.len(),
-    //     now.elapsed().as_micros()
-    // );
-
-    let now2 = time::Instant::now();
-    let res2 = search_simd(game);
+    let now1 = time::Instant::now();
+    let res1 = search_scalar(game);
     println!(
         "found {} boards in {} microseconds",
-        res2.len(),
-        now2.elapsed().as_micros()
+        res1.len(),
+        now1.elapsed().as_micros()
     );
 
-    println!("{:?}", res2.last().unwrap().board);
+    // let now2 = time::Instant::now();
+    // let res2 = search_simd(game);
+    // println!(
+    //     "found {} boards in {} microseconds",
+    //     res2.len(),
+    //     now2.elapsed().as_micros()
+    // );
+
+    // println!("{:?}", res2.last().unwrap().board);
 }

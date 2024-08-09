@@ -15,15 +15,14 @@ pub fn search_scalar(game: Game) -> Vec<Game> {
         let me = bfs.pop_front().unwrap();
         let (piece, new_queue) = Game::next(me[0].queue);
 
-        // we can actually break here i think
         if piece == 0 {
-            continue;
+            break;
         };
 
         let next = process_scalar(&me, piece, new_queue);
 
-        bfs.push_back(next.clone());
-        res.extend(next);
+        // res.extend(next.clone());
+        bfs.push_back(next);
     }
     res
 }
@@ -36,10 +35,12 @@ pub fn process_scalar(work: &[Game], piece: usize, new_queue: usize) -> Vec<Game
 
         // TODO: include col 0, 9 :)
         for col in 1..9 {
+            let pz0 = p_bitmask[0].trailing_zeros() as i8;
+            let pz1 = p_bitmask[1].trailing_zeros() as i8;
+            let pz2 = p_bitmask[2].trailing_zeros() as i8;
+            // mask the piece onto the game's board
             for &g in work {
-                // mask the piece onto the game's board
-
-                let g = process_game(g, p_bitmask, col, new_queue);
+                let g = process_game(g, p_bitmask, pz0, pz1, pz2, col, new_queue);
                 next.push(g);
             }
         }
@@ -47,20 +48,29 @@ pub fn process_scalar(work: &[Game], piece: usize, new_queue: usize) -> Vec<Game
     next
 }
 
-fn process_game(mut g: Game, p_bitmask: [usize; 3], col: usize, new_queue: usize) -> Game {
+#[inline(always)]
+fn process_game(
+    mut g: Game,
+    p_bitmask: [u16; 3],
+    pz0: i8,
+    pz1: i8,
+    pz2: i8,
+    col: usize,
+    new_queue: usize,
+) -> Game {
     let x = g.board[col - 1];
-    let y = g.board[col];
+    let y = g.board[col + 0];
     let z = g.board[col + 1];
 
-    let i = (16 - x.leading_zeros() as i8) - (p_bitmask[0].trailing_zeros() as i8);
-    let j = (16 - y.leading_zeros() as i8) - (p_bitmask[1].trailing_zeros() as i8);
-    let k = (16 - z.leading_zeros() as i8) - (p_bitmask[2].trailing_zeros() as i8);
+    let i = (16 - x.leading_zeros() as i8) - pz0;
+    let j = (16 - y.leading_zeros() as i8) - pz1;
+    let k = (16 - z.leading_zeros() as i8) - pz2;
 
     let n = max(max(i, j), k);
 
-    g.board[col - 1] |= (p_bitmask[0] << n) as u16;
-    g.board[col] |= (p_bitmask[1] << n) as u16;
-    g.board[col + 1] |= (p_bitmask[2] << n) as u16;
+    g.board[col - 1] |= p_bitmask[0] << n;
+    g.board[col + 0] |= p_bitmask[1] << n;
+    g.board[col + 1] |= p_bitmask[2] << n;
 
     Game {
         board: g.board,
