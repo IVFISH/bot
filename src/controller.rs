@@ -1,13 +1,19 @@
 #![allow(dead_code)]
 
+use std::cmp::max;
+use std::fmt::{Display, Formatter};
+
 use crate::board::Board;
 use crate::command::Command;
+use crate::constants::board_constants::{BOARD_WIDTH, VISIBLE_BOARD_HEIGHT};
+use crate::constants::piece_constants::{NUM_ROTATE_STATES, PIECE_ROTATIONS};
 use crate::piece::Piece;
 
 #[derive(Debug)]
 pub struct Controller<'a> {
     pub piece: &'a mut Piece,
     pub board: &'a Board,
+    cmaps: CollisionMaps,
     commands: Vec<Command>,
     pieces: Vec<Piece>,
 }
@@ -20,6 +26,7 @@ impl<'a> Controller<'a> {
         Self {
             piece,
             board,
+            cmaps: CollisionMaps::new(board, cp.r#type),
             commands: vec![Command::Null],
             pieces: vec![cp],
         }
@@ -47,27 +54,29 @@ impl<'a> Controller<'a> {
     pub fn do_command(&mut self, command: &Command) -> bool {
         match *command {
             Command::Null => true, // do nothing
-            Command::MoveHorizontal(mag) => {
-                let [dir_row, dir_col] = [0, mag];
-                Self::can_move_piece(self.board, self.piece, [dir_row, dir_col])
-                    .then(|| self.piece.r#move(dir_row, dir_col))
-                    .is_some()
-            }
+            Command::MoveHorizontal(mag) => self
+                .cmaps
+                .not_obstructed(
+                    self.piece.dir,
+                    self.piece.row as i8,
+                    self.piece.col as i8 + mag,
+                )
+                .then(|| self.piece.move_unchecked(0, mag))
+                .is_some(),
             Command::MoveDrop => {
-                let max_down = self.board.piece_max_down(self.piece);
+                let max_down = self.cmaps.max_down(self.piece.dir, self.piece.row, self.piece.col);
                 (max_down > 0)
-                    .then(|| self.piece.r#move(-max_down, 0))
+                    .then(|| self.piece.move_unchecked(-max_down, 0))
                     .is_some()
             }
             Command::Rotate(dir) => {
                 for [dir_row, dir_col] in self.piece.get_kicks(dir).iter() {
-                    if Self::can_rotate_kick_piece(
-                        self.board,
-                        self.piece,
-                        dir,
-                        [*dir_row, *dir_col],
+                    if self.cmaps.not_obstructed(
+                        (self.piece.dir + dir) % 4,
+                        self.piece.row as i8 + dir_row,
+                        self.piece.col as i8 + dir_col,
                     ) {
-                        self.piece.rotate_with_kicks(dir, *dir_row, *dir_col);
+                        self.piece.rotate_with_kicks_unchecked(dir, *dir_row, *dir_col);
                         return true;
                     }
                 }
@@ -185,6 +194,64 @@ impl<'a> Controller<'a> {
         let mut cp = *piece;
         cp.rotate_with_kicks(dir, dir_row, dir_col);
         Piece::can_rotate_kick(piece, dir, dir_row, dir_col) && !board.piece_collision(&cp)
+    }
+}
+
+#[derive(Debug)]
+struct CollisionMaps {
+    boards: [[u64; BOARD_WIDTH]; NUM_ROTATE_STATES],
+}
+
+impl Display for CollisionMaps {
+    /// returns a string representation of the board
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        for board in self.boards.iter() {
+            for row in (0..VISIBLE_BOARD_HEIGHT).rev() {
+                for col in board.iter() {
+                    if (col >> row & 1) == 1 {
+                        write!(f, "■ ")?
+                    } else {
+                        write!(f, "□ ")?
+                    }
+                }
+                writeln!(f)?
+            }
+            writeln!(f)?
+        }
+        Ok(())
+    }
+}
+
+impl CollisionMaps {
+    fn new(board: &Board, piecetype: u8) -> Self {
+        let mut boards = [[0; 10]; 4];
+        // for dir in 0..NUM_ROTATE_STATES {
+        for (dir, cmap) in boards.iter_mut().enumerate() {
+            for [row, col] in PIECE_ROTATIONS[piecetype as usize][dir] {
+                for x in 0..10 {
+                    let c = board.arr.get((x + col) as usize).copied().unwrap_or(!0);
+                    let c = match row < 0 {
+                        true => !(!c << -row),
+                        false => c >> row,
+                    };
+                    cmap[x as usize] |= c;
+                }
+            }
+        }
+        CollisionMaps { boards }
+    }
+
+    fn not_obstructed(&self, dir: u8, row: i8, col: i8) -> bool {
+        let v = row < 0
+            || self.boards[dir as usize]
+                .get(col as usize)
+                .map(|&c| c & 1 << row != 0)
+                .unwrap_or(true);
+        !v
+    }
+
+    fn max_down(&self, dir: u8, row: usize, col: usize) -> i8 {
+        row as i8 - (u64::BITS - (self.boards[dir as usize][col] & !(u64::MAX << row)).leading_zeros()) as i8
     }
 }
 

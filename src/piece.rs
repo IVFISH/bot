@@ -184,8 +184,7 @@ impl Piece {
     /// if the new position would be in bounds
     pub fn r#move(&mut self, dir_row: i8, dir_col: i8) -> &mut Self {
         if Self::can_move(self, dir_row, dir_col) {
-            self.row = (self.row as i8 + dir_row) as usize;
-            self.col = (self.col as i8 + dir_col) as usize;
+            self.move_unchecked(dir_row, dir_col);
         }
         self
     }
@@ -203,10 +202,21 @@ impl Piece {
     /// moves a piece in the specified vector direction
     pub fn rotate_with_kicks(&mut self, dir: u8, dir_row: i8, dir_col: i8) -> &mut Self {
         if Self::can_rotate_kick(self, dir, dir_row, dir_col) {
-            self.dir = (self.dir + dir) % 4;
-            self.row = (self.row as i8 + dir_row) as usize;
-            self.col = (self.col as i8 + dir_col) as usize;
+            self.rotate_with_kicks_unchecked(dir, dir_row, dir_col);
         };
+        self
+    }
+
+    pub fn move_unchecked(&mut self, dir_row: i8, dir_col: i8) -> &mut Self {
+        self.row = (self.row as i8 + dir_row) as usize;
+        self.col = (self.col as i8 + dir_col) as usize;
+        self
+    }
+
+    pub fn rotate_with_kicks_unchecked(&mut self, dir: u8, dir_row: i8, dir_col: i8) -> &mut Self {
+        self.dir = (self.dir + dir) % 4;
+        self.row = (self.row as i8 + dir_row) as usize;
+        self.col = (self.col as i8 + dir_col) as usize;
         self
     }
 
