@@ -30,7 +30,7 @@ impl AllClearPruner {
 
     /// the sum of the # of odd line clears and t-pieces must be even
     /// https://docs.google.com/document/d/1udtq235q2SdoFYwMZNu-GRYR-4dCYMkp0E8_Hw1XTyg/edit
-    fn checkerboard_rule(&self, board: &[u64], game: &Game, height: usize) -> bool {
+    fn checkerboard_rule(&self, board: &[u32], game: &Game, height: usize) -> bool {
         // checkerboard rule is only for areas of multiples of 2
         if (board.len() * height) & 1 != 0 {
             return true;
@@ -47,7 +47,7 @@ impl AllClearPruner {
 
     /// the sum of the number of L, J, and vertical T pieces must be even
     /// https://docs.google.com/document/d/1udtq235q2SdoFYwMZNu-GRYR-4dCYMkp0E8_Hw1XTyg/edit
-    fn columnar_rule(&self, board: &[u64], game: &Game, height: usize) -> bool {
+    fn columnar_rule(&self, board: &[u32], game: &Game, height: usize) -> bool {
         // columnar rule is only for areas of multiples of 4
         if (board.len() * height) & 0b11 != 0 {
             return true;
@@ -69,13 +69,13 @@ impl AllClearPruner {
     /// (not sure how this one works yet)
     // TODO: Figure this out
     #[allow(unused)]
-    fn piece_dependencies(&self, board: &[u64], height: usize) -> bool {
+    fn piece_dependencies(&self, board: &[u32], height: usize) -> bool {
         true
     }
 
     /// checks if the number of empty minos
     /// is a multiple of `constants::piece_constants::PIECE_SIZE`
-    fn mino_rule(&self, board: &[u64], height: usize) -> bool {
+    fn mino_rule(&self, board: &[u32], height: usize) -> bool {
         // if we are using tetraminos
         // we can just check if the last 2 bits are 0
         let empty = (board.len() * height) as u32 - Board::cell_count(board);
@@ -83,12 +83,12 @@ impl AllClearPruner {
     }
 
     /// checks if the maximum cell height is <= height
-    fn height_rule(&self, board: &[u64], height: usize) -> bool {
+    fn height_rule(&self, board: &[u32], height: usize) -> bool {
         Board::get_max_height(board) <= height
     }
 
     /// do all the conditions
-    fn all_rules(&self, board: &[u64], game: &Game, height: usize) -> bool {
+    fn all_rules(&self, board: &[u32], game: &Game, height: usize) -> bool {
         self.height_rule(board, height)
             && self.checkerboard_rule(board, game, height)
             && self.columnar_rule(board, game, height)
@@ -99,7 +99,7 @@ impl AllClearPruner {
     /// do conditions for partials
     // TODO: Figure out if we need game here
     #[allow(unused)]
-    fn partition_rules(&self, board: &[u64], game: &Game, height: usize) -> bool {
+    fn partition_rules(&self, board: &[u32], game: &Game, height: usize) -> bool {
         self.mino_rule(board, height)
     }
 }

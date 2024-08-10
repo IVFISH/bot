@@ -407,7 +407,7 @@ mod tests {
             .into_iter()
             .enumerate()
             .all(|(i, p)| p == bot.game.queue.peek_ahead(i as u8)));
-        assert!(bot.move_gen(3).placements.len() == 118_151);
+        assert_eq!(bot.move_gen(3).placements.len(), 118_151);
 
         let bot = Bot::<NoPruner>::with_seed(19);
         let desired_q = [3, 6, 5, 1];

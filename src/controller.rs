@@ -201,7 +201,7 @@ impl<'a> Controller<'a> {
 
 #[derive(Debug)]
 struct CollisionMaps {
-    boards: [[u64; BOARD_WIDTH]; NUM_ROTATE_STATES],
+    boards: [[u32; BOARD_WIDTH]; NUM_ROTATE_STATES],
 }
 
 impl Display for CollisionMaps {
@@ -249,12 +249,13 @@ impl CollisionMaps {
                 .get(col as usize)
                 .map(|&c| c & 1 << row != 0)
                 .unwrap_or(true);
+        // println!("\n{}\n{}", dir, Board {arr: self.boards[dir as usize]});
         !v
     }
 
     fn max_down(&self, dir: u8, row: usize, col: usize) -> i8 {
         row as i8
-            - (u64::BITS - (self.boards[dir as usize][col] & !(u64::MAX << row)).leading_zeros())
+            - (u32::BITS - (self.boards[dir as usize][col] & !(u32::MAX << row)).leading_zeros())
                 as i8
     }
 }

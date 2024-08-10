@@ -6,7 +6,7 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, Default, Copy, Eq, PartialEq, Hash)]
 pub struct Board {
-    pub arr: [u64; BOARD_WIDTH],
+    pub arr: [u32; BOARD_WIDTH],
 }
 
 impl Display for Board {
@@ -53,7 +53,7 @@ impl Board {
     /// returns the index of the first empty row in a col below the given row
     #[inline]
     pub fn get_height_below(&self, col: usize, row: usize) -> usize {
-        Self::height(self.arr[col] & !(u64::MAX << row))
+        Self::height(self.arr[col] & !(u32::MAX << row))
     }
 
     /// returns the state (0 or 1) at the grid's row and col
@@ -150,20 +150,20 @@ impl Board {
     // statistics -------------------------------
     /// the row of the highest placed mino
     #[inline]
-    pub fn get_max_height(arr: &[u64]) -> usize {
+    pub fn get_max_height(arr: &[u32]) -> usize {
         Self::height(*arr.iter().max().unwrap())
     }
 
     /// the row of the lowest placed mino
     #[inline]
-    pub fn get_min_height(arr: &[u64]) -> usize {
+    pub fn get_min_height(arr: &[u32]) -> usize {
         Self::height(*arr.iter().min().unwrap())
     }
 
     /// returns the amount of t-slots (with an accessible overhang)
     /// present in the current board
     #[inline]
-    pub fn t_slot(arr: &[u64]) -> usize {
+    pub fn t_slot(arr: &[u32]) -> usize {
         const SIZE: usize = 3;
         (Self::get_min_height(arr)..=(Self::get_max_height(arr) - SIZE))
             .map(|row| {
@@ -177,7 +177,7 @@ impl Board {
     /// returns a vector of size=9 of the adjacent
     /// differences between column heights
     #[inline]
-    pub fn get_adjacent_height_differences(arr: &[u64]) -> Vec<usize> {
+    pub fn get_adjacent_height_differences(arr: &[u32]) -> Vec<usize> {
         arr.windows(2)
             .map(|w| Self::height(w[0]).abs_diff(Self::height(w[1])))
             .collect()
@@ -187,8 +187,8 @@ impl Board {
     /// see https://docs.google.com/document/d/1udtq235q2SdoFYwMZNu-GRYR-4dCYMkp0E8_Hw1XTyg/edit
     /// for an explanation of parity and PC theory
     #[inline]
-    pub fn checkerboard_parity(arr: &[u64]) -> i8 {
-        const MASK: u64 = 0xAAAAAAAAAA; // 1010..
+    pub fn checkerboard_parity(arr: &[u32]) -> i8 {
+        const MASK: u32 = 0xAAAAAAAA; // 1010..
         arr.chunks(2)
             .map(|cols| {
                 (cols[0] & MASK).count_ones() as i8 - (cols[0] & (MASK >> 1)).count_ones() as i8
@@ -202,7 +202,7 @@ impl Board {
     /// see https://docs.google.com/document/d/1udtq235q2SdoFYwMZNu-GRYR-4dCYMkp0E8_Hw1XTyg/edit
     /// for an explanation of parity and PC theory
     #[inline]
-    pub fn columnar_parity(arr: &[u64]) -> i8 {
+    pub fn columnar_parity(arr: &[u32]) -> i8 {
         arr.chunks(2)
             .map(|cols| ((cols[0]).count_ones() as i8) - (cols[1].count_ones() as i8))
             .sum()
@@ -210,15 +210,16 @@ impl Board {
 
     /// returns the amount of non-empty cells on the board
     #[inline]
-    pub fn cell_count(arr: &[u64]) -> u32 {
+    pub fn cell_count(arr: &[u32]) -> u32 {
         arr.iter().map(|c| c.count_ones()).sum()
     }
 
     /// partitions the board into sections that are split by columns of height row
     /// the full columns are not included in the partition
     /// includes the range of the included columns by
+    // TODO: maybe figure out how to not return a vec -- save some allocations
     #[inline]
-    pub fn partition(&self, row: usize) -> Vec<&[u64]> {
+    pub fn partition(&self, row: usize) -> Vec<&[u32]> {
         let mut out = Vec::new();
         let mut prev = 0;
         let iter = self
@@ -242,13 +243,13 @@ impl Board {
     /// returns whether the board is empty
     #[inline]
     pub fn all_clear(&self) -> bool {
-        self.arr.iter().sum::<u64>() == 0
+        self.arr.iter().sum::<u32>() == 0
     }
 
     /// clears all filled lines on the board and moves down
     /// the blocks above those lines
     #[inline]
-    pub fn clear_lines(&mut self) -> u64 {
+    pub fn clear_lines(&mut self) -> u32 {
         let full_rows = self.arr.into_iter().reduce(|x, y| x & y).unwrap();
         let mut rows = full_rows; // copy
         while rows != 0 {
@@ -307,8 +308,8 @@ impl Board {
 
     /// the height of a col
     #[inline]
-    fn height(col: u64) -> usize {
-        (u64::BITS - col.leading_zeros()) as usize
+    fn height(col: u32) -> usize {
+        (u32::BITS - col.leading_zeros()) as usize
     }
 
     /// whether a 3x3 grid is a horizontal t-slot
@@ -317,8 +318,8 @@ impl Board {
     /// 0 0 0  |  0 0 0
     /// 1 0 1  |  1 0 1
     #[inline]
-    fn check_hor_t(arr: &[u64], row: usize) -> bool {
-        const MASK: u64 = 0b111;
+    fn check_hor_t(arr: &[u32], row: usize) -> bool {
+        const MASK: u32 = 0b111;
         let c1 = arr[0] >> row & MASK;
         let c2 = arr[1] >> row & MASK;
         let c3 = arr[2] >> row & MASK;

@@ -67,7 +67,7 @@ impl Game {
         let cleared = self.board.clear_lines();
         // update line clear history
         self.line_clears <<= 4;
-        self.line_clears |= (cleared >> self.active.bottom_row().unwrap()) as u32 & 0xF;
+        self.line_clears |= (cleared >> self.active.bottom_row().unwrap()) & 0xF;
         // update the active
         self.active = self.queue.next();
         self
