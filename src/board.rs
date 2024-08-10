@@ -162,16 +162,18 @@ impl Board {
 
     /// returns the amount of t-slots (with an accessible overhang)
     /// present in the current board
+    // TODO: SPEED THIS UP WITH SIMD
     #[inline]
+    #[allow(clippy::unnecessary_fold)] // using any is 40% slower
     pub fn t_slot(arr: &[u32]) -> usize {
         const SIZE: usize = 3;
         (Self::get_min_height(arr)..=(Self::get_max_height(arr) - SIZE))
             .map(|row| {
                 arr.windows(SIZE)
-                    .map(|cols| Self::check_hor_t(cols, row) as usize)
-                    .sum::<usize>()
+                    .fold(false, |t_slot, cols| t_slot || Self::check_hor_t(cols, row))
             })
-            .sum()
+            .filter(|b| *b)
+            .count()
     }
 
     /// returns a vector of size=9 of the adjacent
@@ -447,16 +449,18 @@ mod tests {
 
     #[test]
     fn test_t_slot() {
-        let mut board = Board::new();
-        board.arr[0] = 0b001;
-        board.arr[1] = 0b000;
-        board.arr[2] = 0b101;
+        #[rustfmt::skip]
+        let boardstr = [
+            "..x.......",
+            "..........",
+            "x.x.......",
+        ];
+        let mut board = board_from_string(&boardstr);
         assert_eq!(Board::t_slot(&board.arr), 1);
 
         board.arr[0] <<= 10;
         board.arr[1] <<= 10;
         board.arr[2] <<= 10;
-        println!("{}", board);
         assert_eq!(Board::t_slot(&board.arr), 1);
 
         board.arr[6] = 0b001;
@@ -465,6 +469,38 @@ mod tests {
         assert_eq!(Board::t_slot(&board.arr), 2);
 
         board.arr[2] = 0;
+        assert_eq!(Board::t_slot(&board.arr), 1);
+
+        // Multiple tslot on a row
+        #[rustfmt::skip]
+        let boardstr = [
+            "xx..xx..xx",
+            "x...x...xx",
+            "xx.xxx.xxx",
+        ];
+        let board = board_from_string(&boardstr);
+        assert_eq!(Board::t_slot(&board.arr), 1);
+
+        // Offset tslots
+        #[rustfmt::skip]
+        let boardstr = [
+            "xx.....x..",
+            "xx..x...xx",
+            "x...xx.xxx",
+            "xx.xxxxxxx",
+        ];
+        let board = board_from_string(&boardstr);
+        assert_eq!(Board::t_slot(&board.arr), 2);
+
+        // Not a tslot
+        #[rustfmt::skip]
+        let boardstr = [
+            "xxxx...xxx",
+            "xxx.....xx",
+            "xxxx.x.xxx",
+        ];
+        let board = board_from_string(&boardstr);
+        // TODO: Figure out if this should be 0?
         assert_eq!(Board::t_slot(&board.arr), 1);
     }
 
