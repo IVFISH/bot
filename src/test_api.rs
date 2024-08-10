@@ -308,6 +308,57 @@ pub mod functions {
         board_from_string(&boardstr)
     }
 
+    pub fn versus_board_short() -> Board {
+        #[rustfmt::skip]
+        let boardstr = [
+            "......xx..",
+            "..xx.xxxxx",
+            "...xxxxxxx",
+            "x.xxxxxxxx",
+        ];
+        board_from_string(&boardstr)
+    }
+
+    pub fn versus_board_medium() -> Board {
+        #[rustfmt::skip]
+        let boardstr = [
+            "......xx..",
+            "..xx.xxxxx",
+            "...xxxxxxx",
+            "x.xxxxxxxx",
+            "x.xxxxxxxx",
+            "x.xxxxxxxx",
+            "x.xxxxxxxx",
+            "x.xxxxxxxx",
+            "xxxxxxx.xx",
+        ];
+        board_from_string(&boardstr)
+    }
+
+    pub fn versus_board_tall() -> Board {
+        #[rustfmt::skip]
+        let boardstr = [
+            "......xx..",
+            "..xx.xxxxx",
+            "...xxxxxxx",
+            "x.xxxxxxxx",
+            "x.xxxxxxxx",
+            "x.xxxxxxxx",
+            "x.xxxxxxxx",
+            "x.xxxxxxxx",
+            "xxxx.xxxxx",
+            "xxxxxxx.xx",
+            "xxxxxxx.xx",
+            "xxxxxxx.xx",
+            "xxxxxxx.xx",
+            "xxxxxxxx.x",
+            "xxxxxxxx.x",
+            "xxxxxxxx.x",
+            "xx.xxxxxxx",
+        ];
+        board_from_string(&boardstr)
+    }
+
     pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
         let mut s = DefaultHasher::new();
         t.hash(&mut s);
