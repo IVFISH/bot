@@ -73,7 +73,30 @@ fn add_list(board: &mut Board, list: Vec<[usize; 2]>) {
     }
 }
 
+pub fn eval_benchmark(c: &mut Criterion) {
+    bench_versus(c, "heights", |b| {
+        black_box(b.get_heights());
+    });
+}
+
+fn bench_versus<F>(c: &mut Criterion, name: &str, eval: F)
+where
+    F: Fn(Board),
+{
+    let board_short = versus_board_short();
+    let board_med = versus_board_medium();
+    let board_tall = versus_board_tall();
+    let mut group = c.benchmark_group(name);
+
+    group.bench_function("short", |b| b.iter(|| black_box(eval(board_short))));
+    group.bench_function("med", |b| b.iter(|| black_box(eval(board_med))));
+    group.bench_function("tall", |b| b.iter(|| black_box(eval(board_tall))));
+
+    group.finish();
+}
+
 criterion_group!(benches, movegen_benchmark_no_pruning);
 // criterion_group!(benches, movegen_benchmark_pc_pruning);
 // criterion_group!(benches, clearlines_benchmark);
+// criterion_group!(benches, eval_benchmark);
 criterion_main!(benches);

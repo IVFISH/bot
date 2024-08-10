@@ -18,6 +18,28 @@ use crate::pruner::*;
 use std::time::Instant;
 
 #[allow(unused)]
+fn play() {
+    let mut bot = Bot::<SimplePruner>::new();
+    let n = 1000;
+
+    let mut t = 0;
+
+    for _ in 0..n {
+        println!("{}", bot.game);
+
+        let now = Instant::now();
+        bot.r#do();
+        t += now.elapsed().as_millis();
+        println!(
+            "Spent {} ms on movegen and execution",
+            now.elapsed().as_millis(),
+        );
+    }
+    println!("------------------------\n{}", bot.game);
+    println!("Averaged {} ms", t / n);
+}
+
+#[allow(unused)]
 fn bench() {
     let bot = Bot::<NoPruner>::new();
     let n = 10;
@@ -52,7 +74,8 @@ fn test() {
 }
 
 fn main() {
-    //bench();
+    // bench();
     test();
+    // play();
     //server::init();
 }

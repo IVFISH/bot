@@ -142,6 +142,27 @@ impl Pruner for AllClearPruner {
     }
 }
 
+pub struct SimplePruner {}
+
+impl Pruner for SimplePruner {
+    fn new() -> Self {
+        Self {}
+    }
+
+    fn precondition(&self, placement: &Placement) -> bool {
+        // TODO: Make this not die
+        let board = placement.game.board;
+        let max = *board.get_heights().iter().max().unwrap();
+        let min = *board.get_heights().iter().max().unwrap();
+
+        max < 10 && max - min < 4
+    }
+
+    fn prune(&self, placements: Vec<Placement>) -> Vec<Placement> {
+        placements
+    }
+}
+
 pub struct NoPruner {}
 
 impl Pruner for NoPruner {
