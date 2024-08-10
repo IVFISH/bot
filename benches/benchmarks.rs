@@ -1,5 +1,4 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use std::time::Duration;
 use tetris::board::*;
 use tetris::bot::*;
 use tetris::constants::board_constants::*;
@@ -80,6 +79,18 @@ pub fn eval_benchmark(c: &mut Criterion) {
         black_box(b.get_heights());
     });
 
+    bench_versus(c, "min heights", |b| {
+        black_box(Board::get_min_height(&b.arr));
+    });
+
+    bench_versus(c, "max heigts", |b| {
+        black_box(Board::get_max_height(&b.arr));
+    });
+
+    bench_versus(c, "total holes", |b| {
+        black_box(Board::get_total_holes(&b.arr));
+    });
+
     bench_versus(c, "tslot", |b| {
         black_box(Board::t_slot(&b.arr));
     });
@@ -93,8 +104,6 @@ where
     let board_med = versus_board_medium();
     let board_tall = versus_board_tall();
     let mut group = c.benchmark_group(name);
-    group.warm_up_time(Duration::from_secs(1));
-    group.measurement_time(Duration::from_secs(3));
 
     group.bench_function("short", |b| b.iter(|| black_box(eval(board_short))));
     group.bench_function("med", |b| b.iter(|| black_box(eval(board_med))));

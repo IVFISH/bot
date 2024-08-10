@@ -160,6 +160,13 @@ impl Board {
         Self::height(*arr.iter().min().unwrap())
     }
 
+    #[inline]
+    pub fn get_total_holes(arr: &[u32]) -> u32 {
+        arr.iter()
+            .map(|col| col.count_zeros() - col.leading_zeros())
+            .sum()
+    }
+
     /// returns the amount of t-slots (with an accessible overhang)
     /// present in the current board
     // TODO: SPEED THIS UP WITH SIMD
@@ -422,6 +429,30 @@ mod tests {
         assert_eq!(board.get_heights(), [0, 0, 6, 6, 0, 0, 0, 0, 0, 0]);
         remove_list(&mut board, vec![[5, 2], [5, 3]]);
         assert_eq!(board.get_heights(), [0, 0, 4, 0, 0, 0, 0, 0, 0, 0]);
+    }
+
+    #[test]
+    fn test_total_holes() {
+        let board = Board::new();
+        assert_eq!(Board::get_total_holes(&board.arr), 0);
+
+        #[rustfmt::skip]
+        let boardstr = [
+            "..........",
+            ".x........",
+            "x.x.......",
+        ];
+        let board = board_from_string(&boardstr);
+        assert_eq!(Board::get_total_holes(&board.arr), 1);
+
+        #[rustfmt::skip]
+        let boardstr = [
+            "......x...",
+            ".xxxxx.xx.",
+            "x.x.......",
+        ];
+        let board = board_from_string(&boardstr);
+        assert_eq!(Board::get_total_holes(&board.arr), 8);
     }
 
     #[test]

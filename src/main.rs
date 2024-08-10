@@ -75,7 +75,7 @@ fn test() {
 
 fn main() {
     // bench();
-    test();
-    // play();
+    // test();
+    play();
     //server::init();
 }
