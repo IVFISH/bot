@@ -250,16 +250,15 @@ impl Board {
     #[inline]
     pub fn clear_lines(&mut self) -> u64 {
         let full_rows = self.arr.into_iter().reduce(|x, y| x & y).unwrap();
-        for i in 0..BOARD_WIDTH {
-            let mut rows = full_rows; // copy
-            while rows != 0 {
-                let r = rows.trailing_zeros();
-                let mask = (1 << r) - 1;
-                let col = self.arr[i];
-                self.arr[i] = col & mask | col >> 1 & !mask;
-                rows &= !(1 << r);
-                rows >>= 1;
+        let mut rows = full_rows; // copy
+        while rows != 0 {
+            let r = rows.trailing_zeros();
+            let mask = (1 << r) - 1;
+            for col in self.arr.iter_mut() {
+                *col = *col & mask | *col >> 1 & !mask
             }
+            rows &= !(1 << r);
+            rows >>= 1;
         }
         full_rows
     }
