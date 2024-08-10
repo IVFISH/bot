@@ -45,21 +45,23 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
     // move generation --------------------------
     /// the API function for getting the next move
     /// this also updates the bot to whatever it did
-    pub fn r#do(&mut self) -> Suggestion {
+    pub fn do_suggest(&mut self) -> Suggestion {
+        self.r#do();
+        Suggestion::new(self.game.board)
+    }
+
+    /// the API function for doing the next move
+    /// this also updates the bot to whatever it did
+    pub fn r#do(&mut self) {
         // todo fix magic numbers
         let depth = 4;
-        let placements = self.move_gen(depth);
-        assert!(!placements.placements.is_empty());
-        let chosen = &placements.placements[0]; // check for out of bounds!
+        let chosen = self.move_gen(depth).placements.first().unwrap().clone(); // check for out of bounds!
         let piece_encoding = (chosen.game.history >> (16 * (depth - 1)) & 0xFFFF) as u16;
         let piece = Piece::decode(piece_encoding);
         let held = (piece_encoding >> 14 & 1) != 0;
         // place the piece
         self.game.set_active(piece, held);
         self.game.place_active(held);
-
-        let board = self.game.board;
-        Suggestion::new(board)
     }
 
     /// the API function for generating all current moves of depth

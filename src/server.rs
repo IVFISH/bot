@@ -70,7 +70,7 @@ where
     P: Pruner + std::marker::Sync,
 {
     let _ = interval.tick().await;
-    bot.r#do()
+    bot.do_suggest()
 }
 
 /// driver function
