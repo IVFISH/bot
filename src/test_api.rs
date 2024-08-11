@@ -359,6 +359,25 @@ pub mod functions {
         board_from_string(&boardstr)
     }
 
+    pub fn versus_board_cheese() -> Board {
+        #[rustfmt::skip]
+        let boardstr = [
+            "x.xxxxxxxx",
+            "xxxxxxx.xx",
+            "xxxxxxxx.x",
+            ".xxxxxxxxx",
+            "xxx.xxxxxx",
+            "x.xxxxxxxx",
+            "xxxxxxx.xx",
+            ".xxxxxxxxx",
+            "xxxxxx.xxx",
+            "xxxxxxxx.x",
+            "x.xxxxxxxx",
+            "xxx.xxxxxx",
+        ];
+        board_from_string(&boardstr)
+    }
+
     pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
         let mut s = DefaultHasher::new();
         t.hash(&mut s);

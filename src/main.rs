@@ -15,12 +15,14 @@ mod test_api;
 
 use crate::bot::*;
 use crate::pruner::*;
+use crate::test_api::functions::*;
 use std::time::Instant;
 
 #[allow(unused)]
 fn play() {
     let mut bot = Bot::<SimplePruner>::new();
-    let n = 1000;
+    bot.game.board = versus_board_tall();
+    let n = 25;
 
     let mut t = 0;
 
@@ -28,7 +30,7 @@ fn play() {
         println!("{}", bot.game);
 
         let now = Instant::now();
-        bot.r#do();
+        bot.r#do(8);
         t += now.elapsed().as_millis();
         println!(
             "Spent {} ms on movegen and execution",

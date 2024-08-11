@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 use crate::board::*;
 use crate::constants::piece_constants::*;
 use crate::game::*;
@@ -150,16 +152,14 @@ impl Pruner for SimplePruner {
     }
 
     fn precondition(&self, placement: &Placement) -> bool {
-        // TODO: Make this not die
-        let board = placement.game.board;
-        let max = *board.get_heights().iter().max().unwrap();
-        let min = *board.get_heights().iter().max().unwrap();
-
-        max < 10 && max - min < 4
+        // Precondtion who??????
+        true
     }
 
     fn prune(&self, placements: Vec<Placement>) -> Vec<Placement> {
-        placements
+        // let mut p = placements.clone();
+        // p.sort();
+        placements.into_iter().sorted().take(10000).collect()
     }
 }
 

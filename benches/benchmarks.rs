@@ -103,11 +103,13 @@ where
     let board_short = versus_board_short();
     let board_med = versus_board_medium();
     let board_tall = versus_board_tall();
+    let board_cheese = versus_board_cheese();
     let mut group = c.benchmark_group(name);
 
     group.bench_function("short", |b| b.iter(|| black_box(eval(board_short))));
     group.bench_function("med", |b| b.iter(|| black_box(eval(board_med))));
     group.bench_function("tall", |b| b.iter(|| black_box(eval(board_tall))));
+    group.bench_function("cheese", |b| b.iter(|| black_box(eval(board_cheese))));
 
     group.finish();
 }

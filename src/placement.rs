@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use crate::board::Board;
 use crate::command::Command;
 use crate::constants::board_constants::*;
 use crate::game::Game;
@@ -13,6 +14,26 @@ pub struct Placement {
     pub base_command: Arc<Vec<Command>>,
 }
 
+impl Ord for Placement {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.eval().total_cmp(&other.eval())
+    }
+}
+
+impl Eq for Placement {}
+
+impl PartialOrd for Placement {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl PartialEq for Placement {
+    fn eq(&self, other: &Self) -> bool {
+        self.eval().eq(&other.eval())
+    }
+}
+
 impl Placement {
     pub fn new(game: Game) -> Self {
         Self {
@@ -23,6 +44,15 @@ impl Placement {
 
     pub fn get_last_piece(&self) -> Piece {
         Piece::decode((self.game.history & 0xFFFF) as u16)
+    }
+
+    // Eval functions ---------------
+    fn eval(&self) -> f32 {
+        let max = Board::get_max_height(&self.game.board.arr);
+        let min = Board::get_min_height(&self.game.board.arr);
+        let holes = Board::get_total_holes(&self.game.board.arr);
+
+        (10 * max as u32 + holes) as f32
     }
 
     /// returns the fumen string that represents the
