@@ -215,10 +215,15 @@ impl Board {
     // TODO: Maybe mirror columns 1 and 8 to cols -1 and 10 to weight edge cols evenly
     #[inline]
     pub fn get_stack_height_differences(arr: &[u32]) -> usize {
-        let min = Self::get_min_height(arr) as u32;
+        let min = Self::get_min_height(arr);
         arr.iter()
-            .filter(|&&x| x != min)
-            .collect::<ArrayVec<_, { BOARD_WIDTH - 1 }>>()
+        .filter(|&&x| Self::height(x) != min)
+        .for_each(|x| print!("{} ", x));
+        println!();
+
+        arr.iter()
+            .filter(|&&x| Self::height(x) != min)
+            .collect::<ArrayVec<_, { BOARD_WIDTH - 1}>>()
             .windows(2)
             .map(|w| Self::height(*w[0]).abs_diff(Self::height(*w[1])))
             .sum()
@@ -582,6 +587,10 @@ mod tests {
         ];
         let board = board_from_string(&boardstr);
         assert_eq!(Board::get_adjacent_height_differences(&board.arr), 10);
+
+        let board = versus_board_tall();
+        println!("{}", board);
+        assert_eq!(Board::get_adjacent_height_differences(&board.arr), 16);
     }
 
     #[test]
@@ -606,6 +615,10 @@ mod tests {
         ];
         let board = board_from_string(&boardstr);
         assert_eq!(Board::get_stack_height_differences(&board.arr), 2);
+
+        let board = versus_board_tall();
+        println!("{}", board);
+        assert_eq!(Board::get_stack_height_differences(&board.arr), 6);
     }
 
     #[test]
