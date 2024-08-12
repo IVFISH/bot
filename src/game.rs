@@ -6,6 +6,14 @@ use crate::piece::Piece;
 use crate::piece_queue::PieceQueue;
 use std::fmt::{Display, Formatter};
 
+#[derive(Copy, Clone, Default, Debug, Eq, Hash, PartialEq)]
+pub struct VersusStats {
+    pub combo: u8,
+    pub attack_chain: u8,
+    pub b2b: u8,
+    pub total_attack: u8,
+}
+
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Game {
     pub board: Board,
@@ -14,6 +22,40 @@ pub struct Game {
     pub queue: PieceQueue,
     pub history: u128,
     pub line_clears: u32,
+    pub versus: VersusStats,
+}
+
+impl Display for VersusStats {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(
+            f,
+            "attack: {} || combo: {} | b2b: {}",
+            self.total_attack, self.combo, self.b2b
+        )?;
+        Ok(())
+    }
+}
+
+impl VersusStats {
+    #[inline]
+    fn clear_lines(&mut self, amt: u8, b2b: bool) {
+        if amt == 0 {
+            self.combo = 0;
+            self.attack_chain = 0;
+        } else {
+            let attk = amt + self.combo - 1;
+            // let attk = (self.combo as i8 - 2).clamp(0, 100) as u8;
+            self.attack_chain += attk;
+            self.total_attack += attk;
+            self.combo += 1;
+
+            if b2b {
+                self.b2b += 1;
+            } else {
+                self.b2b = 0;
+            }
+        }
+    }
 }
 
 impl Display for Game {
@@ -29,6 +71,7 @@ impl Display for Game {
             self.queue
         )?;
         write!(f, "{}", self.board)?;
+        writeln!(f, "{}", self.versus)?;
         Ok(())
     }
 }
@@ -45,6 +88,7 @@ impl Game {
             board: Board::default(),
             history: 0,
             line_clears: 0,
+            versus: VersusStats::default(),
         }
     }
 
@@ -65,6 +109,7 @@ impl Game {
         // update the board
         self.board.set_piece(&self.active);
         let cleared = self.board.clear_lines();
+        self.versus.clear_lines(cleared.count_ones() as u8, false);
         // update line clear history
         self.line_clears <<= 4;
         self.line_clears |= (cleared >> self.active.bottom_row().unwrap()) & 0xF;

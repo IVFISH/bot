@@ -2,6 +2,7 @@
 
 use crate::constants::board_constants::*;
 use crate::piece::Piece;
+use arrayvec::ArrayVec;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, Default, Copy, Eq, PartialEq, Hash)]
@@ -160,10 +161,28 @@ impl Board {
         Self::height(*arr.iter().min().unwrap())
     }
 
+    /// The total amount of holes
     #[inline]
     pub fn get_total_holes(arr: &[u32]) -> u32 {
         arr.iter()
             .map(|col| col.count_zeros() - col.leading_zeros())
+            .sum()
+    }
+
+    /// The total number of unique holes. Connected holes within the same column are counted as one.
+    #[inline]
+    pub fn get_messiness(arr: &[u32]) -> usize {
+        arr.iter()
+            .map(|&e| {
+                let mut e = e >> e.trailing_ones(); // copy as mut
+                let mut count = 0;
+                while e != 0 {
+                    count += 1;
+                    e >>= e.trailing_zeros();
+                    e >>= e.trailing_ones();
+                }
+                count
+            })
             .sum()
     }
 
@@ -183,13 +202,26 @@ impl Board {
             .count()
     }
 
-    /// returns a vector of size=9 of the adjacent
-    /// differences between column heights
+    /// returns the sum of the adjacent differences between column heights
+    // TODO: Maybe mirror columns 1 and 8 to cols -1 and 10 to weight edge cols evenly
     #[inline]
-    pub fn get_adjacent_height_differences(arr: &[u32]) -> Vec<usize> {
+    pub fn get_adjacent_height_differences(arr: &[u32]) -> usize {
         arr.windows(2)
             .map(|w| Self::height(w[0]).abs_diff(Self::height(w[1])))
-            .collect()
+            .sum()
+    }
+
+    /// returns the sum of the adjacent differences between column heights IGNORING WELLS
+    // TODO: Maybe mirror columns 1 and 8 to cols -1 and 10 to weight edge cols evenly
+    #[inline]
+    pub fn get_stack_height_differences(arr: &[u32]) -> usize {
+        let min = Self::get_min_height(arr) as u32;
+        arr.iter()
+            .filter(|&&x| x != min)
+            .collect::<ArrayVec<_, { BOARD_WIDTH - 1 }>>()
+            .windows(2)
+            .map(|w| Self::height(*w[0]).abs_diff(Self::height(*w[1])))
+            .sum()
     }
 
     /// returns the checkerboard parity of the board (differences between checkerboard)
@@ -227,6 +259,7 @@ impl Board {
     /// the full columns are not included in the partition
     /// includes the range of the included columns by
     // TODO: maybe figure out how to not return a vec -- save some allocations
+    // ArrayVec might be nice -- capacity-limited vec allocated on stack
     #[inline]
     pub fn partition(&self, row: usize) -> Vec<&[u32]> {
         let mut out = Vec::new();
@@ -453,6 +486,126 @@ mod tests {
         ];
         let board = board_from_string(&boardstr);
         assert_eq!(Board::get_total_holes(&board.arr), 8);
+    }
+
+    #[test]
+    fn test_messiness() {
+        let board = Board::new();
+        assert_eq!(Board::get_total_holes(&board.arr), 0);
+
+        #[rustfmt::skip]
+        let boardstr = [
+            "..........",
+            ".x........",
+            "x.x.......",
+        ];
+        let board = board_from_string(&boardstr);
+        assert_eq!(Board::get_messiness(&board.arr), 1);
+
+        #[rustfmt::skip]
+        let boardstr = [
+            "..........",
+            ".x........",
+            "x.x.......",
+            "x.x.......",
+            "x.x.......",
+            "x.x.......",
+            "x.x.......",
+        ];
+        let board = board_from_string(&boardstr);
+        assert_eq!(Board::get_messiness(&board.arr), 1);
+
+        #[rustfmt::skip]
+        let boardstr = [
+            "..........",
+            ".x........",
+            "x.x.......",
+            "x.x.......",
+            "xxx.......",
+            "x.x.......",
+            "x.x.......",
+        ];
+        let board = board_from_string(&boardstr);
+        assert_eq!(Board::get_messiness(&board.arr), 2);
+
+        #[rustfmt::skip]
+        let boardstr = [
+            "..........",
+            ".x........",
+            "x.x.......",
+            "x..x......",
+            "xxx.x.....",
+            "x.x.x.....",
+            "x.x.x.....",
+        ];
+        let board = board_from_string(&boardstr);
+        assert_eq!(Board::get_messiness(&board.arr), 4);
+
+        #[rustfmt::skip]
+        let boardstr = [
+            "......x...",
+            ".xxxxx.xx.",
+            "x.x.......",
+        ];
+        let board = board_from_string(&boardstr);
+        assert_eq!(Board::get_messiness(&board.arr), 7);
+    }
+
+    #[test]
+    fn test_adjacent_heigts() {
+        let board = Board::new();
+        assert_eq!(Board::get_adjacent_height_differences(&board.arr), 0);
+
+        #[rustfmt::skip]
+        let boardstr = [
+            "x.........",
+            "x.........",
+            "x.........",
+        ];
+        let board = board_from_string(&boardstr);
+        assert_eq!(Board::get_adjacent_height_differences(&board.arr), 3);
+
+        #[rustfmt::skip]
+        let boardstr = [
+            "..x.......",
+            "..x.......",
+            "..xx......",
+        ];
+        let board = board_from_string(&boardstr);
+        assert_eq!(Board::get_adjacent_height_differences(&board.arr), 6);
+
+        #[rustfmt::skip]
+        let boardstr = [
+            "..x..x....",
+            "..x.x.....",
+            "..xxx.....",
+        ];
+        let board = board_from_string(&boardstr);
+        assert_eq!(Board::get_adjacent_height_differences(&board.arr), 10);
+    }
+
+    #[test]
+    fn test_stack_heigts() {
+        let board = Board::new();
+        assert_eq!(Board::get_stack_height_differences(&board.arr), 0);
+
+        #[rustfmt::skip]
+        let boardstr = [
+            "..........",
+            "xxxxxx.xxx",
+            "xxxxxx.xxx",
+        ];
+        let board = board_from_string(&boardstr);
+        assert_eq!(Board::get_stack_height_differences(&board.arr), 0);
+
+        #[rustfmt::skip]
+        let boardstr = [
+            ".......x..",
+            "xxxxxx.xxx",
+            "xxxxxx.xxx",
+        ];
+        let board = board_from_string(&boardstr);
+        assert_eq!(Board::get_stack_height_differences(&board.arr), 2);
     }
 
     #[test]

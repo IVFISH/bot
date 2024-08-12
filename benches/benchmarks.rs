@@ -13,6 +13,11 @@ pub fn movegen_benchmark_no_pruning(c: &mut Criterion) {
         b.iter(|| black_box(bot.move_gen(1)))
     });
 
+    bot.game.board = versus_board_tall();
+    group1.bench_function("movegen versus board depth=1", |b| {
+        b.iter(|| black_box(bot.move_gen(1)))
+    });
+
     bot.game.board = l_spin_board_5();
     group1.bench_function("movegen l-spin-fuckery board depth=1", |b| {
         b.iter(|| black_box(bot.move_gen(1)))
@@ -24,6 +29,11 @@ pub fn movegen_benchmark_no_pruning(c: &mut Criterion) {
     bot.game.board = Board::new();
     group2.bench_function("movegen empty board depth=3", |b| {
         b.iter(|| black_box(bot.move_gen(3)))
+    });
+
+    bot.game.board = versus_board_tall();
+    group2.bench_function("movegen versus board depth=3", |b| {
+        b.iter(|| black_box(bot.move_gen(1)))
     });
 
     bot.game.board = l_spin_board_5();
@@ -91,6 +101,18 @@ pub fn eval_benchmark(c: &mut Criterion) {
         black_box(Board::get_total_holes(&b.arr));
     });
 
+    bench_versus(c, "messiness", |b| {
+        black_box(Board::get_messiness(&b.arr));
+    });
+
+    bench_versus(c, "adj height diff", |b| {
+        black_box(Board::get_adjacent_height_differences(&b.arr));
+    });
+
+    bench_versus(c, "stack height diff", |b| {
+        black_box(Board::get_stack_height_differences(&b.arr));
+    });
+
     bench_versus(c, "tslot", |b| {
         black_box(Board::t_slot(&b.arr));
     });
@@ -103,12 +125,16 @@ where
     let board_short = versus_board_short();
     let board_med = versus_board_medium();
     let board_tall = versus_board_tall();
+    let board_speculative = versus_board_speculative();
     let board_cheese = versus_board_cheese();
     let mut group = c.benchmark_group(name);
 
     group.bench_function("short", |b| b.iter(|| black_box(eval(board_short))));
     group.bench_function("med", |b| b.iter(|| black_box(eval(board_med))));
     group.bench_function("tall", |b| b.iter(|| black_box(eval(board_tall))));
+    group.bench_function("speculative", |b| {
+        b.iter(|| black_box(eval(board_speculative)))
+    });
     group.bench_function("cheese", |b| b.iter(|| black_box(eval(board_cheese))));
 
     group.finish();
