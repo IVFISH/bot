@@ -215,9 +215,10 @@ impl Board {
     // TODO: Maybe mirror columns 1 and 8 to cols -1 and 10 to weight edge cols evenly
     #[inline]
     pub fn get_stack_height_differences(arr: &[u32]) -> usize {
-        let min = Self::get_min_height(arr);
+        let &min = arr.iter().min().unwrap();
+        // let min = Self::get_min_height(arr);
         arr.iter()
-            .filter(|&&x| Self::height(x) != min)
+            .filter(|&&x| x != min)
             .collect::<ArrayVec<_, { BOARD_WIDTH - 1}>>()
             .windows(2)
             .map(|w| Self::height(*w[0]).abs_diff(Self::height(*w[1])))
