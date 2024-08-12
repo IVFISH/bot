@@ -217,11 +217,6 @@ impl Board {
     pub fn get_stack_height_differences(arr: &[u32]) -> usize {
         let min = Self::get_min_height(arr);
         arr.iter()
-        .filter(|&&x| Self::height(x) != min)
-        .for_each(|x| print!("{} ", x));
-        println!();
-
-        arr.iter()
             .filter(|&&x| Self::height(x) != min)
             .collect::<ArrayVec<_, { BOARD_WIDTH - 1}>>()
             .windows(2)
