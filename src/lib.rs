@@ -4,6 +4,5 @@
 #![feature(slice_as_chunks)]
 
 pub mod game;
-pub mod simd;
 pub mod scalar;
 pub mod bitmatrix;

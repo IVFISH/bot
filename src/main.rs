@@ -7,14 +7,12 @@ pub mod bitmatrix;
 pub mod game;
 pub mod nontrivials;
 pub mod scalar;
-pub mod simd;
 
+use bitmatrix::*;
 use bitvec::prelude::*;
 use game::*;
-use bitmatrix::*;
 use nontrivials::*;
 use scalar::*;
-use simd::*;
 use std::time;
 
 // fn main() {
@@ -44,26 +42,36 @@ fn main() {
     game.board[1] = 0x0000;
     game.board[2] = 0x2222;
 
-    game.board[7] = 0x8000;
+    // game.board[7] = 0x8000;
     // game.board[8] = 0x36db << 1;
     // game.board[9] = 0x1249 << 1;
 
     println!("{}", Bitmatrix { data: game.board.into_bitarray().to_bitvec()});
 
-    println!("===================");
+    // println!("===================");
 
-    let collisions = collision(game);
-    println!("{}", collisions);
+    // let collisions = collision(game);
+    // println!("{}", collisions);
 
-    println!("===================");
+    // println!("===================");
+    
+    // let reached = reachable(collisions);
+    // println!("{}", reached);
 
-    let reached = reachable(collisions);
-    println!("{}", reached);
+    for g in movegen(game) {
+        println!(
+            "{}",
+            Bitmatrix {
+                data: g.board.into_bitarray().to_bitvec()
+            }
+        );
+    }
 
-    let rep = 100_000;
+    let rep = 10_000;
     let now = time::Instant::now();
     for _ in 0..rep {
         let _ = movegen(game);
     }
     println!("movegen took {} microsconds", now.elapsed().as_micros() / rep);
+
 }

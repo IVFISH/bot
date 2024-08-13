@@ -38,6 +38,12 @@ impl Bitmatrix {
         }
     }
 
+    pub fn not(&self) -> Self {
+        Self {
+            data: !self.data.clone(),
+        }
+    }
+
     pub fn dshift(&self) -> Self {
         let mut data = self.data[1..].to_bitvec();
         data.push(false);
@@ -92,10 +98,10 @@ impl Bitmatrix {
     }
 }
 
-mod test {
+pub mod test {
     use super::*;
 
-    fn test_shifting() {
+    pub fn test_shifting() {
         let mut b = Bitmatrix::new();
         b.data.set(0, true);
         b.data.set(15, true);

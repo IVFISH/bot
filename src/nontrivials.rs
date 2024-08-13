@@ -34,20 +34,21 @@ pub fn collision(game: Game) -> Bitmatrix {
 pub fn reachable(collision: Bitmatrix) -> Bitmatrix {
     // find the initial possible matrix
     // then iterate the actions
-    const N: usize = 5;
+    const N: usize = 20;
     let mut r = Bitmatrix::new();
     r.data.set(79, true); // starting
     for _ in 0..N {
         // todo: break early if doesn't change
         r = r.or(collision.and((r.lshift()).or(r.rshift()).or(r.ushift()).or(r.dshift())));
     }
-    r
+
+    r.and(r.ushift().not())
 }
 
 pub fn to_game_vec(game: Game, reachable: Bitmatrix) -> Vec<Game> {
     let mut ret = Vec::with_capacity(reachable.data.count_ones());
     let (p, q) = Game::next(game.queue);
-    let piece = PIECES[p][0];
+    let piece = PIECES[p - 1][0];
 
     let copy = Game { board: game.board, queue: q };
 
