@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 pub type COL = u16;
-pub const W: usize = 6;
+pub const W: usize = 10;
 pub const H: usize = COL::BITS as usize;
 
 #[derive(Debug, Copy, Clone)]

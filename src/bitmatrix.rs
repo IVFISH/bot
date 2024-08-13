@@ -70,7 +70,6 @@ impl Bitmatrix {
         // Self { data }
         let mut data = self.data.clone();
         data.shift_left(H);
-
         Self { data }
     }
 

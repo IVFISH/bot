@@ -44,7 +44,7 @@ fn main() {
     game.board[1] = 0x0000;
     game.board[2] = 0x2222;
 
-    // game.board[7] = 0x1249 << 1;
+    game.board[7] = 0x8000;
     // game.board[8] = 0x36db << 1;
     // game.board[9] = 0x1249 << 1;
 
@@ -59,4 +59,11 @@ fn main() {
 
     let reached = reachable(collisions);
     println!("{}", reached);
+
+    let rep = 100_000;
+    let now = time::Instant::now();
+    for _ in 0..rep {
+        let _ = movegen(game);
+    }
+    println!("movegen took {} microsconds", now.elapsed().as_micros() / rep);
 }
