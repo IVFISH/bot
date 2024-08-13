@@ -1,6 +1,5 @@
 use crate::game::*;
 use std::cmp::*;
-use std::collections::*;
 
 /// Does a BFS to find all future game states from a given Game.
 /// Searches until the queue is empty.
