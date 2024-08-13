@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+bitvec = "1.0.1"
+num-traits = "0.2.19"
 
 [build]
 rustflags = ["-C", "target-feature='+avx2,+avx,+sse2,+avx512f,+avx512bw,+avx512vl'"]

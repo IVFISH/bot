@@ -22,7 +22,7 @@ pub fn search_scalar(game: Game) -> Vec<Game> {
 }
 
 pub fn process_scalar(work: &[Game], piece: usize, new_queue: usize) -> Vec<Game> {
-    let mut next = Vec::new();
+    let mut next = Vec::with_capacity(work.len() * 32);
     for rot in 0..4 {
         // generate the bitmask for piece and rot
         let p_bitmask = PIECES[piece - 1][rot];

@@ -3,33 +3,60 @@
 #![feature(array_chunks)]
 #![feature(slice_as_chunks)]
 
+pub mod bitmatrix;
 pub mod game;
+pub mod nontrivials;
 pub mod scalar;
 pub mod simd;
 
+use bitvec::prelude::*;
 use game::*;
+use bitmatrix::*;
+use nontrivials::*;
 use scalar::*;
 use simd::*;
 use std::time;
 
+// fn main() {
+//     // note: the queue is backwards (also 1-indexed)
+//     let game = Game::new(0x1_321);
+//
+//     let now1 = time::Instant::now();
+//     let res1 = search_scalar(game);
+//     println!(
+//         "scalar found {} boards in {} microseconds",
+//         res1.len(),
+//         now1.elapsed().as_micros()
+//     );
+//
+//     let now2 = time::Instant::now();
+//     let res2 = search_simd(game);
+//     println!(
+//         "simd found {} boards in {} microseconds",
+//         res2[0].len(),
+//         now2.elapsed().as_micros()
+//     );
+// }
+
 fn main() {
-    // note: the queue is backwards (also 1-indexed)
-    let game = Game::new(0x1_321);
+    let mut game = Game::new(0x1);
+    game.board[0] = 0xaaaa;
+    game.board[1] = 0x0000;
+    game.board[2] = 0x2222;
 
-    let now1 = time::Instant::now();
-    let res1 = search_scalar(game);
-    println!(
-        "scalar found {} boards in {} microseconds",
-        res1.len(),
-        now1.elapsed().as_micros()
-    );
+    // game.board[7] = 0x1249 << 1;
+    // game.board[8] = 0x36db << 1;
+    // game.board[9] = 0x1249 << 1;
 
-    let now2 = time::Instant::now();
-    let res2 = search_simd(game);
-    println!(
-        "simd found {} boards in {} microseconds",
-        res2[0].len(),
-        now2.elapsed().as_micros()
-    );
+    println!("{}", Bitmatrix { data: game.board.into_bitarray().to_bitvec()});
 
+    println!("===================");
+
+    let collisions = collision(game);
+    println!("{}", collisions);
+
+    println!("===================");
+
+    let reached = reachable(collisions);
+    println!("{}", reached);
 }
