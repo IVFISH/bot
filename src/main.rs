@@ -74,4 +74,10 @@ fn main() {
     }
     println!("movegen took {} microsconds", now.elapsed().as_micros() / rep);
 
+    let now = time::Instant::now();
+    for _ in 0..rep {
+        let _ = collision(game);
+    }
+    println!("collision map took {} microsconds", now.elapsed().as_micros() / rep);
+
 }

@@ -3,9 +3,9 @@ use bitvec::view::BitViewSized;
 use crate::bitmatrix::*;
 use crate::game::*;
 
-/// generate collision map
+/// generate collision map and the trivials
 /// TODO: implement other rotations
-pub fn collision(game: Game) -> Bitmatrix {
+pub fn collision(game: Game) -> (Bitmatrix, Bitmatrix) {
     let m = MASKS[Game::next(game.queue).0 - 1][0];
     let mut p = [0u16; W];
 
@@ -26,20 +26,33 @@ pub fn collision(game: Game) -> Bitmatrix {
         p[col] = !np;
     }
 
-    Bitmatrix {
+    let collisions = Bitmatrix {
         data: p.into_bitarray().to_bitvec(),
+    };
+
+    for col in 0..W {
+        let q = p[col];
+        let l = q.leading_zeros();
+        p[col] = q & (u16::MAX << l);
     }
+
+    let trivials = Bitmatrix {
+        data: p.into_bitarray().to_bitvec(),
+    };
+
+    (collisions, trivials)
 }
 
-pub fn reachable(collision: Bitmatrix) -> Bitmatrix {
+pub fn reachable(collision: Bitmatrix, trivials: Bitmatrix) -> Bitmatrix {
     // find the initial possible matrix
     // then iterate the actions
     const N: usize = 20;
-    let mut r = Bitmatrix::new();
-    r.data.set(79, true); // starting
+    let mut r = trivials;
+
     for _ in 0..N {
-        // todo: break early if doesn't change
-        r = r.or(collision.and((r.lshift()).or(r.rshift()).or(r.ushift()).or(r.dshift())));
+        let q = r.or(collision.and((r.lshift()).or(r.rshift()).or(r.ushift()).or(r.dshift())));
+        if q == r { break;}
+        r = q;
     }
 
     r.and(r.ushift().not())
@@ -66,5 +79,6 @@ pub fn to_game_vec(game: Game, reachable: Bitmatrix) -> Vec<Game> {
 }
 
 pub fn movegen(game: Game) -> Vec<Game> {
-    to_game_vec(game, reachable(collision(game)))
+    let (c, t) = collision(game);
+    to_game_vec(game, reachable(c, t))
 }

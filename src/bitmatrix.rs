@@ -8,8 +8,10 @@ use bitvec::prelude::*;
 // pub const H: usize = COL::BITS as usize;
 
 /// column major storage of bit-boards
+/// warning: BitVec uses little endian data storage -- very misleading sometimes
 
-#[derive(Clone)]
+// TODO: compare derived equal with (a ^ b == 0)
+#[derive(Clone, PartialEq, Eq)]
 pub struct Bitmatrix {
     pub data: BitVec<COL>,
 }
@@ -44,6 +46,10 @@ impl Bitmatrix {
         }
     }
 
+    pub fn slices(&self) -> [COL; W] {
+        todo!()
+    }
+
     pub fn dshift(&self) -> Self {
         let mut data = self.data[1..].to_bitvec();
         data.push(false);
@@ -56,10 +62,6 @@ impl Bitmatrix {
     }
 
     pub fn ushift(&self) -> Self {
-        // let mut data = bitvec![0];
-        // data.extend(self.data[..(W *  H - 1)]);
-        // Self { data }
-
         let mut data = self.data.clone();
         data.shift_right(1);
 
@@ -71,9 +73,6 @@ impl Bitmatrix {
     }
 
     pub fn lshift(&self) -> Self {
-        // let mut data = self.data[H..].to_bitvec();
-        // data.push(false);
-        // Self { data }
         let mut data = self.data.clone();
         data.shift_left(H);
         Self { data }
