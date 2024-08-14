@@ -272,7 +272,7 @@ mod tests {
     use super::*;
     use crate::test_api::functions::*;
 
-    // #[test]
+    #[test]
     fn test_tucks_t() {
         let mut bot = Bot::<NoPruner>::new();
         let b = &mut bot.game.board;
@@ -284,7 +284,7 @@ mod tests {
             .move_gen(1)
             .placements
             .iter()
-            .map(|p| p.get_last_piece())
+            .map(|p| p.base_piece)
             .filter(|p| p.r#type == PIECE_T)
             .collect();
         assert_eq!(pieces.len(), 48);
@@ -309,7 +309,7 @@ mod tests {
             .move_gen(1)
             .placements
             .iter()
-            .map(|p| p.get_last_piece())
+            .map(|p| p.base_piece)
             .filter(|p| p.r#type == PIECE_O)
             .collect();
         assert_eq!(pieces.len(), 15);

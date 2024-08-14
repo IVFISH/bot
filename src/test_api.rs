@@ -31,15 +31,16 @@ pub mod functions {
         }
     }
 
+    /// Only checks the base piece
     pub fn assert_placement_contains(placements: &PlacementList, piece: Piece) {
         placements
             .placements
             .iter()
-            .for_each(|p| println!("{:?}", p.get_last_piece()));
+            .for_each(|p| println!("{:?}", p.base_piece));
         assert!(placements
             .placements
             .iter()
-            .any(|p| p.get_last_piece() == piece));
+            .any(|p| p.base_piece == piece));
     }
 
     pub fn assert_location_eq(locations: Option<[[usize; 2]; 4]>, sols: [[usize; 2]; 4]) {

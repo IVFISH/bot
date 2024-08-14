@@ -39,11 +39,6 @@ impl Placement {
         }
     }
 
-    pub fn get_last_piece(&self) -> Piece {
-        panic!("deprecate this");
-        Piece::decode((self.game.history & 0xFFFF) as u16)
-    }
-
     // Eval functions ---------------
     // TODO: Change this so its not lazily evaluated. Currently only called when sorting, resulting in single-threaded eval
     pub fn eval(&self) -> f32 {
