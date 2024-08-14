@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use tetris::board::*;
 use tetris::bot::*;

@@ -20,8 +20,6 @@ pub struct Game {
     pub active: Piece,
     pub hold: Option<u8>,
     pub queue: PieceQueue,
-    pub history: u128,
-    pub line_clears: u32,
     pub versus: VersusStats,
 }
 
@@ -88,8 +86,6 @@ impl Game {
             queue,
             hold: None,
             board: Board::default(),
-            history: 0,
-            line_clears: 0,
             versus: VersusStats::default(),
         }
     }
@@ -104,17 +100,13 @@ impl Game {
     /// places the current active piece onto the board
     /// this also updates the queue and the new active
     /// (this does not check for validity of placement)
-    pub fn place_active(&mut self, held: bool) -> &mut Self {
-        // push the piece into the history
-        let t_spin = false; // fix (have a board method)
-        self.history = self.history << 16 | (self.active.encode(held, t_spin) as u128);
-        // update the board
+    pub fn place_active(&mut self) -> &mut Self {
+        // check if the piece is a spin
+        let is_spin = false; // TODO: figure this out somehow. controller method??
+                             // update the board
         self.board.set_piece(&self.active);
         let cleared = self.board.clear_lines();
-        self.versus.clear_lines(cleared.count_ones() as u8, false);
-        // update line clear history
-        self.line_clears <<= 4;
-        self.line_clears |= (cleared >> self.active.bottom_row().unwrap()) & 0xF;
+        self.versus.clear_lines(cleared.count_ones() as u8, is_spin);
         // update the active
         self.active = self.queue.next();
         self
@@ -140,93 +132,5 @@ impl Game {
     /// returns the piece that would be given from hold
     pub fn get_hold_piece(&self) -> Piece {
         Piece::new(self.hold.unwrap_or_else(|| self.queue.peek()))
-    }
-
-    /// recovers the past board states (up to 8)
-    /// THIS DOES NOT REWIND ANYTHING BESIDES BOARD
-    pub fn past_states(&self) -> Vec<Self> {
-        let mut history = self.history;
-        let mut line_clears = self.line_clears;
-        let mut games = Vec::new();
-        let mut prev = *self;
-        while history != 0 {
-            games.push(prev);
-            let piece = Piece::decode((history & (u16::MAX as u128)) as u16);
-            let rows = (line_clears & 0xF) << piece.bottom_row().unwrap();
-            prev.board.insert_rows(rows as usize);
-            prev.board.remove_piece(&piece);
-            history >>= 16;
-            line_clears >>= 4;
-        }
-        games.push(prev);
-        games.reverse();
-        games
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::constants::piece_constants::*;
-    use crate::test_api::functions::*;
-
-    #[test]
-    fn regenerate_past_boards() {
-        let mut game = Game::new(1337);
-        let mut past = vec![game];
-        // queue = OISTLJZ
-        assert_games_eq(&game.past_states(), &past);
-
-        let o = Piece {
-            r#type: PIECE_O,
-            dir: 0,
-            row: 0,
-            col: 0,
-        };
-        game.set_active(o, false);
-        game.place_active(false);
-        past.push(game);
-        let i = Piece {
-            r#type: PIECE_I,
-            dir: 0,
-            row: 0,
-            col: 3,
-        };
-        game.set_active(i, false);
-        game.place_active(false);
-        past.push(game);
-        let s = Piece {
-            r#type: PIECE_S,
-            dir: 1,
-            row: 1,
-            col: 5,
-        };
-        game.set_active(s, false);
-        game.place_active(false);
-        past.push(game);
-        let t = Piece {
-            r#type: PIECE_T,
-            dir: 0,
-            row: 0,
-            col: 8,
-        };
-        game.set_active(t, false);
-        game.place_active(false);
-        past.push(game);
-        let l = Piece {
-            r#type: PIECE_L,
-            dir: 0,
-            row: 0,
-            col: 3,
-        };
-        game.set_active(l, false);
-        game.place_active(false);
-        past.push(game);
-
-        for g in &past {
-            println!("{}", g);
-        }
-        assert_eq!(game.past_states().len(), 6);
-        assert_games_eq(&game.past_states(), &past);
     }
 }

@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 
 use crate::board::Board;
-use crate::constants::board_constants::*;
 use crate::game::Game;
 use crate::piece::Piece;
 
@@ -62,41 +61,5 @@ impl Placement {
 
         (max + min + messiness + adj_diff + stack_diff - 5 * tslot + (holes + coveredness) as usize)
             as f32
-    }
-
-    /// returns the fumen string that represents the
-    /// series of pieces that the placement stores
-    pub fn get_fumen(&self) -> String {
-        fn to_fumen(game: Game) -> fumen::Fumen {
-            let mut fumen = fumen::Fumen::default();
-            let page = fumen.add_page();
-            for row in (0..VISIBLE_BOARD_HEIGHT).rev() {
-                for col in 0..BOARD_WIDTH {
-                    if game.board.get(row, col) {
-                        page.field[row][col] = fumen::CellColor::Grey;
-                    }
-                }
-            }
-            fumen
-        }
-
-        fn add_page(fumen: &mut fumen::Fumen, game: Game) {
-            let page = fumen.add_page();
-            page.field = [[fumen::CellColor::Empty; 10]; 23]; // clear page
-            for row in (0..VISIBLE_BOARD_HEIGHT).rev() {
-                for col in 0..BOARD_WIDTH {
-                    if game.board.get(row, col) {
-                        page.field[row][col] = fumen::CellColor::Grey;
-                    }
-                }
-            }
-        }
-
-        let mut games = self.game.past_states();
-        let mut f = to_fumen(games.pop().unwrap());
-        for game in games.into_iter().rev() {
-            add_page(&mut f, game);
-        }
-        f.encode()
     }
 }

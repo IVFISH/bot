@@ -37,10 +37,7 @@ pub mod functions {
             .placements
             .iter()
             .for_each(|p| println!("{:?}", p.base_piece));
-        assert!(placements
-            .placements
-            .iter()
-            .any(|p| p.base_piece == piece));
+        assert!(placements.placements.iter().any(|p| p.base_piece == piece));
     }
 
     pub fn assert_location_eq(locations: Option<[[usize; 2]; 4]>, sols: [[usize; 2]; 4]) {

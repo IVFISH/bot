@@ -299,6 +299,7 @@ impl Board {
 
     /// clears all filled lines on the board and moves down
     /// the blocks above those lines
+    /// returns the rows where lineclears occured, encoded as a u32
     #[inline]
     pub fn clear_lines(&mut self) -> u32 {
         let full_rows = self.arr.into_iter().reduce(|x, y| x & y).unwrap();

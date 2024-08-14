@@ -57,7 +57,7 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         let held = piece == self.game.active;
         // place the piece
         self.game.set_active(piece, held);
-        self.game.place_active(held);
+        self.game.place_active();
     }
 
     /// the API function for generating all current moves of depth
@@ -130,10 +130,7 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
 
     fn make_placement(piece: Piece, held: bool, place_before: &Placement) -> Placement {
         let mut new_placement = place_before.clone();
-        new_placement
-            .game
-            .set_active(piece, held)
-            .place_active(held);
+        new_placement.game.set_active(piece, held).place_active();
         new_placement
     }
 
