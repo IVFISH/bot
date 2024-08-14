@@ -151,7 +151,7 @@ impl Pruner for SimplePruner {
         Self {}
     }
 
-    fn precondition(&self, placement: &Placement) -> bool {
+    fn precondition(&self, _placement: &Placement) -> bool {
         // Precondtion who??????
         true
     }
@@ -183,16 +183,13 @@ impl Pruner for NoPruner {
 mod tests {
     use super::*;
     use crate::test_api::functions::*;
-    use std::sync::Arc;
 
     // #[test]
     #[allow(dead_code)]
     fn placing_above_height() {
         let pruner = AllClearPruner::new();
-        let placement1 = Placement {
-            game: Game::random(),
-            base_command: Arc::new(vec![]),
-        };
+
+        let placement1 = Placement::new(Game::random());
         assert!(pruner.precondition(&placement1));
 
         let mut placement2 = placement1.clone();

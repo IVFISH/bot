@@ -11,8 +11,6 @@ use crate::pruner::*;
 use crate::suggestion::*;
 use rayon::prelude::*;
 use rustc_hash::FxHashSet;
-use std::iter::once;
-use std::sync::Arc;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Bot<P: Pruner> {
@@ -53,11 +51,10 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
     /// the API function for doing the next move
     /// this also updates the bot to whatever it did
     pub fn r#do(&mut self, depth: usize) {
-        // todo fix magic numbers
-        let chosen = self.move_gen(depth).placements.first().unwrap().clone(); // check for out of bounds!
-        let piece_encoding = (chosen.game.history >> (16 * (depth - 1)) & 0xFFFF) as u16;
-        let piece = Piece::decode(piece_encoding);
-        let held = (piece_encoding >> 14 & 1) != 0;
+        // TODO: Figure out why this crashes at depth 1
+        let chosen = self.move_gen(depth).placements.first().unwrap().clone();
+        let piece = chosen.base_piece;
+        let held = piece == self.game.active;
         // place the piece
         self.game.set_active(piece, held);
         self.game.place_active(held);
@@ -196,12 +193,12 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         let mut piece = start.game.active;
         let controller = &mut Controller::new(&mut piece, &start.game.board);
 
-        let pairs = &mut Self::get_base_trivials(controller);
-        Self::get_base_nontrivials(pairs, controller);
+        let seen = &mut Self::get_base_trivials(controller);
+        Self::get_base_nontrivials(seen, controller);
 
-        let out = pairs.iter().map(|(p, cmds)| Placement {
-            game: Self::make_placement(*p, false, start).game,
-            base_command: Arc::new(cmds.clone()),
+        let out = seen.iter().map(|&p| Placement {
+            game: Self::make_placement(p, false, start).game,
+            base_piece: p,
         });
 
         if start.game.get_hold_piece().r#type == start.game.active.r#type {
@@ -211,54 +208,33 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         let mut piece = start.game.get_hold_piece();
         let controller = &mut Controller::new(&mut piece, &start.game.board);
 
-        let pairs = &mut Self::get_base_trivials(controller);
-        Self::get_base_nontrivials(pairs, controller);
+        let seen = &mut Self::get_base_trivials(controller);
+        Self::get_base_nontrivials(seen, controller);
 
-        out.chain(pairs.iter().map(|(p, cmds)| Placement {
-            game: Self::make_placement(*p, true, start).game,
-            base_command: Arc::new(cmds.clone()),
+        out.chain(seen.iter().map(|&p| Placement {
+            game: Self::make_placement(p, true, start).game,
+            base_piece: p,
         }))
         .collect()
     }
 
-    fn get_base_trivials(controller: &mut Controller) -> Vec<(Piece, Vec<Command>)> {
-        let mut out: Vec<(Piece, Vec<Command>)> = Vec::new();
+    fn get_base_trivials(controller: &mut Controller) -> Vec<Piece> {
+        let mut out: Vec<Piece> = Vec::new();
         for rotation in 0..NUM_ROTATE_STATES {
             if !controller.do_command_mut(Command::Rotate(rotation as u8)) {
                 continue;
             }
             let mut commands: Vec<Command> = vec![Command::Rotate(rotation as u8)];
-            out.push((
-                Self::get_dropped_piece(controller),
-                commands
-                    .iter()
-                    .chain(once(&Command::MoveDrop))
-                    .cloned()
-                    .collect(),
-            ));
+            out.push(Self::get_dropped_piece(controller));
             while controller.do_command(&Command::MoveHorizontal(1)) {
                 commands.push(Command::MoveHorizontal(1));
-                out.push((
-                    Self::get_dropped_piece(controller),
-                    commands
-                        .iter()
-                        .chain(once(&Command::MoveDrop))
-                        .cloned()
-                        .collect(),
-                ));
+                out.push(Self::get_dropped_piece(controller));
             }
             controller.update_piece(controller.peek().unwrap().1); // reset the piece
             let mut commands: Vec<Command> = vec![Command::Rotate(rotation as u8)];
             while controller.do_command(&Command::MoveHorizontal(-1)) {
                 commands.push(Command::MoveHorizontal(-1));
-                out.push((
-                    Self::get_dropped_piece(controller),
-                    commands
-                        .iter()
-                        .chain(once(&Command::MoveDrop))
-                        .cloned()
-                        .collect(),
-                ));
+                out.push(Self::get_dropped_piece(controller));
             }
             controller.undo();
 
@@ -270,10 +246,10 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         out
     }
 
-    fn get_base_nontrivials(seen: &mut Vec<(Piece, Vec<Command>)>, controller: &mut Controller) {
+    fn get_base_nontrivials(seen: &mut Vec<Piece>, controller: &mut Controller) {
         let mut dfs_stack: Vec<_> = seen.clone();
-        let mut seen_all: FxHashSet<_> = seen.iter().map(|(p, _)| p).cloned().collect(); // includes the not-grounded ones
-        while let Some((p, cmd)) = dfs_stack.pop() {
+        let mut seen_all: FxHashSet<_> = seen.iter().copied().collect(); // includes the not-grounded ones
+        while let Some(p) = dfs_stack.pop() {
             for command in COMMANDS.iter() {
                 controller.update_piece(p);
                 controller.do_command(command);
@@ -281,13 +257,10 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
                     continue;
                 }
                 seen_all.insert(*controller.piece);
-                let to_add = (
-                    *controller.piece,
-                    cmd.iter().chain(once(command)).cloned().collect(),
-                );
-                dfs_stack.push(to_add.clone());
+                let to_add = *controller.piece;
+                dfs_stack.push(to_add);
                 if controller.board.piece_grounded(controller.piece) {
-                    seen.push(to_add.clone());
+                    seen.push(to_add);
                 }
             }
         }

@@ -143,10 +143,7 @@ fn bench_eval(c: &mut Criterion) {
     fn eval_board(b: Board) {
         let mut g = Game::new(901);
         g.board = b;
-        let p = Placement {
-            game: g,
-            base_command: Arc::new(vec![]),
-        };
+        let p = Placement::new(g);
         p.eval();
     }
 
@@ -188,8 +185,17 @@ where
     group.finish();
 }
 
-criterion_group!(benches, movegen_benchmark_no_pruning);
+pub fn fish_test(c: &mut Criterion) {
+    let mut bot = Bot::<SimplePruner>::with_seed(920);
+    bot.game.board = versus_board_medium();
+
+    c.bench_function("do moves", |b| {
+        b.iter(|| black_box(bot.r#do(3)));
+    });
+}
+// criterion_group!(benches, movegen_benchmark_no_pruning);
 // criterion_group!(benches, movegen_benchmark_pc_pruning);
 // criterion_group!(benches, clearlines_benchmark);
 // criterion_group!(benches, eval_benchmark);
+criterion_group!(benches, fish_test);
 criterion_main!(benches);

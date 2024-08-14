@@ -1,17 +1,14 @@
 #![allow(dead_code)]
 
 use crate::board::Board;
-use crate::command::Command;
 use crate::constants::board_constants::*;
 use crate::game::Game;
 use crate::piece::Piece;
 
-use std::sync::Arc;
-
 #[derive(Clone, Debug)]
 pub struct Placement {
     pub game: Game, // game after the piece has been placed
-    pub base_command: Arc<Vec<Command>>,
+    pub base_piece: Piece,
 }
 
 impl Ord for Placement {
@@ -38,11 +35,12 @@ impl Placement {
     pub fn new(game: Game) -> Self {
         Self {
             game,
-            base_command: Arc::new(Vec::new()),
+            base_piece: Piece::default(),
         }
     }
 
     pub fn get_last_piece(&self) -> Piece {
+        panic!("deprecate this");
         Piece::decode((self.game.history & 0xFFFF) as u16)
     }
 
