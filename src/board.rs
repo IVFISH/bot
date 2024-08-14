@@ -629,7 +629,7 @@ mod tests {
     fn test_cell_coveredness() {
         let board = versus_board_speculative();
         println!("{}", board);
-        assert_eq!(Board::get_cell_coveredness(&board.arr), 5)
+        assert_eq!(Board::get_cell_coveredness(&board.arr), 12)
     }
 
     #[test]

@@ -45,7 +45,7 @@ impl Hash for Piece {
 impl Default for Piece {
     fn default() -> Self {
         Self {
-            r#type: 0,
+            r#type: 255, // Defualt to bad piece
             dir: 0,
             row: SPAWN_ROW,
             col: SPAWN_COL,
