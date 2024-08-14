@@ -186,24 +186,36 @@ impl Board {
             .sum()
     }
 
-    /// returns the amount of t-slots (with an accessible overhang)
+    /// returns the number of t-slots (with an accessible overhang)
     /// present in the current board
     #[inline]
     pub fn t_slot(arr: &[u32]) -> usize {
+        // m is the mask for t-shaped holes in the board, repeated
+        // each of m0, m1, m2 represents a column
+        //  m:  012
+        //      x..
+        //      ...
+        //      x.x
+        //      etc.
+        //         vv top rows (30 and 31) are special to avoid matches
         let m0 = 0b11_101_101_101_101_101_101_101_101_101_101u32;
         let m1 = 0b11_000_000_000_000_000_000_000_000_000_000u32;
         let m2 = 0b11_001_001_001_001_001_001_001_001_001_001u32;
 
+        // s0 has 0s only in the 0th row mod 3, etc.
+        // this is used in np1 and np2 
+        // to ensure each p0, p1, p2 are used only for their respective rows
         let s0 = 0b11_110_110_110_110_110_110_110_110_110_110u32;
-        let s1 = 0b1_110_110_110_110_110_110_110_110_110_110_1u32;
-        let s2 = 0b110_110_110_110_110_110_110_110_110_110_11u32;
+        let s1 = 0b11_101_101_101_101_101_101_101_101_101_101u32;
+        let s2 = 0b11_011_011_011_011_011_011_011_011_011_011u32;
 
-        // if tslot matches then
-        // after xoring: everything will be 0
+        // tslot in a row <==> the corresponding bit of p will be 0
         let mut p = u32::MAX;
 
         for col in 1..(BOARD_WIDTH - 1) {
-            // apply first mask
+            // apply mask to look for left overhang
+            // each of p0, p1, p2 correspond to 
+            // tslots "centered" at rows 0, 1, or 2 (mod 3)
             let p0 = (arr[col - 1] ^ m0) | (arr[col] ^ m1) | (arr[col + 1] ^ m2);
             let p1 = (arr[col - 1] ^ m0 << 1) | (arr[col] ^ m1 << 1) | (arr[col + 1] ^ m2 << 1);
             let p2 = (arr[col - 1] ^ m0 << 2) | (arr[col] ^ m1 << 2) | (arr[col + 1] ^ m2 << 2);
@@ -212,7 +224,7 @@ impl Board {
                 & ((p1 | (p1 >> 1) | (p1 >> 2)) | s1)
                 & ((p2 | (p2 >> 1) | (p2 >> 2)) | s2);
 
-            // apply second mask
+            // apply mask to look for right overhang
             let p0 = (arr[col - 1] ^ m2) | (arr[col] ^ m1) | (arr[col + 1] ^ m0);
             let p1 = (arr[col - 1] ^ m2 << 1) | (arr[col] ^ m1 << 1) | (arr[col + 1] ^ m0 << 1);
             let p2 = (arr[col - 1] ^ m2 << 2) | (arr[col] ^ m1 << 2) | (arr[col + 1] ^ m0 << 2);
