@@ -191,9 +191,10 @@ pub fn fish_test(c: &mut Criterion) {
         b.iter(|| black_box(bot.r#do(3)));
     });
 }
-// criterion_group!(benches, movegen_benchmark_no_pruning);
+
+criterion_group!(benches, movegen_benchmark_no_pruning);
 // criterion_group!(benches, movegen_benchmark_pc_pruning);
 // criterion_group!(benches, clearlines_benchmark);
 // criterion_group!(benches, eval_benchmark);
-criterion_group!(benches, fish_test);
+// criterion_group!(benches, fish_test);
 criterion_main!(benches);

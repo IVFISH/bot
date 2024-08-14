@@ -186,20 +186,57 @@ impl Board {
             .sum()
     }
 
-    /// returns the amount of t-slots (with an accessible overhang)
+    /// returns the number of t-slots (with an accessible overhang)
     /// present in the current board
-    // TODO: SPEED THIS UP WITH SIMD
     #[inline]
-    #[allow(clippy::unnecessary_fold)] // using any is 40% slower
     pub fn t_slot(arr: &[u32]) -> usize {
-        const SIZE: usize = 3;
-        (Self::get_min_height(arr)..=(Self::get_max_height(arr) - SIZE))
-            .map(|row| {
-                arr.windows(SIZE)
-                    .fold(false, |t_slot, cols| t_slot || Self::check_hor_t(cols, row))
-            })
-            .filter(|b| *b)
-            .count()
+        // m is the mask for t-shaped holes in the board, repeated
+        // each of m0, m1, m2 represents a column
+        //  m:  012
+        //      x..
+        //      ...
+        //      x.x
+        //      etc.
+        //         vv top rows (30 and 31) are special to avoid matches
+        let m0 = 0b11_101_101_101_101_101_101_101_101_101_101u32;
+        let m1 = 0b11_000_000_000_000_000_000_000_000_000_000u32;
+        let m2 = 0b11_001_001_001_001_001_001_001_001_001_001u32;
+
+        // s0 has 0s only in the 0th row mod 3, etc.
+        // this is used in np1 and np2 
+        // to ensure each p0, p1, p2 are used only for their respective rows
+        let s0 = 0b11_110_110_110_110_110_110_110_110_110_110u32;
+        let s1 = 0b11_101_101_101_101_101_101_101_101_101_101u32;
+        let s2 = 0b11_011_011_011_011_011_011_011_011_011_011u32;
+
+        // tslot in a row <==> the corresponding bit of p will be 0
+        let mut p = u32::MAX;
+
+        for col in 1..(BOARD_WIDTH - 1) {
+            // apply mask to look for left overhang
+            // each of p0, p1, p2 correspond to 
+            // tslots "centered" at rows 0, 1, or 2 (mod 3)
+            let p0 = (arr[col - 1] ^ m0) | (arr[col] ^ m1) | (arr[col + 1] ^ m2);
+            let p1 = (arr[col - 1] ^ m0 << 1) | (arr[col] ^ m1 << 1) | (arr[col + 1] ^ m2 << 1);
+            let p2 = (arr[col - 1] ^ m0 << 2) | (arr[col] ^ m1 << 2) | (arr[col + 1] ^ m2 << 2);
+
+            let np1 = ((p0 | (p0 >> 1) | (p0 >> 2)) | s0)
+                & ((p1 | (p1 >> 1) | (p1 >> 2)) | s1)
+                & ((p2 | (p2 >> 1) | (p2 >> 2)) | s2);
+
+            // apply mask to look for right overhang
+            let p0 = (arr[col - 1] ^ m2) | (arr[col] ^ m1) | (arr[col + 1] ^ m0);
+            let p1 = (arr[col - 1] ^ m2 << 1) | (arr[col] ^ m1 << 1) | (arr[col + 1] ^ m0 << 1);
+            let p2 = (arr[col - 1] ^ m2 << 2) | (arr[col] ^ m1 << 2) | (arr[col + 1] ^ m0 << 2);
+
+            let np2 = ((p0 | (p0 >> 1) | (p0 >> 2)) | s0)
+                & ((p1 | (p1 >> 1) | (p1 >> 2)) | s1)
+                & ((p2 | (p2 >> 1) | (p2 >> 2)) | s2);
+
+            p &= np1 & np2;
+        }
+
+        p.count_zeros() as usize
     }
 
     /// returns the sum of the adjacent differences between column heights
@@ -362,20 +399,6 @@ impl Board {
     #[inline]
     fn height(col: u32) -> usize {
         (u32::BITS - col.leading_zeros()) as usize
-    }
-
-    /// whether a 3x3 grid is a horizontal t-slot
-    /// with the bottom at the given row. for example:
-    /// 1 0 0  |  0 0 1
-    /// 0 0 0  |  0 0 0
-    /// 1 0 1  |  1 0 1
-    #[inline]
-    fn check_hor_t(arr: &[u32], row: usize) -> bool {
-        const MASK: u32 = 0b111;
-        let c1 = arr[0] >> row & MASK;
-        let c2 = arr[1] >> row & MASK;
-        let c3 = arr[2] >> row & MASK;
-        [c1, c2, c3] == [0b101, 0b000, 0b001] || [c1, c2, c3] == [0b001, 0b000, 0b101]
     }
 }
 
