@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use tetris::board::*;
 use tetris::bot::*;
@@ -7,7 +9,6 @@ use tetris::test_api::functions::*;
 
 pub fn movegen_benchmark_no_pruning(c: &mut Criterion) {
     let mut bot = Bot::<NoPruner>::with_seed(3);
-
     let mut group1 = c.benchmark_group("depth 1");
     group1.bench_function("movegen empty board depth=1", |b| {
         b.iter(|| black_box(bot.move_gen(1)))
@@ -15,6 +16,11 @@ pub fn movegen_benchmark_no_pruning(c: &mut Criterion) {
 
     bot.game.board = versus_board_tall();
     group1.bench_function("movegen versus board depth=1", |b| {
+        b.iter(|| black_box(bot.move_gen(1)))
+    });
+
+    bot.game.board = versus_board_speculative();
+    group1.bench_function("movegen speculative board depth=1", |b| {
         b.iter(|| black_box(bot.move_gen(1)))
     });
 
@@ -33,7 +39,12 @@ pub fn movegen_benchmark_no_pruning(c: &mut Criterion) {
 
     bot.game.board = versus_board_tall();
     group2.bench_function("movegen versus board depth=3", |b| {
-        b.iter(|| black_box(bot.move_gen(1)))
+        b.iter(|| black_box(bot.move_gen(3)))
+    });
+
+    bot.game.board = versus_board_speculative();
+    group2.bench_function("movegen speculative board depth=3", |b| {
+        b.iter(|| black_box(bot.move_gen(3)))
     });
 
     bot.game.board = l_spin_board_5();
@@ -85,6 +96,9 @@ fn add_list(board: &mut Board, list: Vec<[usize; 2]>) {
 
 pub fn eval_benchmark(c: &mut Criterion) {
     use tetris::board::Board;
+
+    bench_eval(c);
+
     bench_versus(c, "heights", |b| {
         black_box(b.get_heights());
     });
@@ -105,6 +119,10 @@ pub fn eval_benchmark(c: &mut Criterion) {
         black_box(Board::get_messiness(&b.arr));
     });
 
+    bench_versus(c, "cell coveredness", |b| {
+        black_box(Board::get_cell_coveredness(&b.arr));
+    });
+
     bench_versus(c, "adj height diff", |b| {
         black_box(Board::get_adjacent_height_differences(&b.arr));
     });
@@ -116,6 +134,36 @@ pub fn eval_benchmark(c: &mut Criterion) {
     bench_versus(c, "tslot", |b| {
         black_box(Board::t_slot(&b.arr));
     });
+}
+
+fn bench_eval(c: &mut Criterion) {
+    use tetris::game::Game;
+    use tetris::placement::Placement;
+
+    fn eval_board(b: Board) {
+        let mut g = Game::new(901);
+        g.board = b;
+        let p = Placement {
+            game: g,
+            base_command: Arc::new(vec![]),
+        };
+        p.eval();
+    }
+
+    let board_short = versus_board_short();
+    let board_med = versus_board_medium();
+    let board_tall = versus_board_tall();
+    let board_speculative = versus_board_speculative();
+    let board_cheese = versus_board_cheese();
+    let mut group = c.benchmark_group("eval");
+
+    group.bench_function("short", |b| b.iter(|| black_box(eval_board(board_short))));
+    group.bench_function("med", |b| b.iter(|| black_box(eval_board(board_med))));
+    group.bench_function("tall", |b| b.iter(|| black_box(eval_board(board_tall))));
+    group.bench_function("speculative", |b| {
+        b.iter(|| black_box(eval_board(board_speculative)))
+    });
+    group.bench_function("cheese", |b| b.iter(|| black_box(eval_board(board_cheese))));
 }
 
 fn bench_versus<F>(c: &mut Criterion, name: &str, eval: F)

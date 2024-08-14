@@ -219,9 +219,17 @@ impl Board {
         // let min = Self::get_min_height(arr);
         arr.iter()
             .filter(|&&x| x != min)
-            .collect::<ArrayVec<_, { BOARD_WIDTH - 1}>>()
+            .collect::<ArrayVec<_, { BOARD_WIDTH - 1 }>>()
             .windows(2)
             .map(|w| Self::height(*w[0]).abs_diff(Self::height(*w[1])))
+            .sum()
+    }
+
+    /// returns the cell coveredness of the board
+    #[inline]
+    pub fn get_cell_coveredness(arr: &[u32]) -> u32 {
+        arr.iter()
+            .map(|col| (col >> col.trailing_ones()).count_ones())
             .sum()
     }
 
@@ -615,6 +623,13 @@ mod tests {
         let board = versus_board_tall();
         println!("{}", board);
         assert_eq!(Board::get_stack_height_differences(&board.arr), 6);
+    }
+
+    #[test]
+    fn test_cell_coveredness() {
+        let board = versus_board_speculative();
+        println!("{}", board);
+        assert_eq!(Board::get_cell_coveredness(&board.arr), 5)
     }
 
     #[test]

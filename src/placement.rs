@@ -47,12 +47,28 @@ impl Placement {
     }
 
     // Eval functions ---------------
-    fn eval(&self) -> f32 {
-        let max = Board::get_max_height(&self.game.board.arr);
-        let min = Board::get_min_height(&self.game.board.arr);
-        let holes = Board::get_total_holes(&self.game.board.arr);
+    // TODO: Change this so its not lazily evaluated. Currently only called when sorting, resulting in single-threaded eval
+    pub fn eval(&self) -> f32 {
+        let board = self.game.board.arr;
 
-        (10 * max as u32 + holes) as f32
+        let max = Board::get_max_height(&board);
+        let min = Board::get_min_height(&board);
+        let holes = Board::get_total_holes(&board);
+
+        let messiness = Board::get_messiness(&board);
+        let coveredness = Board::get_cell_coveredness(&board);
+
+        let adj_diff = Board::get_adjacent_height_differences(&board);
+        let stack_diff = Board::get_stack_height_differences(&board);
+
+        // TODO: figure out why tslot isn't working
+        // let tslot = Board::t_slot(&board);
+        let tslot = 0;
+
+        // (10 * max as u32 + holes) as f32
+
+        (max + min + messiness + adj_diff + stack_diff - 5 * tslot + (holes + coveredness) as usize)
+            as f32
     }
 
     /// returns the fumen string that represents the

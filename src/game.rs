@@ -37,12 +37,14 @@ impl Display for VersusStats {
 }
 
 impl VersusStats {
+    /// Updates versus stats using the amount of lines cleared and the type
     #[inline]
     fn clear_lines(&mut self, amt: u8, b2b: bool) {
         if amt == 0 {
             self.combo = 0;
             self.attack_chain = 0;
         } else {
+            // TODO: IMPLEMENT ATTACK TABLE
             let attk = amt + self.combo - 1;
             // let attk = (self.combo as i8 - 2).clamp(0, 100) as u8;
             self.attack_chain += attk;
