@@ -54,7 +54,7 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         // TODO: Figure out why this crashes at depth 1
         let chosen = self.move_gen(depth).placements.first().unwrap().clone();
         let piece = chosen.base_piece;
-        let held = piece == self.game.active;
+        let held = piece.r#type != self.game.active.r#type;
         // place the piece
         self.game.set_active(piece, held);
         self.game.place_active();
