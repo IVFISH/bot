@@ -50,13 +50,13 @@ fn main() {
 
     // println!("===================");
 
-    // let collisions = collision(game);
+    let (collisions, trivials) = collision(game);
     // println!("{}", collisions);
 
     // println!("===================");
     
-    // let reached = reachable(collisions);
-    // println!("{}", reached);
+    let reached = reachable(collisions, trivials);
+    println!("{}", reached[0]);
 
     for g in movegen(game) {
         println!(
