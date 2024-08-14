@@ -188,8 +188,8 @@ where
     group.finish();
 }
 
-criterion_group!(benches, movegen_benchmark_no_pruning);
+// criterion_group!(benches, movegen_benchmark_no_pruning);
 // criterion_group!(benches, movegen_benchmark_pc_pruning);
 // criterion_group!(benches, clearlines_benchmark);
-// criterion_group!(benches, eval_benchmark);
+criterion_group!(benches, eval_benchmark);
 criterion_main!(benches);
