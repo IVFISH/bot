@@ -1,0 +1,54 @@
+#![allow(dead_code)]
+
+#[cfg(test)]
+pub mod test_api {
+    use crate::game::*;
+
+    pub fn game_from_string(boardstr: &[&str], queue: usize) -> Game {
+        let mut game = Game::new(queue);
+        for (row, rowstr) in boardstr.iter().rev().enumerate() {
+            for (col, char) in rowstr.chars().take(W).enumerate() {
+                game.board[col] |= (char.is_alphanumeric() as COL) << row;
+            }
+        }
+
+        game
+    }
+
+    pub fn assert_contains(movegen: &Vec<Game>, game: Game) {
+        let contains = movegen.iter().any(|g| g.board == game.board);
+        assert!(contains);
+    }
+
+    pub fn l_spin_board_1() -> Game {
+        #[rustfmt::skip]
+        let boardstr = [
+            "oooo..oooo",
+            "ooo...oooo",
+            "ooo.oooooo",
+        ];
+        game_from_string(&boardstr, 0x2)
+    }
+
+    pub fn l_spin_board_2() -> Game {
+        #[rustfmt::skip]
+        let boardstr = [
+            "oo........",
+            "o.........",
+            "oo.ooooooo",
+            "oo.o..oooo",
+            "oo....oooo",
+            "ooooo.oooo",
+            "oooo....oo",
+            "oooo..oooo",
+            "ooooo.oooo",
+            "ooo...oooo",
+            "oo..oooooo",
+            "o...oooooo",
+            "o.o..ooooo",
+            "o.oooooooo",
+            "o..ooooooo",
+        ];
+        game_from_string(&boardstr, 0x2)
+    }
+}

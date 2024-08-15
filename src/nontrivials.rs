@@ -132,3 +132,66 @@ pub fn movegen(game: Game) -> Vec<Game> {
     let (c, t) = collision(game.board, piece);
     to_game_vec(game, reachable(c, t, piece))
 }
+
+#[cfg(test)]
+pub mod tests {
+    use crate::{movegen, test_api::test_api::*};
+
+    #[test]
+    fn l_spin_1() {
+        let game = l_spin_board_1();
+        #[rustfmt::skip]
+        let sol_str_1 = [
+            "oooo..oooo",
+            "oooxxxoooo",
+            "oooxoooooo",
+        ];
+        #[rustfmt::skip]
+        let sol_str_2 = [
+            "oooo.xoooo",
+            "oooxxxoooo",
+            "ooo.oooooo",
+        ];
+
+        // for g in movegen(game) {
+        //     println!("{}", g);
+        // }
+
+        let gen = movegen(game);
+        assert_eq!(gen.len(), 34);
+        assert_contains(&gen, game_from_string(&sol_str_1, 0));
+        assert_contains(&gen, game_from_string(&sol_str_2, 0));
+    }
+
+    #[test]
+    fn l_spin_2() {
+        let game = l_spin_board_2();
+        #[rustfmt::skip]
+        let sol_str = [
+            "oo........",
+            "o.........",
+            "oo.ooooooo",
+            "oo.o..oooo",
+            "oo....oooo",
+            "ooooo.oooo",
+            "oooo....oo",
+            "oooo..oooo",
+            "ooooo.oooo",
+            "ooo...oooo",
+            "oo..oooooo",
+            "o...oooooo",
+            "oxo..ooooo",
+            "oxoooooooo",
+            "oxxooooooo",
+        ];
+
+        // for g in movegen(game) {
+        //     println!("{}", g);
+        // }
+
+        // NOTE: on 18+ high board, this should generate 50 pieces (there is trivial on the left)
+        let gen = movegen(game);
+        assert_eq!(gen.len(), 49);
+        assert_contains(&gen, game_from_string(&sol_str, 0));
+    }
+}

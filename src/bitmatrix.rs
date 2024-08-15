@@ -117,7 +117,7 @@ impl Bitmatrix {
 }
 
 pub mod test {
-    use super::*;
+    // use super::*;
 
     // pub fn test_shifting() {
     //     let mut b = Bitmatrix::new();
