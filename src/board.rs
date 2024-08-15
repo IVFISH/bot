@@ -203,7 +203,7 @@ impl Board {
         let m2 = 0b00_001_001_001_001_001_001_001_001_001_001u32;
 
         // s0 has 0s only in the 0th row mod 3, etc.
-        // this is used in np1 and np2 
+        // this is used in np1 and np2
         // to ensure each p0, p1, p2 are used only for their respective rows
         //         vv top rows (30 and 31) should be ignored; set to 1s
         let s0 = 0b11_110_110_110_110_110_110_110_110_110_110u32;
@@ -215,7 +215,7 @@ impl Board {
 
         for col in 1..(BOARD_WIDTH - 1) {
             // apply mask to look for left overhang
-            // each of p0, p1, p2 correspond to 
+            // each of p0, p1, p2 correspond to
             // tslots "centered" at rows 0, 1, or 2 (mod 3)
             let p0 = (arr[col - 1] ^ m0) | (arr[col] ^ m1) | (arr[col + 1] ^ m2);
             let p1 = (arr[col - 1] ^ m0 << 1) | (arr[col] ^ m1 << 1) | (arr[col + 1] ^ m2 << 1);

@@ -187,8 +187,15 @@ pub fn fish_test(c: &mut Criterion) {
     let mut bot = Bot::<SimplePruner, NoEvaluator>::with_seed(920);
     bot.game.board = versus_board_medium();
 
-    c.bench_function("do moves", |b| {
-        b.iter(|| black_box(bot.r#do(3)));
+    c.bench_function("no brain", |b| {
+        b.iter(|| black_box(bot.move_gen(4)));
+    });
+
+    let mut bot = Bot::<SimplePruner, SimpleEvaluator>::with_seed(920);
+    bot.game.board = versus_board_medium();
+
+    c.bench_function("brain", |b| {
+        b.iter(|| black_box(bot.r#do(8)));
     });
 }
 

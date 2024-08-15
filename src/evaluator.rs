@@ -1,10 +1,12 @@
-use crate::{board::Board, game::Game};
+use crate::board::Board;
+use crate::game::Game;
 
 pub trait Evaluator {
     /// constructor method
     fn new() -> Self;
 
     /// evaluates the game
+    // TODO: seperate versus and positional eval
     fn eval(game: &Game) -> f32;
 }
 
@@ -29,6 +31,7 @@ impl Evaluator for SimpleEvaluator {
 
     fn eval(game: &Game) -> f32 {
         let board = game.board.arr;
+        let versus = game.versus;
 
         let max = Board::get_max_height(&board);
         let min = Board::get_min_height(&board);
@@ -42,6 +45,12 @@ impl Evaluator for SimpleEvaluator {
 
         let tslot = Board::t_slot(&board);
 
-        (max + min + messiness + adj_diff + stack_diff - 5 * tslot + (holes + coveredness) as usize) as f32
+        // let combo = versus.combo;
+        // let attk = versus.total_attack;
+        let combo = 0;
+        let attk = 0;
+
+        (max + min + messiness + adj_diff + stack_diff - 5 * tslot + (holes + coveredness) as usize
+            - 2 * (combo + attk) as usize) as f32
     }
 }

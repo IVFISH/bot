@@ -37,7 +37,7 @@ impl Placement {
         Self {
             game,
             base_piece: Piece::default(),
-            eval: f32::MAX
+            eval: f32::MAX,
         }
     }
 
@@ -45,7 +45,7 @@ impl Placement {
         Self {
             game,
             base_piece,
-            eval: f32::MAX
+            eval: f32::MAX,
         }
     }
 }

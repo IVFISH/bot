@@ -3,12 +3,12 @@
 use crate::command::{Command, COMMANDS};
 use crate::constants::piece_constants::*;
 use crate::controller::Controller;
+use crate::evaluator::*;
 use crate::game::Game;
 use crate::piece::Piece;
 use crate::placement::*;
 use crate::placement_list::*;
 use crate::pruner::*;
-use crate::evaluator::*;
 use crate::suggestion::*;
 use rayon::prelude::*;
 use rustc_hash::FxHashSet;
@@ -17,10 +17,10 @@ use rustc_hash::FxHashSet;
 pub struct Bot<P: Pruner, E: Evaluator> {
     pub game: Game,
     pub pruner: P,
-    pub evaluator: E
+    pub evaluator: E,
 }
 
-impl<P: Pruner + std::marker::Sync, E:Evaluator + std::marker::Sync> Default for Bot<P, E> {
+impl<P: Pruner + std::marker::Sync, E: Evaluator + std::marker::Sync> Default for Bot<P, E> {
     fn default() -> Self {
         Self::new()
     }
@@ -55,7 +55,6 @@ impl<P: Pruner + std::marker::Sync, E: Evaluator + std::marker::Sync> Bot<P, E> 
     /// the API function for doing the next move
     /// this also updates the bot to whatever it did
     pub fn r#do(&mut self, depth: usize) {
-        // TODO: Figure out why this crashes at depth 1
         let chosen = self.move_gen(depth).placements.first().unwrap().clone();
         let piece = chosen.base_piece;
         let held = piece.r#type != self.game.active.r#type;
@@ -68,11 +67,7 @@ impl<P: Pruner + std::marker::Sync, E: Evaluator + std::marker::Sync> Bot<P, E> 
     /// for the current active piece, as well as after holding
     pub fn move_gen(&self, depth: usize) -> PlacementList {
         let start = Placement::new(self.game);
-
-        let mut placements = PlacementList {
-            placements: Self::get_base_placements(&start),
-        }; // depth 1
-
+        let mut placements = PlacementList::new(Self::get_base_placements(&start), &self.pruner);
         // placements = (1..depth).fold(placements, |p, _| {
         //     Self::iterate_move_gen(p, &self.pruner)
         // });
@@ -198,10 +193,11 @@ impl<P: Pruner + std::marker::Sync, E: Evaluator + std::marker::Sync> Bot<P, E> 
         let seen = &mut Self::get_base_trivials(controller);
         Self::get_base_nontrivials(seen, controller);
 
-        let out = seen.iter().map(|&p| Placement::new_base(
-            Self::make_placement(p, false, start).game,
-            p,
-        ));
+        let out = seen.iter().map(|&p| {
+            let mut placement = Placement::new_base(Self::make_placement(p, false, start).game, p);
+            placement.eval = E::eval(&placement.game);
+            placement
+        });
 
         if start.game.get_hold_piece().r#type == start.game.active.r#type {
             return out.collect();
@@ -213,10 +209,11 @@ impl<P: Pruner + std::marker::Sync, E: Evaluator + std::marker::Sync> Bot<P, E> 
         let seen = &mut Self::get_base_trivials(controller);
         Self::get_base_nontrivials(seen, controller);
 
-        out.chain(seen.iter().map(|&p| Placement::new_base(
-            Self::make_placement(p, true, start).game,
-            p,
-        )))
+        out.chain(seen.iter().map(|&p| {
+            let mut placement = Placement::new_base(Self::make_placement(p, true, start).game, p);
+            placement.eval = E::eval(&placement.game);
+            placement
+        }))
         .collect()
     }
 
@@ -392,5 +389,24 @@ mod tests {
             .all(|(i, p)| p == bot.game.queue.peek_ahead(i as u8)));
         assert!(bot.move_gen(3).placements.len() == 333_078);
         // add some more stuff to test :D
+
+        // assumes commit 4553225 is correct
+        let bot = Bot::<NoPruner, NoEvaluator>::with_seed(4);
+        let desired_q = [1, 4, 5, 6];
+        assert!(bot.game.active.r#type == 2);
+        assert!(desired_q
+            .into_iter()
+            .enumerate()
+            .all(|(i, p)| p == bot.game.queue.peek_ahead(i as u8)));
+        assert_eq!(bot.move_gen(1).placements.len(), 43);
+
+        let bot = Bot::<NoPruner, NoEvaluator>::with_seed(4);
+        let desired_q = [1, 4, 5, 6];
+        assert!(bot.game.active.r#type == 2);
+        assert!(desired_q
+            .into_iter()
+            .enumerate()
+            .all(|(i, p)| p == bot.game.queue.peek_ahead(i as u8)));
+        assert_eq!(bot.move_gen(2).placements.len(), 2115);
     }
 }

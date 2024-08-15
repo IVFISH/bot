@@ -20,7 +20,7 @@ async fn handle_connection<S, P, E>(ws_stream: S, mut bot: Bot<P, E>) -> Result<
 where
     S: Unpin + Stream<Item = Result<Message, Error>> + Sink<Message>,
     P: Pruner + std::marker::Sync,
-    E: Evaluator + std::marker::Sync
+    E: Evaluator + std::marker::Sync,
 {
     // split into a sink and a stream
     let (mut ws_sender, mut ws_receiver) = ws_stream.split();
@@ -70,7 +70,7 @@ where
 async fn get_suggestion<P, E>(interval: &mut Interval, bot: &mut Bot<P, E>) -> Suggestion
 where
     P: Pruner + std::marker::Sync,
-    E: Evaluator + std::marker::Sync
+    E: Evaluator + std::marker::Sync,
 {
     let _ = interval.tick().await;
     bot.do_suggest()
