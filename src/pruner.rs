@@ -1,3 +1,4 @@
+use itertools::partition;
 use itertools::Itertools;
 
 use crate::board::*;
@@ -146,6 +147,43 @@ impl Pruner for AllClearPruner {
 
 pub struct SimplePruner {}
 
+impl SimplePruner {
+    fn quicksort<T>(placements: Vec<T>, n: usize) -> Vec<T>
+    where
+        T: Ord + Clone + std::fmt::Debug,
+    {
+        let right = placements.len();
+        let mut placements = Self::q_helper(placements, 0, right, n);
+        placements.truncate(n);
+        placements
+    }
+
+    fn q_helper<T>(mut placements: Vec<T>, left: usize, right: usize, n: usize) -> Vec<T>
+    where
+        T: Ord + Clone + std::fmt::Debug,
+    {
+        // todo: use median of first, last, middle
+        let pivot_ele = placements[left].clone();
+        let mut pivot_idx =
+            itertools::partition(&mut placements[left..right], |elt| *elt > pivot_ele);
+        // pivot_idx = # elements strictly larger than pivot_ele
+
+        // edge case in case of bad partitions
+        if pivot_idx == 0 {
+            pivot_idx += 1;
+        }
+
+        // recurse
+        if pivot_idx == n {
+            return placements;
+        } else if pivot_idx < n {
+            Self::q_helper(placements, left + pivot_idx, right, n - pivot_idx)
+        } else {
+            Self::q_helper(placements, left, left + pivot_idx, n)
+        }
+    }
+}
+
 impl Pruner for SimplePruner {
     fn new() -> Self {
         Self {}
@@ -157,9 +195,7 @@ impl Pruner for SimplePruner {
     }
 
     fn prune(&self, placements: Vec<Placement>) -> Vec<Placement> {
-        // let mut p = placements.clone();
-        // p.sort();
-        placements.into_iter().sorted().take(10000).collect()
+        Self::quicksort(placements, 10_000)
     }
 }
 
@@ -181,6 +217,8 @@ impl Pruner for NoPruner {
 
 #[cfg(test)]
 mod tests {
+    use rand::seq::SliceRandom;
+
     use super::*;
     use crate::test_api::functions::*;
     use std::sync::Arc;
@@ -207,5 +245,22 @@ mod tests {
         assert!(placements
             .into_iter()
             .all(|p| p.game.board == placement1.game.board));
+    }
+
+    #[test]
+    fn quicksort() {
+        for i in 1..10 {
+            let mut arr: Vec<_> = (1..(i * 1000)).collect();
+            arr.shuffle(&mut rand::thread_rng());
+
+            let n = i * 100;
+            let qs = SimplePruner::quicksort(arr.clone(), n);
+            assert_eq!(qs.len(), n);
+
+            arr.sort();
+            for s in arr.into_iter().rev().take(n) {
+                assert!(qs.contains(&s));
+            }
+        }
     }
 }
