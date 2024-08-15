@@ -46,7 +46,7 @@ fn main() {
     // game.board[8] = 0x36db << 1;
     // game.board[9] = 0x1249 << 1;
 
-    println!("{}", Bitmatrix { data: game.board.into_bitarray().to_bitvec()});
+    println!("{}", Bitmatrix { data: game.board.into_iter().collect()});
 
     // println!("===================");
 
@@ -62,7 +62,7 @@ fn main() {
         println!(
             "{}",
             Bitmatrix {
-                data: g.board.into_bitarray().to_bitvec()
+                data: g.board.into_iter().collect()
             }
         );
     }

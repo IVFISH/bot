@@ -1,5 +1,3 @@
-use bitvec::view::BitViewSized;
-
 use crate::bitmatrix::*;
 use crate::game::*;
 
@@ -29,7 +27,7 @@ pub fn collision(game: Game) -> (Vec<Bitmatrix>, Vec<Bitmatrix>) {
         }
 
         let collisions = Bitmatrix {
-            data: p.into_bitarray().to_bitvec(),
+            data: p.into_iter().collect(),
         };
 
         for col in 0..W {
@@ -40,7 +38,7 @@ pub fn collision(game: Game) -> (Vec<Bitmatrix>, Vec<Bitmatrix>) {
         }
 
         let trivials = Bitmatrix {
-            data: p.into_bitarray().to_bitvec(),
+            data: p.into_iter().collect(),
         };
 
         c.push(collisions);
@@ -98,7 +96,7 @@ pub fn reachable(collision: Vec<Bitmatrix>, trivials: Vec<Bitmatrix>) -> Vec<Bit
 pub fn to_game_vec(game: Game, reachable: Vec<Bitmatrix>) -> Vec<Game> {
     assert_eq!(reachable.len(), 4);
 
-    let mut ret = Vec::with_capacity(reachable.iter().map(|d| d.data.count_ones()).sum());
+    let mut ret = Vec::with_capacity(reachable.iter().map(|d| d.count_ones()).sum());
     let (p, q) = Game::next(game.queue);
 
     for rot in 0..4 {
@@ -109,7 +107,7 @@ pub fn to_game_vec(game: Game, reachable: Vec<Bitmatrix>) -> Vec<Game> {
             queue: q,
         };
 
-        for i in reachable[rot].data.iter_ones() {
+        for i in reachable[rot].iter_ones() {
             let (r, c) = (i % H, i / H);
 
             let mut cpy = copy;

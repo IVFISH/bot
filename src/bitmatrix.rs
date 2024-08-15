@@ -1,6 +1,7 @@
 use std::fmt::*;
 
 use crate::game::{COL, H, W};
+use arrayvec::*;
 use bitvec::prelude::*;
 
 /// I can't figure out how to use num_traits::PrimInt to make Bitmatrix generic :(
@@ -13,15 +14,15 @@ use bitvec::prelude::*;
 // TODO: compare derived equal with (a ^ b == 0)
 #[derive(Clone, PartialEq, Eq)]
 pub struct Bitmatrix {
-    pub data: BitVec<COL>,
+    pub data: ArrayVec<COL, W>,
 }
 
 impl Display for Bitmatrix {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let iter = self.data.chunks_exact(H).collect::<Vec<_>>();
+        // let iter = self.data.chunks_exact(H).collect::<Vec<_>>();
         for row in (0..H).rev() {
             for col in 0..W {
-                if iter[col][row] {
+                if self.data[col] >> row & 1 == 1 {
                     write!(f, "■ ")?
                 } else {
                     write!(f, "□ ")?
@@ -36,63 +37,67 @@ impl Display for Bitmatrix {
 impl Bitmatrix {
     pub fn new() -> Self {
         Self {
-            data: BitVec::repeat(false, W * H),
+            data: ArrayVec::new_const(),
         }
+    }
+
+    pub fn iter_ones<'a>(&'a self) -> impl Iterator<Item = usize> + 'a {
+        self.data.as_bits::<Lsb0>().iter_ones()
+    }
+
+    pub fn count_ones(&self) -> usize {
+        self.data.as_bits::<Lsb0>().count_ones()
     }
 
     pub fn not(&self) -> Self {
         Self {
-            data: !self.data.clone(),
+            data: self.data.iter().map(|&c| !c).collect(),
         }
-    }
-
-    pub fn slices(&self) -> [COL; W] {
-        todo!()
     }
 
     pub fn dshift(&self) -> Self {
-        let mut data = self.data[1..].to_bitvec();
-        data.push(false);
-
-        for c in 0..W {
-            data.set(c * H + 15, false);
+        Self {
+            data: self.data.iter().map(|&c| c >> 1).collect(),
         }
-
-        Self { data }
     }
 
     pub fn ushift(&self) -> Self {
-        let mut data = self.data.clone();
-        data.shift_right(1);
-
-        for c in 0..W {
-            data.set(c * H, false);
+        Self {
+            data: self.data.iter().map(|&c| c << 1).collect(),
         }
-
-        Self { data }
     }
 
     pub fn lshift(&self) -> Self {
         let mut data = self.data.clone();
-        data.shift_left(H);
+        data.rotate_left(1);
         Self { data }
     }
 
     pub fn rshift(&self) -> Self {
         let mut data = self.data.clone();
-        data.shift_right(H);
+        data.rotate_right(1);
         Self { data }
     }
 
     pub fn or(&self, other: Bitmatrix) -> Self {
         Self {
-            data: other.data | self.data.clone(),
+            data: self
+                .data
+                .iter()
+                .zip(other.data.iter())
+                .map(|(x, y)| x | y)
+                .collect(),
         }
     }
 
     pub fn and(&self, other: Bitmatrix) -> Self {
         Self {
-            data: other.data & self.data.clone(),
+            data: self
+                .data
+                .iter()
+                .zip(other.data.iter())
+                .map(|(x, y)| x & y)
+                .collect(),
         }
     }
 }
@@ -100,23 +105,23 @@ impl Bitmatrix {
 pub mod test {
     use super::*;
 
-    pub fn test_shifting() {
-        let mut b = Bitmatrix::new();
-        b.data.set(0, true);
-        b.data.set(15, true);
-        b.data.set(96, true);
-        b.data.set(111, true);
-        b.data.set(144, true);
-        b.data.set(159, true);
-        println!("{}", b);
-        println!("===================");
-        println!("{}", b.lshift());
-        println!("===================");
-        println!("{}", b.rshift());
-        println!("===================");
-        println!("{}", b.ushift());
-        println!("===================");
-        println!("{}", b.dshift());
-        println!("===================");
-    }
+    // pub fn test_shifting() {
+    //     let mut b = Bitmatrix::new();
+    //     b.data.set(0, true);
+    //     b.data.set(15, true);
+    //     b.data.set(96, true);
+    //     b.data.set(111, true);
+    //     b.data.set(144, true);
+    //     b.data.set(159, true);
+    //     println!("{}", b);
+    //     println!("===================");
+    //     println!("{}", b.lshift());
+    //     println!("===================");
+    //     println!("{}", b.rshift());
+    //     println!("===================");
+    //     println!("{}", b.ushift());
+    //     println!("===================");
+    //     println!("{}", b.dshift());
+    //     println!("===================");
+    // }
 }
