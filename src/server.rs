@@ -1,4 +1,5 @@
 use crate::bot::*;
+use crate::evaluator::*;
 use crate::pruner::*;
 use crate::suggestion::*;
 use futures_util::{Sink, SinkExt, Stream, StreamExt};
@@ -11,14 +12,15 @@ use tungstenite::{Error, Result};
 
 async fn accept_connection(stream: TcpStream) {
     let ws_stream = accept_async(stream).await.unwrap();
-    let bot = Bot::<AllClearPruner>::new();
+    let bot = Bot::<AllClearPruner, NoEvaluator>::new();
     let _ = handle_connection(ws_stream, bot).await;
 }
 
-async fn handle_connection<S, P>(ws_stream: S, mut bot: Bot<P>) -> Result<()>
+async fn handle_connection<S, P, E>(ws_stream: S, mut bot: Bot<P, E>) -> Result<()>
 where
     S: Unpin + Stream<Item = Result<Message, Error>> + Sink<Message>,
     P: Pruner + std::marker::Sync,
+    E: Evaluator + std::marker::Sync
 {
     // split into a sink and a stream
     let (mut ws_sender, mut ws_receiver) = ws_stream.split();
@@ -65,9 +67,10 @@ where
 }
 
 /// gets the next inputs from the bot
-async fn get_suggestion<P>(interval: &mut Interval, bot: &mut Bot<P>) -> Suggestion
+async fn get_suggestion<P, E>(interval: &mut Interval, bot: &mut Bot<P, E>) -> Suggestion
 where
     P: Pruner + std::marker::Sync,
+    E: Evaluator + std::marker::Sync
 {
     let _ = interval.tick().await;
     bot.do_suggest()

@@ -3,6 +3,7 @@ pub mod bot;
 pub mod command;
 pub mod constants;
 pub mod controller;
+pub mod evaluator;
 pub mod game;
 pub mod piece;
 pub mod piece_queue;

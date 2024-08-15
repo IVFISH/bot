@@ -8,28 +8,31 @@ use crate::piece::Piece;
 use crate::placement::*;
 use crate::placement_list::*;
 use crate::pruner::*;
+use crate::evaluator::*;
 use crate::suggestion::*;
 use rayon::prelude::*;
 use rustc_hash::FxHashSet;
 
 #[derive(Debug, Copy, Clone)]
-pub struct Bot<P: Pruner> {
+pub struct Bot<P: Pruner, E: Evaluator> {
     pub game: Game,
     pub pruner: P,
+    pub evaluator: E
 }
 
-impl<P: Pruner + std::marker::Sync> Default for Bot<P> {
+impl<P: Pruner + std::marker::Sync, E:Evaluator + std::marker::Sync> Default for Bot<P, E> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<P: Pruner + std::marker::Sync> Bot<P> {
+impl<P: Pruner + std::marker::Sync, E: Evaluator + std::marker::Sync> Bot<P, E> {
     // constructors -----------------------------
     pub fn new() -> Self {
         Self {
             game: Game::random(),
             pruner: P::new(),
+            evaluator: E::new(),
         }
     }
 
@@ -37,6 +40,7 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         Self {
             game: Game::new(seed),
             pruner: P::new(),
+            evaluator: E::new(),
         }
     }
 
@@ -131,7 +135,7 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
     fn make_placement(piece: Piece, held: bool, place_before: &Placement) -> Placement {
         let mut new_placement = place_before.clone();
         new_placement.game.set_active(piece, held).place_active();
-        new_placement.eval();
+        new_placement.eval = E::eval(&new_placement.game);
         new_placement
     }
 
@@ -272,7 +276,7 @@ mod tests {
 
     #[test]
     fn test_tucks_t() {
-        let mut bot = Bot::<NoPruner>::new();
+        let mut bot = Bot::<NoPruner, NoEvaluator>::new();
         let b = &mut bot.game.board;
         add_list(b, vec![[2, 7], [2, 8], [2, 9], [2, 0], [2, 1], [2, 2]]);
         bot.game.active = Piece::new(PIECE_T);
@@ -297,7 +301,7 @@ mod tests {
 
     #[test]
     fn test_tucks_o() {
-        let mut bot = Bot::<NoPruner>::new();
+        let mut bot = Bot::<NoPruner, NoEvaluator>::new();
         let b = &mut bot.game.board;
         add_list(b, vec![[2, 7], [2, 8], [2, 9], [2, 0], [2, 1], [2, 2]]);
         bot.game.active = Piece::new(PIECE_O);
@@ -322,7 +326,7 @@ mod tests {
 
     #[test]
     fn test_z_spin() {
-        let mut bot = Bot::<NoPruner>::new();
+        let mut bot = Bot::<NoPruner, NoEvaluator>::new();
         bot.game.board = z_spin_board_1();
         bot.game.active = Piece::new(PIECE_Z);
         let placements = bot.move_gen(1);
@@ -337,7 +341,7 @@ mod tests {
 
     #[test]
     fn test_tst_spin() {
-        let mut bot = Bot::<NoPruner>::new();
+        let mut bot = Bot::<NoPruner, NoEvaluator>::new();
         bot.game.board = tst_board();
         bot.game.active = Piece::new(PIECE_T);
         let placements = bot.move_gen(1);
@@ -352,7 +356,7 @@ mod tests {
 
     #[test]
     fn test_l_spin() {
-        let mut bot = Bot::<NoPruner>::new();
+        let mut bot = Bot::<NoPruner, NoEvaluator>::new();
         bot.game.board = l_spin_board_5();
         println!("{}", bot.game.board);
         bot.game.active = Piece::new(PIECE_L);
@@ -370,7 +374,7 @@ mod tests {
     fn test_number_placements_generated() {
         // NOTE this is dependent on the queue
         // assumes commit 90232f86f194a8e819f89ea80124da7e01ef9b59 is correct
-        let bot = Bot::<NoPruner>::with_seed(4);
+        let bot = Bot::<NoPruner, NoEvaluator>::with_seed(4);
         let desired_q = [1, 4, 5, 6];
         assert!(bot.game.active.r#type == 2);
         assert!(desired_q
@@ -379,7 +383,7 @@ mod tests {
             .all(|(i, p)| p == bot.game.queue.peek_ahead(i as u8)));
         assert_eq!(bot.move_gen(3).placements.len(), 118_151);
 
-        let bot = Bot::<NoPruner>::with_seed(19);
+        let bot = Bot::<NoPruner, NoEvaluator>::with_seed(19);
         let desired_q = [3, 6, 5, 1];
         assert!(bot.game.active.r#type == 4);
         assert!(desired_q

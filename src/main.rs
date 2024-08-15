@@ -3,6 +3,7 @@ mod bot;
 mod command;
 mod constants;
 mod controller;
+mod evaluator;
 mod game;
 mod piece;
 mod piece_queue;
@@ -13,6 +14,8 @@ mod server;
 mod suggestion;
 mod test_api;
 
+use evaluator::*;
+
 use crate::bot::*;
 use crate::pruner::*;
 use crate::test_api::functions::*;
@@ -20,7 +23,7 @@ use std::time::Instant;
 
 #[allow(unused)]
 fn play() {
-    let mut bot = Bot::<SimplePruner>::new();
+    let mut bot = Bot::<SimplePruner, SimpleEvaluator>::new();
     bot.game.board = versus_board_tall();
     let n = 25;
 
@@ -43,7 +46,7 @@ fn play() {
 
 #[allow(unused)]
 fn bench() {
-    let bot = Bot::<NoPruner>::new();
+    let bot = Bot::<NoPruner, NoEvaluator>::new();
     let n = 10;
 
     let now = Instant::now();
@@ -55,7 +58,7 @@ fn bench() {
 
 #[allow(unused)]
 fn test() {
-    let bot = Bot::<NoPruner>::with_seed(4);
+    let bot = Bot::<NoPruner, NoEvaluator>::with_seed(4);
     let d = 4;
     let queue: Vec<u8> = (0..d + 1).map(|x| bot.game.queue.peek_ahead(x)).collect();
     println!("{}, {:?}", bot.game.active.r#type, queue);

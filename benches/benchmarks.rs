@@ -2,11 +2,12 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use tetris::board::*;
 use tetris::bot::*;
 use tetris::constants::board_constants::*;
+use tetris::evaluator::*;
 use tetris::pruner::*;
 use tetris::test_api::functions::*;
 
 pub fn movegen_benchmark_no_pruning(c: &mut Criterion) {
-    let mut bot = Bot::<NoPruner>::with_seed(3);
+    let mut bot = Bot::<NoPruner, NoEvaluator>::with_seed(3);
     let mut group1 = c.benchmark_group("depth 1");
     group1.bench_function("movegen empty board depth=1", |b| {
         b.iter(|| black_box(bot.move_gen(1)))
@@ -53,7 +54,7 @@ pub fn movegen_benchmark_no_pruning(c: &mut Criterion) {
 }
 
 pub fn movegen_benchmark_pc_pruning(c: &mut Criterion) {
-    let mut bot = Bot::<AllClearPruner>::with_seed(4);
+    let mut bot = Bot::<AllClearPruner, NoEvaluator>::with_seed(4);
     bot.game.board = pco_board();
     c.bench_function("pco start find-pcs depth=3", |b| {
         b.iter(|| black_box(bot.move_gen(3)))
@@ -183,7 +184,7 @@ where
 }
 
 pub fn fish_test(c: &mut Criterion) {
-    let mut bot = Bot::<SimplePruner>::with_seed(920);
+    let mut bot = Bot::<SimplePruner, NoEvaluator>::with_seed(920);
     bot.game.board = versus_board_medium();
 
     c.bench_function("do moves", |b| {

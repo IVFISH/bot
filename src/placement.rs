@@ -2,7 +2,6 @@
 
 use core::f32;
 
-use crate::board::Board;
 use crate::game::Game;
 use crate::piece::Piece;
 
@@ -35,47 +34,18 @@ impl PartialEq for Placement {
 
 impl Placement {
     pub fn new(game: Game) -> Self {
-        let mut out = Self {
+        Self {
             game,
             base_piece: Piece::default(),
-            eval: f32::MAX,
-        };
-        out.eval();
-        out
+            eval: f32::MAX
+        }
     }
 
     pub fn new_base(game: Game, base_piece: Piece) -> Self {
-        let mut out = Self {
+        Self {
             game,
             base_piece,
-            eval: f32::MAX,
-        };
-        out.eval();
-        out
-    }
-
-    // Eval functions ---------------
-    // TODO: Change this so its not lazily evaluated. Currently only called when sorting, resulting in single-threaded eval
-    pub fn eval(&mut self) {
-        let board = self.game.board.arr;
-
-        let max = Board::get_max_height(&board);
-        let min = Board::get_min_height(&board);
-        let holes = Board::get_total_holes(&board);
-
-        let messiness = Board::get_messiness(&board);
-        let coveredness = Board::get_cell_coveredness(&board);
-
-        let adj_diff = Board::get_adjacent_height_differences(&board);
-        let stack_diff = Board::get_stack_height_differences(&board);
-
-        // TODO: figure out why tslot isn't working
-        let tslot = Board::t_slot(&board);
-        // let tslot = 0;
-
-        // (10 * max as u32 + holes) as f32
-
-        self.eval = (max + min + messiness + adj_diff + stack_diff - 5 * tslot + (holes + coveredness) as usize)
-            as f32
+            eval: f32::MAX
+        }
     }
 }
