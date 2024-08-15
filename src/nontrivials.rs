@@ -2,23 +2,22 @@ use crate::bitmatrix::*;
 use crate::game::*;
 
 /// generate collision map and the trivials
-/// TODO: implement other rotations
-pub fn collision(game: Game) -> (Vec<Bitmatrix>, Vec<Bitmatrix>) {
+pub fn collision(board: [u16; 10], piece: usize) -> (Vec<Bitmatrix>, Vec<Bitmatrix>) {
     let (mut c, mut t) = (Vec::new(), Vec::new());
     for rot in 0..4 {
-        let m = MASKS[Game::next(game.queue).0 - 1][rot];
+        let m = MASKS[piece][rot];
         let mut p = [0u16; W];
 
         for col in 1..(W - 1) {
-            let p0 = (game.board[col - 1] & m[0])
-                | (game.board[col - 0] & m[1])
-                | (game.board[col + 1] & m[2]);
-            let p1 = (game.board[col - 1] & (m[0] << 1))
-                | (game.board[col - 0] & (m[1] << 1))
-                | (game.board[col + 1] & (m[2] << 1));
-            let p2 = (game.board[col - 1] & (m[0] << 2))
-                | (game.board[col - 0] & (m[1] << 2))
-                | (game.board[col + 1] & (m[2] << 2));
+            let p0 = (board[col - 1] & m[0])
+                | (board[col - 0] & m[1])
+                | (board[col + 1] & m[2]);
+            let p1 = (board[col - 1] & (m[0] << 1))
+                | (board[col - 0] & (m[1] << 1))
+                | (board[col + 1] & (m[2] << 1));
+            let p2 = (board[col - 1] & (m[0] << 2))
+                | (board[col - 0] & (m[1] << 2))
+                | (board[col + 1] & (m[2] << 2));
 
             let np = ((p0 | (p0 >> 1) | (p0 >> 2)) & 0x1249)
                 | ((p1 | (p1 >> 1) | (p1 >> 2)) & 0x2492)
@@ -48,7 +47,7 @@ pub fn collision(game: Game) -> (Vec<Bitmatrix>, Vec<Bitmatrix>) {
     (c, t)
 }
 
-pub fn reachable(collision: Vec<Bitmatrix>, trivials: Vec<Bitmatrix>) -> Vec<Bitmatrix> {
+pub fn reachable(collision: Vec<Bitmatrix>, trivials: Vec<Bitmatrix>, piece: usize) -> Vec<Bitmatrix> {
     assert_eq!(collision.len(), 4);
     assert_eq!(trivials.len(), 4);
 
@@ -67,15 +66,21 @@ pub fn reachable(collision: Vec<Bitmatrix>, trivials: Vec<Bitmatrix>) -> Vec<Bit
             let mut q = r.or(p.and((r.lshift()).or(r.rshift()).or(r.ushift()).or(r.dshift())));
 
             // get the reachable with rotation
-            for other in 0..4 {
-                if other == rot {
-                    continue;
-                }
-
-                let r = &reachable[other];
+            // CW, CCW
+            for dir in [5, 3] {
+                let r = &reachable[(rot + dir) % 4];
 
                 // use the offset table here --> assuming kicks in all 4 directions for now
-                q = q.or(p.and((r.lshift()).or(r.rshift()).or(r.ushift()).or(r.dshift())));
+                let offsets = KICKS[piece][rot][(dir == 3) as usize];
+
+                // translate positive dR into ushift
+                // translate positive dC into rshift
+                let mut o = r.clone();
+                for [dr, dc] in offsets {
+                    o = o.or(o.shift(dr, dc));
+                }
+
+                q = q.or(p.and(o));
             }
 
             changed |= *r != q;
@@ -122,6 +127,8 @@ pub fn to_game_vec(game: Game, reachable: Vec<Bitmatrix>) -> Vec<Game> {
 }
 
 pub fn movegen(game: Game) -> Vec<Game> {
-    let (c, t) = collision(game);
-    to_game_vec(game, reachable(c, t))
+
+    let piece = Game::next(game.queue).0 - 1;
+    let (c, t) = collision(game.board, piece);
+    to_game_vec(game, reachable(c, t, piece))
 }

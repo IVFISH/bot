@@ -55,6 +55,20 @@ impl Bitmatrix {
         }
     }
 
+    pub fn shift(&self, dr: i32, dc: i32) -> Self {
+        if dr > 0 {
+            self.ushift().shift(dr - 1, dc)
+        } else if dr < 0 {
+            self.dshift().shift(dr + 1, dc)
+        } else if dc > 0 {
+            self.rshift().shift(dr, dc - 1)
+        } else if dc < 0 {
+            self.lshift().shift(dr, dc + 1)
+        } else {
+            self.clone()
+        }
+    }
+
     pub fn dshift(&self) -> Self {
         Self {
             data: self.data.iter().map(|&c| c >> 1).collect(),
