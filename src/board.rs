@@ -197,14 +197,15 @@ impl Board {
         //      ...
         //      x.x
         //      etc.
-        //         vv top rows (30 and 31) are special to avoid matches
-        let m0 = 0b11_101_101_101_101_101_101_101_101_101_101u32;
-        let m1 = 0b11_000_000_000_000_000_000_000_000_000_000u32;
-        let m2 = 0b11_001_001_001_001_001_001_001_001_001_001u32;
+        //         vv top rows (30 and 31) don't matter, will ignore
+        let m0 = 0b00_101_101_101_101_101_101_101_101_101_101u32;
+        let m1 = 0b00_000_000_000_000_000_000_000_000_000_000u32;
+        let m2 = 0b00_001_001_001_001_001_001_001_001_001_001u32;
 
         // s0 has 0s only in the 0th row mod 3, etc.
         // this is used in np1 and np2 
         // to ensure each p0, p1, p2 are used only for their respective rows
+        //         vv top rows (30 and 31) should be ignored; set to 1s
         let s0 = 0b11_110_110_110_110_110_110_110_110_110_110u32;
         let s1 = 0b11_101_101_101_101_101_101_101_101_101_101u32;
         let s2 = 0b11_011_011_011_011_011_011_011_011_011_011u32;
