@@ -141,8 +141,7 @@ fn bench_eval(c: &mut Criterion) {
     fn eval_board(b: Board) {
         let mut g = Game::new(901);
         g.board = b;
-        let p = Placement::new(g);
-        p.eval();
+        let _p = Placement::new(g);
     }
 
     let board_short = versus_board_short();

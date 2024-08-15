@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+use core::f32;
+
 use crate::board::Board;
 use crate::game::Game;
 use crate::piece::Piece;
@@ -8,11 +10,12 @@ use crate::piece::Piece;
 pub struct Placement {
     pub game: Game, // game after the piece has been placed
     pub base_piece: Piece,
+    pub eval: f32,
 }
 
 impl Ord for Placement {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.eval().total_cmp(&other.eval())
+        self.eval.total_cmp(&other.eval)
     }
 }
 
@@ -26,21 +29,34 @@ impl PartialOrd for Placement {
 
 impl PartialEq for Placement {
     fn eq(&self, other: &Self) -> bool {
-        self.eval().eq(&other.eval())
+        self.eval.eq(&other.eval)
     }
 }
 
 impl Placement {
     pub fn new(game: Game) -> Self {
-        Self {
+        let mut out = Self {
             game,
             base_piece: Piece::default(),
-        }
+            eval: f32::MAX,
+        };
+        out.eval();
+        out
+    }
+
+    pub fn new_base(game: Game, base_piece: Piece) -> Self {
+        let mut out = Self {
+            game,
+            base_piece,
+            eval: f32::MAX,
+        };
+        out.eval();
+        out
     }
 
     // Eval functions ---------------
     // TODO: Change this so its not lazily evaluated. Currently only called when sorting, resulting in single-threaded eval
-    pub fn eval(&self) -> f32 {
+    pub fn eval(&mut self) {
         let board = self.game.board.arr;
 
         let max = Board::get_max_height(&board);
@@ -54,12 +70,12 @@ impl Placement {
         let stack_diff = Board::get_stack_height_differences(&board);
 
         // TODO: figure out why tslot isn't working
-        // let tslot = Board::t_slot(&board);
-        let tslot = 0;
+        let tslot = Board::t_slot(&board);
+        // let tslot = 0;
 
         // (10 * max as u32 + holes) as f32
 
-        (max + min + messiness + adj_diff + stack_diff - 5 * tslot + (holes + coveredness) as usize)
+        self.eval = (max + min + messiness + adj_diff + stack_diff - 5 * tslot + (holes + coveredness) as usize)
             as f32
     }
 }

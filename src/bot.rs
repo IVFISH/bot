@@ -131,6 +131,7 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
     fn make_placement(piece: Piece, held: bool, place_before: &Placement) -> Placement {
         let mut new_placement = place_before.clone();
         new_placement.game.set_active(piece, held).place_active();
+        new_placement.eval();
         new_placement
     }
 
@@ -193,10 +194,10 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         let seen = &mut Self::get_base_trivials(controller);
         Self::get_base_nontrivials(seen, controller);
 
-        let out = seen.iter().map(|&p| Placement {
-            game: Self::make_placement(p, false, start).game,
-            base_piece: p,
-        });
+        let out = seen.iter().map(|&p| Placement::new_base(
+            Self::make_placement(p, false, start).game,
+            p,
+        ));
 
         if start.game.get_hold_piece().r#type == start.game.active.r#type {
             return out.collect();
@@ -208,10 +209,10 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         let seen = &mut Self::get_base_trivials(controller);
         Self::get_base_nontrivials(seen, controller);
 
-        out.chain(seen.iter().map(|&p| Placement {
-            game: Self::make_placement(p, true, start).game,
-            base_piece: p,
-        }))
+        out.chain(seen.iter().map(|&p| Placement::new_base(
+            Self::make_placement(p, true, start).game,
+            p,
+        )))
         .collect()
     }
 
