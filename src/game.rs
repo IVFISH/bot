@@ -11,7 +11,7 @@ pub struct VersusStats {
     pub combo: u8,
     pub attack_chain: u8,
     pub b2b: u8,
-    pub total_attack: u8,
+    pub last_attack: u8,
 }
 
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
@@ -28,7 +28,7 @@ impl Display for VersusStats {
         writeln!(
             f,
             "attack: {} || combo: {} | b2b: {}",
-            self.total_attack, self.combo, self.b2b
+            self.last_attack, self.combo, self.b2b
         )?;
         Ok(())
     }
@@ -45,8 +45,8 @@ impl VersusStats {
             // TODO: IMPLEMENT ATTACK TABLE
             let attk = amt + self.combo - 1;
             // let attk = (self.combo as i8 - 2).clamp(0, 100) as u8;
-            self.attack_chain += attk;
-            self.total_attack += attk;
+            self.attack_chain = attk;
+            self.last_attack += attk;
             self.combo += 1;
 
             if b2b {
