@@ -9,9 +9,7 @@ pub fn collision(board: Bitmatrix, piece: usize) -> (Vec<Bitmatrix>, Vec<Bitmatr
         let mut p = [0u16; W];
 
         for col in 1..(W - 1) {
-            let p0 = (board[col - 1] & m[0])
-                | (board[col - 0] & m[1])
-                | (board[col + 1] & m[2]);
+            let p0 = (board[col - 1] & m[0]) | (board[col - 0] & m[1]) | (board[col + 1] & m[2]);
             let p1 = (board[col - 1] & (m[0] << 1))
                 | (board[col - 0] & (m[1] << 1))
                 | (board[col + 1] & (m[2] << 1));
@@ -30,9 +28,12 @@ pub fn collision(board: Bitmatrix, piece: usize) -> (Vec<Bitmatrix>, Vec<Bitmatr
         };
 
         for col in 0..W {
-            if p[col] == 0 { continue; }
+            if p[col] == 0 {
+                continue;
+            }
+
             let l = p[col].leading_ones();
-            p[col] &= u16::MAX >> (l - 1);
+            p[col] = 1 << (COL::BITS - l);
         }
 
         let trivials = Bitmatrix {
@@ -46,7 +47,11 @@ pub fn collision(board: Bitmatrix, piece: usize) -> (Vec<Bitmatrix>, Vec<Bitmatr
     (c, t)
 }
 
-pub fn reachable(collision: Vec<Bitmatrix>, trivials: Vec<Bitmatrix>, piece: usize) -> Vec<Bitmatrix> {
+pub fn reachable(
+    collision: Vec<Bitmatrix>,
+    trivials: Vec<Bitmatrix>,
+    piece: usize,
+) -> Vec<Bitmatrix> {
     assert_eq!(collision.len(), 4);
     assert_eq!(trivials.len(), 4);
 
@@ -55,6 +60,12 @@ pub fn reachable(collision: Vec<Bitmatrix>, trivials: Vec<Bitmatrix>, piece: usi
     const N: usize = 20;
     let mut reachable = trivials;
 
+    println!("{}", reachable[0]);
+    println!("{}", reachable[1]);
+    println!("{}", reachable[2]);
+    println!("{}", reachable[3]);
+    println!("=========================");
+
     for _ in 0..N {
         let mut changed = false;
         for rot in 0..4 {
@@ -62,46 +73,53 @@ pub fn reachable(collision: Vec<Bitmatrix>, trivials: Vec<Bitmatrix>, piece: usi
             let p = collision[rot];
 
             // get the reachable without rotation
-            let mut q = r | (p & (r.lshift(1) | r.rshift(1) | r.dshift(1)));
+            // next iteration of r
+            let mut q = r | (p & (r.lshift(1) | r.rshift(1) | r.softdrop()));
 
             // get the reachable with rotation
+            // for dir in [1, 2, 3] { // i don't want to write 180 kicks yet :)
             // CW, CCW
             for dir in [1, 3] {
-                let r = &reachable[(rot + dir) % 4];
+                let new_rot = (rot  + 4 - dir) % 4;
 
                 // use the offset table here --> assuming kicks in all 4 directions for now
-                let offsets = KICKS[piece][rot][(dir == 3) as usize];
+                let offsets = KICKS[piece][new_rot][(dir == 3) as usize];
 
-                // to make sure kicks don't apply multiple times
-                // keep track of all the differences (xor)
-                // let mut d = Bitmatrix::new();
+                // reachables in (rot - dir) to apply offset
+                let r1 = reachable[new_rot];
+                // accumulation of new positions
+                let mut o = Bitmatrix::new();
+                // all the places that have already kicked
+                let mut d = Bitmatrix::new();
 
                 // translate positive dR into ushift
                 // translate positive dC into rshift
-                let mut o = *r;
                 for [dr, dc] in offsets {
-                    // let s = o.shift(dr, dc);
-                    // d |= d ^ s;
-                    // o |= s & !d;
-                    o |= o.shift(dr, dc);
+                    // (r1 & !d) can still kick
+                    // o1 is the set of all new placements from this offset
+                    let o1 = (r1 & !d).shift(dr, dc) & p;
+                    d |= o1.shift(-dr, -dc);
+                    o |= o1;
                 }
 
-                q |= p & o;
+                // from (rot - dir) -> rot
+                q |= o;
             }
 
             changed |= r != q;
             reachable[rot] = q;
+
+            println!("{}", q);
         }
 
         if !changed {
             break;
         }
+
+        println!("=========================");
     }
 
-    reachable
-        .into_iter()
-        .map(|r| r & !r.ushift(1))
-        .collect()
+    reachable.into_iter().map(|r| r & !r.ushift(1)).collect()
 }
 
 pub fn to_game_vec(game: Game, reachable: Vec<Bitmatrix>) -> Vec<Game> {
@@ -133,7 +151,6 @@ pub fn to_game_vec(game: Game, reachable: Vec<Bitmatrix>) -> Vec<Game> {
 }
 
 pub fn movegen(game: Game) -> Vec<Game> {
-
     let piece = Game::next(game.queue).0 - 1;
     let (c, t) = collision(game.board, piece);
     to_game_vec(game, reachable(c, t, piece))
@@ -143,7 +160,6 @@ pub fn movegen(game: Game) -> Vec<Game> {
 pub mod tests {
     use crate::nontrivials::movegen;
     use crate::test_api::test_api::*;
-
 
     #[test]
     fn l_spin_1() {
@@ -210,7 +226,24 @@ pub mod tests {
         let sol_str = [
             "oooo.ooooo",
             "oooxxxoooo",
-            "oox.oooooo",
+            "oooxoooooo",
+        ];
+
+        // for g in movegen(game) {
+        //     println!("{}", g);
+        // }
+
+        let gen = movegen(game);
+        assert_not_contains(&gen, game_from_string(&sol_str, 0));
+    }
+
+    #[test]
+    fn l_spin_4() {
+        let game = l_spin_board_4();
+        #[rustfmt::skip]
+        let sol_str = [
+            "ooooo.x.oo",
+            "ooooxxxooo",
         ];
 
         // for g in movegen(game) {

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 #[cfg(test)]
 pub mod test_api {
     use crate::game::*;
@@ -61,6 +63,15 @@ pub mod test_api {
             "oooo.ooooo",
             "ooo...oooo",
             "ooo.oooooo",
+        ];
+        game_from_string(&boardstr, 0x2)
+    }
+
+    pub fn l_spin_board_4() -> Game {
+        #[rustfmt::skip]
+        let boardstr = [
+            "ooooo...oo",
+            "oooo...ooo",
         ];
         game_from_string(&boardstr, 0x2)
     }
