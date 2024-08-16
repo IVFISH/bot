@@ -98,11 +98,11 @@ pub fn reachable(
 
             // get the reachable with rotation
             let new_rot = (rot + 3) % 4;
-            q |= rotate_kick(rot, reachable[new_rot], p, &KICKS[piece][new_rot][0]);
+            q |= rotate_kick(reachable[new_rot], p, &KICKS[piece][new_rot][0]);
             let new_rot = (rot + 2) % 4;
-            q |= rotate_kick(rot, reachable[new_rot], p, &KICKS_180[piece][new_rot]);
+            q |= rotate_kick(reachable[new_rot], p, &KICKS_180[piece][new_rot]);
             let new_rot = (rot + 1) % 4;
-            q |= rotate_kick(rot, reachable[new_rot], p, &KICKS[piece][new_rot][1]);
+            q |= rotate_kick(reachable[new_rot], p, &KICKS[piece][new_rot][1]);
 
             changed |= r != q;
             reachable[rot] = q;
@@ -116,9 +116,9 @@ pub fn reachable(
     reachable.into_iter().map(|r| r & !r.ushift(1)).collect()
 }
 
-fn rotate_kick(rot: usize, r1: Bitmatrix, p: Bitmatrix, offsets: &[[i32; 2]]) -> Bitmatrix {
-    // reachables in (rot - dir) to apply offset
-    // r1
+#[inline(always)]
+fn rotate_kick(r1: Bitmatrix, p: Bitmatrix, offsets: &[[i32; 2]]) -> Bitmatrix {
+    // r1: reachables in (rot - dir) to apply offset
 
     // accumulation of new positions
     let mut o = Bitmatrix::new();
