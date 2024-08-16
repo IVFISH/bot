@@ -2,7 +2,7 @@ use crate::bitmatrix::*;
 use crate::game::*;
 
 /// generate collision map and the trivials
-pub fn collision(board: [u16; 10], piece: usize) -> (Vec<Bitmatrix>, Vec<Bitmatrix>) {
+pub fn collision(board: Bitmatrix, piece: usize) -> (Vec<Bitmatrix>, Vec<Bitmatrix>) {
     let (mut c, mut t) = (Vec::new(), Vec::new());
     for rot in 0..4 {
         let m = MASKS[piece][rot];
@@ -53,37 +53,43 @@ pub fn reachable(collision: Vec<Bitmatrix>, trivials: Vec<Bitmatrix>, piece: usi
 
     // find the initial possible matrix
     // then iterate the actions
-    const N: usize = 20;
+    const N: usize = 1;
     let mut reachable = trivials;
 
     for _ in 0..N {
         let mut changed = false;
         for rot in 0..4 {
-            let r = &reachable[rot];
-            let p = &collision[rot];
+            let r = reachable[rot];
+            let p = collision[rot];
 
             // get the reachable without rotation
-            let mut q = r.or(p.and((r.lshift()).or(r.rshift()).or(r.ushift()).or(r.dshift())));
+            let mut q = r | (p & (r.lshift(1) | r.rshift(1) | r.dshift(1)));
 
             // get the reachable with rotation
             // CW, CCW
-            for dir in [5, 3] {
+            for dir in [1, 3] {
                 let r = &reachable[(rot + dir) % 4];
 
                 // use the offset table here --> assuming kicks in all 4 directions for now
                 let offsets = KICKS[piece][rot][(dir == 3) as usize];
 
+                // to make sure kicks don't apply multiple times
+                // keep track of all the differences (xor)
+                let mut d = Bitmatrix::new();
+
                 // translate positive dR into ushift
                 // translate positive dC into rshift
-                let mut o = r.clone();
+                let mut o = *r;
                 for [dr, dc] in offsets {
-                    o = o.or(o.shift(dr, dc));
+                    let s = o.shift(dr, dc);
+                    d |= d ^ s;
+                    o |= s & !d;
                 }
 
-                q = q.or(p.and(o));
+                q |= p & o;
             }
 
-            changed |= *r != q;
+            changed |= r != q;
             reachable[rot] = q;
         }
 
@@ -94,7 +100,7 @@ pub fn reachable(collision: Vec<Bitmatrix>, trivials: Vec<Bitmatrix>, piece: usi
 
     reachable
         .into_iter()
-        .map(|r| r.and(r.ushift().not()))
+        .map(|r| r & !r.ushift(1))
         .collect()
 }
 

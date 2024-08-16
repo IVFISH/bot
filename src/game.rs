@@ -10,14 +10,14 @@ pub const H: usize = COL::BITS as usize;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Game {
-    pub board: [COL; W],
+    pub board: Bitmatrix,
     pub queue: usize,
 }
 
 impl Game {
     pub fn new(queue: usize) -> Self {
         Self {
-            board: [0; W],
+            board: Bitmatrix::new(),
             queue,
         }
     }
@@ -29,10 +29,7 @@ impl Game {
 
 impl Display for Game {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Bitmatrix {
-            data: self.board.into_iter().collect(),
-        }
-        .fmt(f)
+        self.board.fmt(f)
     }
 }
 

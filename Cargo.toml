@@ -7,5 +7,5 @@ edition = "2021"
 rustflags = ["-C", "target-feature='+avx2,+avx,+sse2,+avx512f,+avx512bw,+avx512vl'"]
 
 [dependencies]
-arrayvec = "0.7.4"
 bitvec = "1.0.1"
+tinyvec = "1.8.0"

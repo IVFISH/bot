@@ -1,25 +1,17 @@
 use std::fmt::*;
+use std::ops;
 
 use crate::game::{COL, H, W};
-use arrayvec::*;
 use bitvec::prelude::*;
+use tinyvec::ArrayVec;
 
-/// I can't figure out how to use num_traits::PrimInt to make Bitmatrix generic :(
-// pub const W: usize = 10;
-// pub const H: usize = COL::BITS as usize;
-
-/// column major storage of bit-boards
-/// warning: BitVec uses little endian data storage -- very misleading sometimes
-
-// TODO: compare derived equal with (a ^ b == 0)
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Copy, Debug)]
 pub struct Bitmatrix {
-    pub data: ArrayVec<COL, W>,
+    pub data: ArrayVec<[COL; W]>,
 }
 
 impl Display for Bitmatrix {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        // let iter = self.data.chunks_exact(H).collect::<Vec<_>>();
         for row in (0..H).rev() {
             for col in 0..W {
                 if self.data[col] >> row & 1 == 1 {
@@ -34,10 +26,97 @@ impl Display for Bitmatrix {
     }
 }
 
+impl ops::BitOrAssign for Bitmatrix {
+    fn bitor_assign(&mut self, rhs: Self) {
+        *self = *self | rhs;
+    }
+}
+
+impl ops::BitAndAssign for Bitmatrix {
+    fn bitand_assign(&mut self, rhs: Self) {
+        *self = *self & rhs;
+    }
+}
+
+impl ops::BitXorAssign for Bitmatrix {
+    fn bitxor_assign(&mut self, rhs: Self) {
+        *self = *self ^ rhs;
+    }
+}
+
+impl ops::BitAnd for Bitmatrix {
+    type Output = Self;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        Self {
+            data: self
+                .data
+                .iter()
+                .zip(rhs.data.iter())
+                .map(|(x, y)| x.bitand(y))
+                .collect(),
+        }
+    }
+}
+
+impl ops::BitXor for Bitmatrix {
+    type Output = Self;
+
+    fn bitxor(self, rhs: Self) -> Self::Output {
+        Self {
+            data: self
+                .data
+                .into_iter()
+                .zip(rhs.data.into_iter())
+                .map(|(x, y)| x.bitxor(y))
+                .collect(),
+        }
+    }
+}
+
+impl ops::BitOr for Bitmatrix {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        Self {
+            data: self
+                .data
+                .into_iter()
+                .zip(rhs.data.into_iter())
+                .map(|(x, y)| x.bitor(y))
+                .collect(),
+        }
+    }
+}
+
+impl ops::Not for Bitmatrix {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
+        Self {
+            data: self.data.into_iter().map(|x| x.not()).collect(),
+        }
+    }
+}
+
+impl ops::Index<usize> for Bitmatrix {
+    type Output = COL;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.data[index]
+    }
+}
+
+impl ops::IndexMut<usize> for Bitmatrix {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.data[index]
+    }
+}
+
 impl Bitmatrix {
     pub fn new() -> Self {
         Self {
-            data: ArrayVec::new_const(),
+            data: [0; W].into(),
         }
     }
 
@@ -49,70 +128,47 @@ impl Bitmatrix {
         self.data.as_bits::<Lsb0>().count_ones()
     }
 
-    pub fn not(&self) -> Self {
-        Self {
-            data: self.data.iter().map(|&c| !c).collect(),
-        }
-    }
-
     pub fn shift(&self, dr: i32, dc: i32) -> Self {
+        let mut ret = *self;
+
         if dr > 0 {
-            self.ushift().shift(dr - 1, dc)
-        } else if dr < 0 {
-            self.dshift().shift(dr + 1, dc)
-        } else if dc > 0 {
-            self.rshift().shift(dr, dc - 1)
-        } else if dc < 0 {
-            self.lshift().shift(dr, dc + 1)
-        } else {
-            self.clone()
+            ret = ret.ushift(dr as usize);
         }
+        if dr < 0 {
+            ret = ret.dshift(-dr as usize)
+        }
+        if dc > 0 {
+            ret = ret.rshift(dc as usize)
+        }
+        if dc < 0 {
+            ret = ret.lshift(-dc as usize)
+        }
+
+        ret
     }
 
-    pub fn dshift(&self) -> Self {
+    pub fn dshift(&self, n: usize) -> Self {
         Self {
-            data: self.data.iter().map(|&c| c >> 1).collect(),
+            data: self.data.into_iter().map(|c| c >> n).collect(),
         }
     }
 
-    pub fn ushift(&self) -> Self {
+    pub fn ushift(&self, n: usize) -> Self {
         Self {
-            data: self.data.iter().map(|&c| c << 1).collect(),
+            data: self.data.into_iter().map(|c| c << n).collect(),
         }
     }
 
-    pub fn lshift(&self) -> Self {
+    pub fn lshift(&self, n: usize) -> Self {
         let mut data = self.data.clone();
-        data.rotate_left(1);
+        data.rotate_left(n);
         Self { data }
     }
 
-    pub fn rshift(&self) -> Self {
+    pub fn rshift(&self, n: usize) -> Self {
         let mut data = self.data.clone();
-        data.rotate_right(1);
+        data.rotate_right(n);
         Self { data }
-    }
-
-    pub fn or(&self, other: Bitmatrix) -> Self {
-        Self {
-            data: self
-                .data
-                .iter()
-                .zip(other.data.iter())
-                .map(|(x, y)| x | y)
-                .collect(),
-        }
-    }
-
-    pub fn and(&self, other: Bitmatrix) -> Self {
-        Self {
-            data: self
-                .data
-                .iter()
-                .zip(other.data.iter())
-                .map(|(x, y)| x & y)
-                .collect(),
-        }
     }
 }
 

@@ -51,4 +51,20 @@ pub mod test_api {
         ];
         game_from_string(&boardstr, 0x2)
     }
+
+    pub fn versus_board_medium() -> Game {
+        #[rustfmt::skip]
+        let boardstr = [
+            "......xx..",
+            "..xx.xxxxx",
+            "...xxxxxxx",
+            "x.xxxxxxxx",
+            "x.xxxxxxxx",
+            "x.xxxxxxxx",
+            "x.xxxxxxxx",
+            "x.xxxxxxxx",
+            "xxxxxxx.xx",
+        ];
+        game_from_string(&boardstr, 0x1)
+    }
 }
