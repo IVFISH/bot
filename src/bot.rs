@@ -130,7 +130,7 @@ impl<P: Pruner + std::marker::Sync, E: Evaluator + std::marker::Sync> Bot<P, E> 
     fn make_placement(piece: Piece, held: bool, place_before: &Placement) -> Placement {
         let mut new_placement = place_before.clone();
         new_placement.game.set_active(piece, held).place_active();
-        new_placement.eval = E::eval(&new_placement.game);
+        (new_placement.pos_eval, new_placement.versus_eval) = E::eval(&new_placement.game);
         new_placement
     }
 
@@ -195,7 +195,7 @@ impl<P: Pruner + std::marker::Sync, E: Evaluator + std::marker::Sync> Bot<P, E> 
 
         let out = seen.iter().map(|&p| {
             let mut placement = Placement::new_base(Self::make_placement(p, false, start).game, p);
-            placement.eval = E::eval(&placement.game);
+            (placement.pos_eval, placement.versus_eval) = E::eval(&placement.game);
             placement
         });
 
@@ -211,7 +211,7 @@ impl<P: Pruner + std::marker::Sync, E: Evaluator + std::marker::Sync> Bot<P, E> 
 
         out.chain(seen.iter().map(|&p| {
             let mut placement = Placement::new_base(Self::make_placement(p, true, start).game, p);
-            placement.eval = E::eval(&placement.game);
+            (placement.pos_eval, placement.versus_eval) = E::eval(&placement.game);
             placement
         }))
         .collect()

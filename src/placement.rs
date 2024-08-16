@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use core::f32;
+use half::f16;
 
 use crate::game::Game;
 use crate::piece::Piece;
@@ -9,12 +9,13 @@ use crate::piece::Piece;
 pub struct Placement {
     pub game: Game, // game after the piece has been placed
     pub base_piece: Piece,
-    pub eval: f32,
+    pub pos_eval: f16,
+    pub versus_eval: f16,
 }
 
 impl Ord for Placement {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.eval.total_cmp(&other.eval)
+        (self.pos_eval + self.versus_eval).total_cmp(&(other.pos_eval + other.versus_eval))
     }
 }
 
@@ -28,7 +29,7 @@ impl PartialOrd for Placement {
 
 impl PartialEq for Placement {
     fn eq(&self, other: &Self) -> bool {
-        self.eval.eq(&other.eval)
+        (self.pos_eval + self.versus_eval).eq(&(other.pos_eval + other.versus_eval))
     }
 }
 
@@ -37,7 +38,8 @@ impl Placement {
         Self {
             game,
             base_piece: Piece::default(),
-            eval: f32::MAX,
+            pos_eval: f16::ZERO,
+            versus_eval: f16::ZERO,
         }
     }
 
@@ -45,7 +47,8 @@ impl Placement {
         Self {
             game,
             base_piece,
-            eval: f32::MAX,
+            pos_eval: f16::ZERO,
+            versus_eval: f16::ZERO,
         }
     }
 }
