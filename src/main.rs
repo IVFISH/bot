@@ -25,7 +25,7 @@ fn bench(game: Game) {
     println!(
         "collision took {} nanoseconds",
         now.elapsed().as_nanos() / rep
-        );
+    );
 
     let mut elapsed = 0;
     for _ in 0..rep {
@@ -42,7 +42,7 @@ fn bench(game: Game) {
     println!(
         "movegen took {} nanoseconds",
         now.elapsed().as_nanos() / rep
-        );
+    );
 }
 
 fn main() {
@@ -59,6 +59,11 @@ fn main() {
 
     let gen = movegen(game);
     assert_not_contains(&gen, game_from_string(&sol_str, 0));
+    for g in gen {
+        println!("{}", g);
+    }
+
+    bench(game);
 }
 
 fn sd_test() {
@@ -103,6 +108,6 @@ pub mod test {
 
     #[test]
     fn bench_test() {
-        bench(versus_board_medium());
+        // bench(versus_board_medium());
     }
 }

@@ -23,6 +23,32 @@ pub fn collision(board: Bitmatrix, piece: usize) -> (Vec<Bitmatrix>, Vec<Bitmatr
             p[col] = !np;
         }
 
+        // try col = 0
+        if m[0] == 0 {
+            let col = 0;
+            let p0 = (board[col - 0] & m[1]) | (board[col + 1] & m[2]);
+            let p1 = (board[col - 0] & (m[1] << 1)) | (board[col + 1] & (m[2] << 1));
+            let p2 = (board[col - 0] & (m[1] << 2)) | (board[col + 1] & (m[2] << 2));
+
+            let np = ((p0 | (p0 >> 1) | (p0 >> 2)) & 0x1249)
+                | ((p1 | (p1 >> 1) | (p1 >> 2)) & 0x2492)
+                | ((p2 | (p2 >> 1) | (p2 >> 2)) & 0x4924);
+            p[col] = !np;
+        }
+
+        // try col = 9
+        if m[2] == 0 {
+            let col = 9;
+            let p0 = (board[col - 1] & m[0]) | (board[col - 0] & m[1]);
+            let p1 = (board[col - 1] & (m[0] << 1)) | (board[col - 0] & (m[1] << 1));
+            let p2 = (board[col - 1] & (m[0] << 2)) | (board[col - 0] & (m[1] << 2));
+
+            let np = ((p0 | (p0 >> 1) | (p0 >> 2)) & 0x1249)
+                | ((p1 | (p1 >> 1) | (p1 >> 2)) & 0x2492)
+                | ((p2 | (p2 >> 1) | (p2 >> 2)) & 0x4924);
+            p[col] = !np;
+        }
+
         let collisions = Bitmatrix {
             data: p.into_iter().collect(),
         };
@@ -57,14 +83,8 @@ pub fn reachable(
 
     // find the initial possible matrix
     // then iterate the actions
-    const N: usize = 1;
+    const N: usize = 20;
     let mut reachable = trivials;
-
-    println!("{}", reachable[0]);
-    println!("{}", reachable[1]);
-    println!("{}", reachable[2]);
-    println!("{}", reachable[3]);
-    println!("=========================");
 
     for _ in 0..N {
         let mut changed = false;
@@ -77,59 +97,45 @@ pub fn reachable(
             let mut q = r | (p & (r.lshift(1) | r.rshift(1) | r.softdrop()));
 
             // get the reachable with rotation
-            // for dir in [1, 2, 3] { // i don't want to write 180 kicks yet :)
-            // CW, CCW
-            for dir in [1, 3] {
-                let new_rot = (rot  + 4 - dir) % 4;
-
-                // use the offset table here --> assuming kicks in all 4 directions for now
-                let offsets = KICKS[piece][new_rot][(dir == 3) as usize];
-
-                // reachables in (rot - dir) to apply offset
-                let r1 = reachable[new_rot];
-                // accumulation of new positions
-                let mut o = Bitmatrix::new();
-                // all the places that have already kicked
-                let mut d = Bitmatrix::new();
-
-                // println!("{:?}", offsets);
-
-                // translate positive dR into ushift
-                // translate positive dC into rshift
-                println!("r1 \n{}", r1);
-                for [dc, dr] in offsets {
-                    println!("[{}, {}]", dr, dc);
-                    // (r1 & !d) can still kick
-                    // o1 is the set of all new placements from this offset
-                    // println!("r1 \n{}", r1);
-                    let o1 = (r1 & !d).shift(dr, dc) & p;
-                    // println!("o1 \n{}", o1);
-                    d |= o1.shift(-dr, -dc);
-                    // println!("d \n{}", d);
-                    o |= o1;
-
-                    println!("o1\n{}", o1);
-                }
-
-                // from (rot - dir) -> rot
-                q |= o;
-            }
+            let new_rot = (rot + 3) % 4;
+            q |= rotate_kick(rot, reachable[new_rot], p, &KICKS[piece][new_rot][0]);
+            let new_rot = (rot + 2) % 4;
+            q |= rotate_kick(rot, reachable[new_rot], p, &KICKS_180[piece][new_rot]);
+            let new_rot = (rot + 1) % 4;
+            q |= rotate_kick(rot, reachable[new_rot], p, &KICKS[piece][new_rot][1]);
 
             changed |= r != q;
             reachable[rot] = q;
-
-            println!("{}", q);
-            break;
         }
 
         if !changed {
             break;
         }
-
-        println!("=========================");
     }
 
     reachable.into_iter().map(|r| r & !r.ushift(1)).collect()
+}
+
+fn rotate_kick(rot: usize, r1: Bitmatrix, p: Bitmatrix, offsets: &[[i32; 2]]) -> Bitmatrix {
+    // reachables in (rot - dir) to apply offset
+    // r1
+
+    // accumulation of new positions
+    let mut o = Bitmatrix::new();
+    // all the places that have already kicked
+    let mut d = Bitmatrix::new();
+
+    // translate positive dR into ushift
+    // translate positive dC into rshift
+    for &[dc, dr] in offsets {
+        // (r1 & !d) can still kick
+        // o1 is the set of all new placements from this offset
+        let o1 = (r1 & !d).shift(dr, dc) & p;
+        d |= o1.shift(-dr, -dc);
+        o |= o1;
+    }
+
+    o
 }
 
 pub fn to_game_vec(game: Game, reachable: Vec<Bitmatrix>) -> Vec<Game> {
@@ -150,9 +156,13 @@ pub fn to_game_vec(game: Game, reachable: Vec<Bitmatrix>) -> Vec<Game> {
             let (r, c) = (i % H, i / H);
 
             let mut cpy = copy;
-            cpy.board[c - 1] |= piece[0] << r;
+            if piece[0] != 0 {
+                cpy.board[c - 1] |= piece[0] << r;
+            }
             cpy.board[c - 0] |= piece[1] << r;
-            cpy.board[c + 1] |= piece[2] << r;
+            if piece[2] != 0 {
+                cpy.board[c + 1] |= piece[2] << r;
+            }
             ret.push(cpy);
         }
     }
@@ -192,7 +202,7 @@ pub mod tests {
         // }
 
         let gen = movegen(game);
-        assert_eq!(gen.len(), 34);
+        assert_eq!(gen.len(), 36);
         assert_contains(&gen, game_from_string(&sol_str_1, 0));
         assert_contains(&gen, game_from_string(&sol_str_2, 0));
     }
@@ -223,9 +233,8 @@ pub mod tests {
         //     println!("{}", g);
         // }
 
-        // NOTE: on 18+ high board, this should generate 50 pieces (there is trivial on the left)
         let gen = movegen(game);
-        assert_eq!(gen.len(), 49);
+        assert_eq!(gen.len(), 50);
         assert_contains(&gen, game_from_string(&sol_str, 0));
     }
 

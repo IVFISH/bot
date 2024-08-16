@@ -118,5 +118,35 @@ pub const KICKS: [[[[[i32; 2]; 5]; 2]; 4]; 5] = [
             // S
             [[0, 0], [-1, 0], [-1, -1], [0, 2], [-1, 2]],
         ],
-    ]; 5
-];
+        ]; 5
+        ];
+
+// [+X, +Y] = KICKS[piece][rot][ {CW, CCW} ][test#]
+pub const KICKS_180: [[[[i32; 2]; 6]; 4]; 5] = [
+            // for T, L, J, S, Z piece: 
+            // going to N has an implicit -1 offset (so explicitely should be +1)
+            // going from N has an implicit +1 offset (explicit -1)
+            // all N offsets are 1 lower than in SRS standard
+            [
+                // N
+                [
+                    // S
+                    [0, -1], [0, 0], [1, 0], [-1, 0], [1, -1], [-1, -1],
+                ],
+                // E
+                [
+                    // W
+                    [0, 0], [1, 0], [1, 2], [1, 1], [0, 2], [0, -1]
+                ],
+                // S
+                [
+                    // N
+                    [0, 1], [0, 0], [-1, 0], [1, 0], [-1, 1], [1, 1]
+                ],
+                // W
+                [
+                    // E
+                    [0, 0], [-1, 0], [-1, 2], [-1, 1], [0, 2], [0, -1]
+                ],
+                ]; 5
+                ];
