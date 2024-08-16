@@ -160,13 +160,13 @@ impl Bitmatrix {
     }
 
     pub fn lshift(&self, n: usize) -> Self {
-        let mut data = self.data.clone();
+        let mut data = self.data;
         data.rotate_left(n);
         Self { data }
     }
 
     pub fn rshift(&self, n: usize) -> Self {
-        let mut data = self.data.clone();
+        let mut data = self.data;
         data.rotate_right(n);
         Self { data }
     }

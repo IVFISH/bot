@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 #[cfg(test)]
 pub mod test_api {
     use crate::game::*;
@@ -18,6 +16,11 @@ pub mod test_api {
     pub fn assert_contains(movegen: &Vec<Game>, game: Game) {
         let contains = movegen.iter().any(|g| g.board == game.board);
         assert!(contains);
+    }
+
+    pub fn assert_not_contains(movegen: &Vec<Game>, game: Game) {
+        let contains = movegen.iter().any(|g| g.board == game.board);
+        assert!(!contains);
     }
 
     pub fn l_spin_board_1() -> Game {
@@ -48,6 +51,16 @@ pub mod test_api {
             "o.o..ooooo",
             "o.oooooooo",
             "o..ooooooo",
+        ];
+        game_from_string(&boardstr, 0x2)
+    }
+
+    pub fn l_spin_board_3() -> Game {
+        #[rustfmt::skip]
+        let boardstr = [
+            "oooo.ooooo",
+            "ooo...oooo",
+            "ooo.oooooo",
         ];
         game_from_string(&boardstr, 0x2)
     }

@@ -54,9 +54,9 @@ fn main() {
 
     // bench(game);
 
-    // game.board[0] = 0xaaaa;
-    // game.board[1] = 0x0000;
-    // game.board[2] = 0x2222;
+    game.board[0] = 0xaaaa;
+    game.board[1] = 0x0000;
+    game.board[2] = 0x2222;
 
     println!("{}", game);
 

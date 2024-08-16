@@ -30,10 +30,9 @@ pub fn collision(board: Bitmatrix, piece: usize) -> (Vec<Bitmatrix>, Vec<Bitmatr
         };
 
         for col in 0..W {
-            let q = p[col];
-
-            let l = q.leading_zeros();
-            p[col] = q & (u16::MAX.rotate_left(l));
+            if p[col] == 0 { continue; }
+            let l = p[col].leading_ones();
+            p[col] &= u16::MAX >> (l - 1);
         }
 
         let trivials = Bitmatrix {
@@ -53,7 +52,7 @@ pub fn reachable(collision: Vec<Bitmatrix>, trivials: Vec<Bitmatrix>, piece: usi
 
     // find the initial possible matrix
     // then iterate the actions
-    const N: usize = 1;
+    const N: usize = 20;
     let mut reachable = trivials;
 
     for _ in 0..N {
@@ -75,15 +74,16 @@ pub fn reachable(collision: Vec<Bitmatrix>, trivials: Vec<Bitmatrix>, piece: usi
 
                 // to make sure kicks don't apply multiple times
                 // keep track of all the differences (xor)
-                let mut d = Bitmatrix::new();
+                // let mut d = Bitmatrix::new();
 
                 // translate positive dR into ushift
                 // translate positive dC into rshift
                 let mut o = *r;
                 for [dr, dc] in offsets {
-                    let s = o.shift(dr, dc);
-                    d |= d ^ s;
-                    o |= s & !d;
+                    // let s = o.shift(dr, dc);
+                    // d |= d ^ s;
+                    // o |= s & !d;
+                    o |= o.shift(dr, dc);
                 }
 
                 q |= p & o;
@@ -141,7 +141,9 @@ pub fn movegen(game: Game) -> Vec<Game> {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::{movegen, test_api::test_api::*};
+    use crate::nontrivials::movegen;
+    use crate::test_api::test_api::*;
+
 
     #[test]
     fn l_spin_1() {
@@ -199,5 +201,23 @@ pub mod tests {
         let gen = movegen(game);
         assert_eq!(gen.len(), 49);
         assert_contains(&gen, game_from_string(&sol_str, 0));
+    }
+
+    #[test]
+    fn l_spin_3() {
+        let game = l_spin_board_3();
+        #[rustfmt::skip]
+        let sol_str = [
+            "oooo.ooooo",
+            "oooxxxoooo",
+            "oox.oooooo",
+        ];
+
+        // for g in movegen(game) {
+        //     println!("{}", g);
+        // }
+
+        let gen = movegen(game);
+        assert_not_contains(&gen, game_from_string(&sol_str, 0));
     }
 }
