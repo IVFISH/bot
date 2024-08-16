@@ -6,6 +6,7 @@ mod test_api;
 use game::*;
 use nontrivials::*;
 use std::time;
+use test_api::test_api::*;
 
 #[allow(dead_code)]
 fn bench(game: Game) {
@@ -24,7 +25,7 @@ fn bench(game: Game) {
     println!(
         "collision took {} nanoseconds",
         now.elapsed().as_nanos() / rep
-    );
+        );
 
     let mut elapsed = 0;
     for _ in 0..rep {
@@ -41,22 +42,23 @@ fn bench(game: Game) {
     println!(
         "movegen took {} nanoseconds",
         now.elapsed().as_nanos() / rep
-    );
+        );
 }
 
 fn main() {
-    // sd_test();
-    // let mut game = Game::new(0x1);
+    let game = l_spin_board_4();
+    #[rustfmt::skip]
+    let sol_str = [
+        "ooooo.x.oo",
+        "ooooxxxooo",
+    ];
 
-    // // bench(game);
+    // for g in movegen(game) {
+    //     println!("{}", g);
+    // }
 
-    // game.board[0] = 0xaaaa;
-    // game.board[1] = 0x0000;
-    // game.board[2] = 0x2222;
-
-    // println!("{}", game);
-
-    // bench(game);
+    let gen = movegen(game);
+    assert_not_contains(&gen, game_from_string(&sol_str, 0));
 }
 
 fn sd_test() {

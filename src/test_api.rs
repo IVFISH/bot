@@ -1,6 +1,5 @@
 #![allow(dead_code)]
 
-#[cfg(test)]
 pub mod test_api {
     use crate::game::*;
 

@@ -57,7 +57,7 @@ pub fn reachable(
 
     // find the initial possible matrix
     // then iterate the actions
-    const N: usize = 20;
+    const N: usize = 1;
     let mut reachable = trivials;
 
     println!("{}", reachable[0]);
@@ -92,14 +92,23 @@ pub fn reachable(
                 // all the places that have already kicked
                 let mut d = Bitmatrix::new();
 
+                // println!("{:?}", offsets);
+
                 // translate positive dR into ushift
                 // translate positive dC into rshift
-                for [dr, dc] in offsets {
+                println!("r1 \n{}", r1);
+                for [dc, dr] in offsets {
+                    println!("[{}, {}]", dr, dc);
                     // (r1 & !d) can still kick
                     // o1 is the set of all new placements from this offset
+                    // println!("r1 \n{}", r1);
                     let o1 = (r1 & !d).shift(dr, dc) & p;
+                    // println!("o1 \n{}", o1);
                     d |= o1.shift(-dr, -dc);
+                    // println!("d \n{}", d);
                     o |= o1;
+
+                    println!("o1\n{}", o1);
                 }
 
                 // from (rot - dir) -> rot
@@ -110,6 +119,7 @@ pub fn reachable(
             reachable[rot] = q;
 
             println!("{}", q);
+            break;
         }
 
         if !changed {
