@@ -1,5 +1,3 @@
-use half::f16;
-
 use crate::board::Board;
 use crate::game::Game;
 
@@ -9,7 +7,7 @@ pub trait Evaluator {
 
     /// evaluates the game
     // TODO: seperate versus and positional eval
-    fn eval(game: &Game) -> (f16, f16);
+    fn eval(game: &Game) -> (i16, i16);
 }
 
 pub struct NoEvaluator {}
@@ -19,8 +17,8 @@ impl Evaluator for NoEvaluator {
         Self {}
     }
 
-    fn eval(_game: &Game) -> (f16, f16) {
-        (f16::ZERO, f16::ZERO)
+    fn eval(_game: &Game) -> (i16, i16) {
+        (0, 0)
     }
 }
 
@@ -31,7 +29,7 @@ impl Evaluator for SimpleEvaluator {
         Self {}
     }
 
-    fn eval(game: &Game) -> (f16, f16) {
+    fn eval(game: &Game) -> (i16, i16) {
         let board = game.board.arr;
         let versus = game.versus;
 
@@ -53,12 +51,12 @@ impl Evaluator for SimpleEvaluator {
         let attk = 0;
 
         (
-            f16::from_f32(
+
                 (max + min + messiness + adj_diff + stack_diff - 5 * tslot
                     + (holes + coveredness) as usize
-                    - 2 * (combo + attk) as usize) as f32,
-            ),
-            f16::ZERO,
+                    - 2 * (combo + attk) as usize) as i16,
+
+            1
         )
     }
 }
