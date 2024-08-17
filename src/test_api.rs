@@ -7,7 +7,7 @@ pub mod test_api {
         let mut game = Game::new(queue);
         for (row, rowstr) in boardstr.iter().rev().enumerate() {
             for (col, char) in rowstr.chars().take(W).enumerate() {
-                game.board[col] |= (char.is_alphanumeric() as COL) << row;
+                game.board[col] |= ((char.is_alphanumeric() as COL) << row).reverse_bits();
             }
         }
 

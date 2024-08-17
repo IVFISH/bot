@@ -12,7 +12,7 @@ pub struct Bitmatrix {
 
 impl Display for Bitmatrix {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        for row in (0..H).rev() {
+        for row in 0..H {
             for col in 0..W {
                 if self.data[col] >> row & 1 == 1 {
                     write!(f, "■ ")?
@@ -154,13 +154,13 @@ impl Bitmatrix {
 
     pub fn dshift(&self, n: usize) -> Self {
         Self {
-            data: self.data.into_iter().map(|c| c >> n).collect(),
+            data: self.data.into_iter().map(|c| c << n).collect(),
         }
     }
 
     pub fn ushift(&self, n: usize) -> Self {
         Self {
-            data: self.data.into_iter().map(|c| c << n).collect(),
+            data: self.data.into_iter().map(|c| c >> n).collect(),
         }
     }
 

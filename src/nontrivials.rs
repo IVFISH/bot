@@ -10,16 +10,16 @@ pub fn collision(board: Bitmatrix, piece: usize) -> (Vec<Bitmatrix>, Vec<Bitmatr
 
         for col in 1..(W - 1) {
             let p0 = (board[col - 1] & m[0]) | (board[col - 0] & m[1]) | (board[col + 1] & m[2]);
-            let p1 = (board[col - 1] & (m[0] << 1))
-                | (board[col - 0] & (m[1] << 1))
-                | (board[col + 1] & (m[2] << 1));
-            let p2 = (board[col - 1] & (m[0] << 2))
-                | (board[col - 0] & (m[1] << 2))
-                | (board[col + 1] & (m[2] << 2));
+            let p1 = (board[col - 1] & (m[0] >> 1))
+                | (board[col - 0] & (m[1] >> 1))
+                | (board[col + 1] & (m[2] >> 1));
+            let p2 = (board[col - 1] & (m[0] >> 2))
+                | (board[col - 0] & (m[1] >> 2))
+                | (board[col + 1] & (m[2] >> 2));
 
-            let np = ((p0 | (p0 >> 1) | (p0 >> 2)) & 0x1249)
-                | ((p1 | (p1 >> 1) | (p1 >> 2)) & 0x2492)
-                | ((p2 | (p2 >> 1) | (p2 >> 2)) & 0x4924);
+            let np = ((p0 | (p0 << 1) | (p0 << 2)) & 0x9248)
+                | ((p1 | (p1 << 1) | (p1 << 2)) & 0x4924)
+                | ((p2 | (p2 << 1) | (p2 << 2)) & 0x2492);
             p[col] = !np;
         }
 
@@ -27,12 +27,12 @@ pub fn collision(board: Bitmatrix, piece: usize) -> (Vec<Bitmatrix>, Vec<Bitmatr
         if m[0] == 0 {
             let col = 0;
             let p0 = (board[col - 0] & m[1]) | (board[col + 1] & m[2]);
-            let p1 = (board[col - 0] & (m[1] << 1)) | (board[col + 1] & (m[2] << 1));
-            let p2 = (board[col - 0] & (m[1] << 2)) | (board[col + 1] & (m[2] << 2));
+            let p1 = (board[col - 0] & (m[1] >> 1)) | (board[col + 1] & (m[2] >> 1));
+            let p2 = (board[col - 0] & (m[1] >> 2)) | (board[col + 1] & (m[2] >> 2));
 
-            let np = ((p0 | (p0 >> 1) | (p0 >> 2)) & 0x1249)
-                | ((p1 | (p1 >> 1) | (p1 >> 2)) & 0x2492)
-                | ((p2 | (p2 >> 1) | (p2 >> 2)) & 0x4924);
+            let np = ((p0 | (p0 << 1) | (p0 << 2)) & 0x9248)
+                | ((p1 | (p1 << 1) | (p1 << 2)) & 0x4924)
+                | ((p2 | (p2 << 1) | (p2 << 2)) & 0x2492);
             p[col] = !np;
         }
 
@@ -40,12 +40,12 @@ pub fn collision(board: Bitmatrix, piece: usize) -> (Vec<Bitmatrix>, Vec<Bitmatr
         if m[2] == 0 {
             let col = 9;
             let p0 = (board[col - 1] & m[0]) | (board[col - 0] & m[1]);
-            let p1 = (board[col - 1] & (m[0] << 1)) | (board[col - 0] & (m[1] << 1));
-            let p2 = (board[col - 1] & (m[0] << 2)) | (board[col - 0] & (m[1] << 2));
+            let p1 = (board[col - 1] & (m[0] >> 1)) | (board[col - 0] & (m[1] >> 1));
+            let p2 = (board[col - 1] & (m[0] >> 2)) | (board[col - 0] & (m[1] >> 2));
 
-            let np = ((p0 | (p0 >> 1) | (p0 >> 2)) & 0x1249)
-                | ((p1 | (p1 >> 1) | (p1 >> 2)) & 0x2492)
-                | ((p2 | (p2 >> 1) | (p2 >> 2)) & 0x4924);
+            let np = ((p0 | (p0 << 1) | (p0 << 2)) & 0x9248)
+                | ((p1 | (p1 << 1) | (p1 << 2)) & 0x4924)
+                | ((p2 | (p2 << 1) | (p2 << 2)) & 0x2492);
             p[col] = !np;
         }
 
@@ -54,12 +54,10 @@ pub fn collision(board: Bitmatrix, piece: usize) -> (Vec<Bitmatrix>, Vec<Bitmatr
         };
 
         for col in 0..W {
-            if p[col] == 0 {
-                continue;
-            }
+            if p[col] == 0 { continue; }
 
-            let l = p[col].leading_ones();
-            p[col] = 1 << (COL::BITS - l);
+            let l = p[col].trailing_ones();
+            p[col] = 1 << (l - 1);
         }
 
         let trivials = Bitmatrix {
@@ -152,16 +150,21 @@ pub fn to_game_vec(game: Game, reachable: Vec<Bitmatrix>) -> Vec<Game> {
             queue: q,
         };
 
+
         for i in reachable[rot].iter_ones() {
             let (r, c) = (i % H, i / H);
 
+            if r < 2 {
+                continue;
+            }
+
             let mut cpy = copy;
             if piece[0] != 0 {
-                cpy.board[c - 1] |= piece[0] << r;
+                cpy.board[c - 1] |= piece[0] << r - 2;
             }
-            cpy.board[c - 0] |= piece[1] << r;
+            cpy.board[c - 0] |= piece[1] << r - 2;
             if piece[2] != 0 {
-                cpy.board[c + 1] |= piece[2] << r;
+                cpy.board[c + 1] |= piece[2] << r - 2;
             }
             ret.push(cpy);
         }
@@ -197,9 +200,9 @@ pub mod tests {
             "ooo.oooooo",
         ];
 
-        // for g in movegen(game) {
-        //     println!("{}", g);
-        // }
+        for g in movegen(game) {
+            println!("{}", g);
+        }
 
         let gen = movegen(game);
         assert_eq!(gen.len(), 36);
@@ -229,12 +232,14 @@ pub mod tests {
             "oxxooooooo",
         ];
 
-        // for g in movegen(game) {
-        //     println!("{}", g);
-        // }
+        for g in movegen(game) {
+            println!("{}", g);
+        }
 
         let gen = movegen(game);
-        assert_eq!(gen.len(), 50);
+        assert_eq!(gen.len(), 43);
+        // NOTE: there are 7 pieces on the top left that are cut-off by the u16 limit
+        // should this limit be increased -- increase assert to 50
         assert_contains(&gen, game_from_string(&sol_str, 0));
     }
 

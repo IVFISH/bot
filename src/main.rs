@@ -46,24 +46,40 @@ fn bench(game: Game) {
 }
 
 fn main() {
-    let game = l_spin_board_4();
-    #[rustfmt::skip]
-    let sol_str = [
-        "ooooo.x.oo",
-        "ooooxxxooo",
-    ];
+    // for piece in 0..2 {
+    //     for rot in 0..4 {
+    //         let mut game = Game::new(0);
+    //         game.board[0] = PIECES[piece][rot][0];
+    //         game.board[1] = PIECES[piece][rot][1];
+    //         game.board[2] = PIECES[piece][rot][2];
 
-    // for g in movegen(game) {
-    //     println!("{}", g);
+    //         game.board[7] = MASKS[piece][rot][0];
+    //         game.board[8] = MASKS[piece][rot][1];
+    //         game.board[9] = MASKS[piece][rot][2];
+
+    //         println!("{}", game);
+    //     }
     // }
+    // 
+    // let mut game= Game::new(0);
+    // game.board[0] = 0x9248;
+    // game.board[1] = 0x4924;
+    // game.board[2] = 0x2492;
+    // println!("{}", game);
 
-    let gen = movegen(game);
-    assert_not_contains(&gen, game_from_string(&sol_str, 0));
-    for g in gen {
-        println!("{}", g);
-    }
+    let mut game = l_spin_board_1();
+    let (c, t) = collision(game.board, 0x1);
 
-    bench(game);
+    println!("{}", game);
+    println!("{}", c[0]);
+    println!("{}", c[1]);
+    println!("{}", c[2]);
+    println!("{}", c[3]);
+
+    println!("{}", t[0]);
+    println!("{}", t[1]);
+    println!("{}", t[2]);
+    println!("{}", t[3]);
 }
 
 fn sd_test() {
