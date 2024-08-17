@@ -3,11 +3,10 @@ use std::ops;
 
 use crate::game::{COL, H, W};
 use bitvec::prelude::*;
-use tinyvec::ArrayVec;
 
 #[derive(Clone, PartialEq, Eq, Copy, Debug)]
 pub struct Bitmatrix {
-    pub data: ArrayVec<[COL; W]>,
+    pub data: [COL; W],
 }
 
 impl Display for Bitmatrix {
@@ -49,12 +48,7 @@ impl ops::BitAnd for Bitmatrix {
 
     fn bitand(self, rhs: Self) -> Self::Output {
         Self {
-            data: self
-                .data
-                .iter()
-                .zip(rhs.data.iter())
-                .map(|(x, y)| x.bitand(y))
-                .collect(),
+            data: self.zip(rhs).map(|(x, y)| x.bitand(y)),
         }
     }
 }
@@ -64,12 +58,7 @@ impl ops::BitXor for Bitmatrix {
 
     fn bitxor(self, rhs: Self) -> Self::Output {
         Self {
-            data: self
-                .data
-                .into_iter()
-                .zip(rhs.data.into_iter())
-                .map(|(x, y)| x.bitxor(y))
-                .collect(),
+            data: self.zip(rhs).map(|(x, y)| x.bitxor(y)),
         }
     }
 }
@@ -79,12 +68,7 @@ impl ops::BitOr for Bitmatrix {
 
     fn bitor(self, rhs: Self) -> Self::Output {
         Self {
-            data: self
-                .data
-                .into_iter()
-                .zip(rhs.data.into_iter())
-                .map(|(x, y)| x.bitor(y))
-                .collect(),
+            data: self.zip(rhs).map(|(x, y)| x.bitor(y)),
         }
     }
 }
@@ -94,7 +78,7 @@ impl ops::Not for Bitmatrix {
 
     fn not(self) -> Self::Output {
         Self {
-            data: self.data.into_iter().map(|x| x.not()).collect(),
+            data: self.data.map(|x| x.not()),
         }
     }
 }
@@ -149,27 +133,22 @@ impl Bitmatrix {
 
     pub fn softdrop(&self, c: Self) -> Self {
         Self {
-            data: self
-                .data
-                .into_iter()
-                .zip(c.data.into_iter())
-                .map(|(r, c)| {
-                    let (c, r) = (c >> 1, r >> 1);
-                    (c + r) & !c
-                })
-                .collect(),
+            data: self.zip(c).map(|(r, c)| {
+                let (c, r) = (c >> 1, r >> 1);
+                (c + r) & !c
+            }),
         }
     }
 
     pub fn dshift(&self, n: usize) -> Self {
         Self {
-            data: self.data.into_iter().map(|c| c << n).collect(),
+            data: self.data.map(|c| c << n),
         }
     }
 
     pub fn ushift(&self, n: usize) -> Self {
         Self {
-            data: self.data.into_iter().map(|c| c >> n).collect(),
+            data: self.data.map(|c| c >> n),
         }
     }
 
@@ -184,28 +163,18 @@ impl Bitmatrix {
         data.rotate_right(n);
         Self { data }
     }
-}
 
-pub mod test {
-    // use super::*;
+    // CODE TAKEN FROM [#79451]
+    pub fn zip(self, rhs: Self) -> [(COL, COL); W] {
+        use core::mem::MaybeUninit;
 
-    // pub fn test_shifting() {
-    //     let mut b = Bitmatrix::new();
-    //     b.data.set(0, true);
-    //     b.data.set(15, true);
-    //     b.data.set(96, true);
-    //     b.data.set(111, true);
-    //     b.data.set(144, true);
-    //     b.data.set(159, true);
-    //     println!("{}", b);
-    //     println!("===================");
-    //     println!("{}", b.lshift());
-    //     println!("===================");
-    //     println!("{}", b.rshift());
-    //     println!("===================");
-    //     println!("{}", b.ushift());
-    //     println!("===================");
-    //     println!("{}", b.dshift());
-    //     println!("===================");
-    // }
+        let mut dst = MaybeUninit::uninit_array::<W>();
+        for (i, (lhs, rhs)) in self.data.into_iter().zip(rhs.data.into_iter()).enumerate() {
+            dst[i].write((lhs, rhs));
+        }
+
+        // SAFETY: At this point we've properly initialized the whole array
+        // and we just need to cast it to the correct type.
+        unsafe { core::mem::transmute::<[MaybeUninit<(COL, COL)>; W], [(COL, COL); W]>(dst) }
+    }
 }

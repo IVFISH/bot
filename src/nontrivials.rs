@@ -49,9 +49,7 @@ pub fn collision(board: Bitmatrix, piece: usize) -> (Vec<Bitmatrix>, Vec<Bitmatr
             p[col] = !np;
         }
 
-        let collisions = Bitmatrix {
-            data: p.into_iter().collect(),
-        };
+        let collisions = Bitmatrix { data: p };
 
         for col in 0..W {
             if p[col] == 0 {
@@ -62,9 +60,7 @@ pub fn collision(board: Bitmatrix, piece: usize) -> (Vec<Bitmatrix>, Vec<Bitmatr
             p[col] = 1 << (l - 1);
         }
 
-        let trivials = Bitmatrix {
-            data: p.into_iter().collect(),
-        };
+        let trivials = Bitmatrix { data: p };
 
         c.push(collisions);
         t.push(trivials);
@@ -117,14 +113,14 @@ pub fn reachable(
 }
 
 #[inline(always)]
-fn rotate_kick(mut t: Bitmatrix, p: Bitmatrix, offsets: &[[i32; 2]]) -> Bitmatrix {
+pub fn rotate_kick(mut t: Bitmatrix, p: Bitmatrix, offsets: &[[i32; 2]]) -> Bitmatrix {
     // t: reachables in (rot - dir) to try kicking from, updated each iter
     // p: possibles in (rot)
 
-    offsets.iter().fold(Bitmatrix::new(), |o, &[dc, dr]|{
-        let o1 = t.shift(dr, dc) & p;   // new places found this iteration
-        t ^= o1.shift(-dr, -dc);        // remove places that successfully kicked
-        o | o1                          // accumulate with OR
+    offsets.iter().fold(Bitmatrix::new(), |o, &[dc, dr]| {
+        let o1 = t.shift(dr, dc) & p; // new places found this iteration
+        t ^= o1.shift(-dr, -dc); // remove places that successfully kicked
+        o | o1 // accumulate with OR
     })
 }
 

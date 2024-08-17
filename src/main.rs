@@ -1,8 +1,11 @@
+#![feature(maybe_uninit_uninit_array)]
+
 pub mod bitmatrix;
 pub mod game;
 pub mod nontrivials;
 mod test_api;
 
+use bitmatrix::Bitmatrix;
 use game::*;
 use nontrivials::*;
 use std::time;
@@ -27,6 +30,15 @@ fn bench(game: Game) {
         now.elapsed().as_nanos() / rep
     );
 
+    let now = time::Instant::now();
+    for _ in 0..rep {
+        let _ = rotate_kick(Bitmatrix::new(), Bitmatrix::new(), &KICKS_180[0][0]);
+    }
+    println!(
+        "kick checking took {} nanoseconds",
+        now.elapsed().as_nanos() / rep
+    );
+
     let mut elapsed = 0;
     for _ in 0..rep {
         let now = time::Instant::now();
@@ -46,21 +58,23 @@ fn bench(game: Game) {
 }
 
 fn main() {
-    for piece in 2..3 {
-        for rot in 0..4 {
-            let mut game = Game::new(0);
+    bench(Game::new(1));
+    bench(l_spin_board_2());
+    // for piece in 2..3 {
+    //     for rot in 0..4 {
+    //         let mut game = Game::new(0);
 
-            game.board[0] = PIECES[piece][rot][0];
-            game.board[1] = PIECES[piece][rot][1];
-            game.board[2] = PIECES[piece][rot][2];
+    //         game.board[0] = PIECES[piece][rot][0];
+    //         game.board[1] = PIECES[piece][rot][1];
+    //         game.board[2] = PIECES[piece][rot][2];
 
-            game.board[7] = MASKS[piece][rot][0];
-            game.board[8] = MASKS[piece][rot][1];
-            game.board[9] = MASKS[piece][rot][2];
+    //         game.board[7] = MASKS[piece][rot][0];
+    //         game.board[8] = MASKS[piece][rot][1];
+    //         game.board[9] = MASKS[piece][rot][2];
 
-            println!("{}", game);
-        }
-    }
+    //         println!("{}", game);
+    //     }
+    // }
 }
 
 fn main1() {
