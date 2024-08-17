@@ -117,25 +117,15 @@ pub fn reachable(
 }
 
 #[inline(always)]
-fn rotate_kick(r1: Bitmatrix, p: Bitmatrix, offsets: &[[i32; 2]]) -> Bitmatrix {
-    // r1: reachables in (rot - dir) to apply offset
+fn rotate_kick(mut t: Bitmatrix, p: Bitmatrix, offsets: &[[i32; 2]]) -> Bitmatrix {
+    // t: reachables in (rot - dir) to try kicking from, updated each iter
+    // p: possibles in (rot)
 
-    // accumulation of new positions
-    let mut o = Bitmatrix::new();
-    // all the places that have already kicked
-    let mut d = Bitmatrix::new();
-
-    // translate positive dR into ushift
-    // translate positive dC into rshift
-    for &[dc, dr] in offsets {
-        // (r1 & !d) can still kick
-        // o1 is the set of all new placements from this offset
-        let o1 = (r1 & !d).shift(dr, dc) & p;
-        d |= o1.shift(-dr, -dc);
-        o |= o1;
-    }
-
-    o
+    offsets.iter().fold(Bitmatrix::new(), |o, &[dc, dr]|{
+        let o1 = t.shift(dr, dc) & p;   // new places found this iteration
+        t ^= o1.shift(-dr, -dc);        // remove places that successfully kicked
+        o | o1                          // accumulate with OR
+    })
 }
 
 pub fn to_game_vec(game: Game, reachable: Vec<Bitmatrix>) -> Vec<Game> {
