@@ -54,7 +54,9 @@ pub fn collision(board: Bitmatrix, piece: usize) -> (Vec<Bitmatrix>, Vec<Bitmatr
         };
 
         for col in 0..W {
-            if p[col] == 0 { continue; }
+            if p[col] == 0 {
+                continue;
+            }
 
             let l = p[col].trailing_ones();
             p[col] = 1 << (l - 1);
@@ -92,7 +94,7 @@ pub fn reachable(
 
             // get the reachable without rotation
             // next iteration of r
-            let mut q = r | (p & (r.lshift(1) | r.rshift(1) | r.softdrop()));
+            let mut q = r | (p & (r.lshift(1) | r.rshift(1) | r.softdrop(p)));
 
             // get the reachable with rotation
             let new_rot = (rot + 3) % 4;
@@ -149,7 +151,6 @@ pub fn to_game_vec(game: Game, reachable: Vec<Bitmatrix>) -> Vec<Game> {
             board: game.board,
             queue: q,
         };
-
 
         for i in reachable[rot].iter_ones() {
             let (r, c) = (i % H, i / H);
@@ -276,5 +277,32 @@ pub mod tests {
 
         let gen = movegen(game);
         assert_not_contains(&gen, game_from_string(&sol_str, 0));
+    }
+
+    #[test]
+    fn sd() {
+        let board_str = [
+            "ooo..........",
+            "o............",
+            "o............",
+            "ooo..........",
+        ];
+
+        let sol_str = [
+            "ooo..........",
+            "oxx..........",
+            "oxx..........",
+            "ooo..........",
+        ];
+
+        let game = game_from_string(&board_str, 0x3);
+        let sol = game_from_string(&sol_str, 0x3);
+
+        for g in movegen(game) {
+            println!("{}", g);
+        }
+
+        let gen = movegen(game);
+        assert_not_contains(&gen, sol);
     }
 }

@@ -46,43 +46,24 @@ fn bench(game: Game) {
 }
 
 fn main() {
-    // for piece in 0..2 {
-    //     for rot in 0..4 {
-    //         let mut game = Game::new(0);
-    //         game.board[0] = PIECES[piece][rot][0];
-    //         game.board[1] = PIECES[piece][rot][1];
-    //         game.board[2] = PIECES[piece][rot][2];
+    for piece in 2..3 {
+        for rot in 0..4 {
+            let mut game = Game::new(0);
 
-    //         game.board[7] = MASKS[piece][rot][0];
-    //         game.board[8] = MASKS[piece][rot][1];
-    //         game.board[9] = MASKS[piece][rot][2];
+            game.board[0] = PIECES[piece][rot][0];
+            game.board[1] = PIECES[piece][rot][1];
+            game.board[2] = PIECES[piece][rot][2];
 
-    //         println!("{}", game);
-    //     }
-    // }
-    // 
-    // let mut game= Game::new(0);
-    // game.board[0] = 0x9248;
-    // game.board[1] = 0x4924;
-    // game.board[2] = 0x2492;
-    // println!("{}", game);
+            game.board[7] = MASKS[piece][rot][0];
+            game.board[8] = MASKS[piece][rot][1];
+            game.board[9] = MASKS[piece][rot][2];
 
-    let mut game = l_spin_board_1();
-    let (c, t) = collision(game.board, 0x1);
-
-    println!("{}", game);
-    println!("{}", c[0]);
-    println!("{}", c[1]);
-    println!("{}", c[2]);
-    println!("{}", c[3]);
-
-    println!("{}", t[0]);
-    println!("{}", t[1]);
-    println!("{}", t[2]);
-    println!("{}", t[3]);
+            println!("{}", game);
+        }
+    }
 }
 
-fn sd_test() {
+fn main1() {
     fn display(x: u8) {
         for i in 0..8 {
             if (x & 1 << i) != 0 {
@@ -97,16 +78,12 @@ fn sd_test() {
     println!("col = 0b11001101");
     display(col);
 
-    let rea = 0b01001001;
-    println!("reachable = 0b01001001");
+    let rea = 0b01001101;
+    println!("reachable = 0b01001101");
     display(rea);
 
-    let diffs = col ^ (col.wrapping_add(rea));
-    println!("diffs = col ^ (col + reachable)");
-    display(diffs);
-
     let (c, r) = (col >> 2, rea >> 2);
-    let sd = (c ^ (c.wrapping_add(r))).wrapping_add(r);
+    let sd = (c ^ (c + r)) + r;
     println!("sd: c = col >> 2; r = reachable >> 2");
     println!("[ (c ^ (c + r)) + r ] >> 2");
     display(sd);
@@ -115,15 +92,9 @@ fn sd_test() {
     let sd = c ^ ((c + r) | c);
     println!("sd: [ c ^ ((c + r) | c) ] >> 1");
     display(sd);
-}
 
-#[cfg(test)]
-pub mod test {
-    use super::bench;
-    use crate::test_api::test_api::*;
-
-    #[test]
-    fn bench_test() {
-        // bench(versus_board_medium());
-    }
+    let (c, r) = (col >> 1, rea >> 1);
+    let sd = (c + r) & !c;
+    println!("sd: [ c ^ ((c + r) | c) ] >> 1");
+    display(sd);
 }

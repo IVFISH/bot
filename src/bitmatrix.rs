@@ -147,9 +147,18 @@ impl Bitmatrix {
         ret
     }
 
-    pub fn softdrop(&self) -> Self {
-        // TODO
-        self.dshift(1)
+    pub fn softdrop(&self, c: Self) -> Self {
+        Self {
+            data: self
+                .data
+                .into_iter()
+                .zip(c.data.into_iter())
+                .map(|(r, c)| {
+                    let (c, r) = (c >> 1, r >> 1);
+                    (c + r) & !c
+                })
+                .collect(),
+        }
     }
 
     pub fn dshift(&self, n: usize) -> Self {
