@@ -11,6 +11,8 @@ pub mod board_constants {
 }
 
 pub mod piece_constants {
+    use serde::{Deserialize, Serialize};
+
     pub const PIECE_SIZE: usize = 4;
     pub const NUM_ROTATE_STATES: usize = 4;
     pub const SPAWN_ROW: usize = 21;
@@ -26,6 +28,13 @@ pub mod piece_constants {
     pub const PIECE_T: u8 = 6;
 
     pub const PIECE_NAME: [char; 7] = ['Z', 'L', 'O', 'S', 'I', 'J', 'T'];
+
+    #[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize)]
+    pub enum SpinType {
+        None,
+        Mini,
+        Full,
+    }
 
     pub const PIECE_ROTATIONS: [[[[i8; 2]; PIECE_SIZE]; NUM_ROTATE_STATES]; NUM_PIECES] = [
         Z_ROTATIONS,

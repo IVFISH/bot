@@ -5,7 +5,7 @@ use std::fmt::{Display, Formatter};
 use crate::board::Board;
 use crate::command::Command;
 use crate::constants::board_constants::{BOARD_WIDTH, VISIBLE_BOARD_HEIGHT};
-use crate::constants::piece_constants::{NUM_ROTATE_STATES, PIECE_ROTATIONS};
+use crate::constants::piece_constants::{SpinType, NUM_ROTATE_STATES, PIECE_ROTATIONS, PIECE_T};
 use crate::piece::Piece;
 
 #[derive(Debug)]
@@ -77,8 +77,17 @@ impl<'a> Controller<'a> {
                         self.piece.row as i8 + dir_row,
                         self.piece.col as i8 + dir_col,
                     ) {
+                        let spin = match self.piece.r#type {
+                            PIECE_T => SpinType::Full,
+                            _ => match self.cmaps.immobile(dir, *dir_row, *dir_col) {
+                                true => SpinType::Mini,
+                                false => SpinType::None,
+                            },
+                        };
+
                         self.piece
                             .rotate_with_kicks_unchecked(dir, *dir_row, *dir_col);
+                        self.piece.spin = spin;
                         return true;
                     }
                 }
@@ -149,54 +158,6 @@ impl<'a> Controller<'a> {
     pub fn size(&self) -> usize {
         self.commands.len()
     }
-
-    // static piece API -------------------------
-    /// moves a piece if it can be moved, according to [`Game::can_move_piece`]
-    pub fn move_piece(board: &Board, piece: &mut Piece, [dir_row, dir_col]: [i8; 2]) {
-        if Self::can_move_piece(board, piece, [dir_row, dir_col]) {
-            piece.r#move(dir_row, dir_col);
-        }
-    }
-
-    /// returns whether the piece can be moved by a vector
-    /// this just checks if there is a collision between any other board cells
-    pub fn can_move_piece(board: &Board, piece: &Piece, [dir_row, dir_col]: [i8; 2]) -> bool {
-        let mut cp = *piece;
-        cp.r#move(dir_row, dir_col);
-        Piece::can_move(piece, dir_row, dir_col) && !board.piece_collision(&cp)
-    }
-
-    /// rotates a piece if it can be rotated, according to [`Game::can_rotate_piece`]
-    pub fn rotate_piece(board: &Board, piece: &mut Piece, dir: u8) {
-        if Self::can_rotate_piece(board, piece, dir) {
-            piece.rotate(dir);
-        }
-    }
-
-    /// returns whether the piece can be rotated in a direction
-    /// checks for collisions with any board cells
-    /// does not check for any kicks
-    /// see the [`Self::can_rotate_kick_piece] method for a rotation check with kicks
-    pub fn can_rotate_piece(board: &Board, piece: &Piece, dir: u8) -> bool {
-        let mut cp = *piece;
-        cp.rotate(dir);
-        Piece::can_rotate(piece, dir) && !board.piece_collision(&cp)
-    }
-
-    /// returns whether the piece can be rotated in a direction with a kick
-    /// checks for collisions with any board cells
-    /// checks for kicks
-    /// see the [`Self::can_rotate_piece`] method for a rotation check without kicks
-    pub fn can_rotate_kick_piece(
-        board: &Board,
-        piece: &Piece,
-        dir: u8,
-        [dir_row, dir_col]: [i8; 2],
-    ) -> bool {
-        let mut cp = *piece;
-        cp.rotate_with_kicks(dir, dir_row, dir_col);
-        Piece::can_rotate_kick(piece, dir, dir_row, dir_col) && !board.piece_collision(&cp)
-    }
 }
 
 #[derive(Debug)]
@@ -251,6 +212,13 @@ impl CollisionMaps {
                 .unwrap_or(true);
         // println!("\n{}\n{}", dir, Board {arr: self.boards[dir as usize]});
         !v
+    }
+
+    fn immobile(&self, dir: u8, row: i8, col: i8) -> bool {
+        !(self.not_obstructed(dir, row + 1, col)
+            | self.not_obstructed(dir, row - 1, col)
+            | self.not_obstructed(dir, row, col - 1)
+            | self.not_obstructed(dir, row, col - 1))
     }
 
     fn max_down(&self, dir: u8, row: usize, col: usize) -> i8 {

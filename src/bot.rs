@@ -332,6 +332,7 @@ mod tests {
             dir: 2,
             row: 1,
             col: 4,
+            spin: SpinType::None,
         };
         assert_placement_contains(&placements, piece);
     }
@@ -347,6 +348,7 @@ mod tests {
             dir: 3,
             row: 1,
             col: 3,
+            spin: SpinType::None,
         };
         assert_placement_contains(&placements, piece);
     }
@@ -363,6 +365,7 @@ mod tests {
             dir: 1,
             row: 1,
             col: 1,
+            spin: SpinType::None,
         };
         assert_placement_contains(&placements, piece);
     }

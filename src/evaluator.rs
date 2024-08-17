@@ -54,7 +54,7 @@ impl Evaluator for SimpleEvaluator {
             5 * (max + min + messiness + adj_diff + stack_diff - 5 * tslot
                 + (holes + coveredness) as usize
                 - 2 * (combo + attk) as usize) as i16,
-            (2*versus.combo + versus.attack_chain) as i16 * -1
+            -((2 * versus.combo + versus.attack_chain) as i16),
         )
     }
 }
