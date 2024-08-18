@@ -17,9 +17,9 @@ pub fn collision(board: Bitmatrix, piece: usize) -> ([Bitmatrix; 4], [Bitmatrix;
                 | (board[col - 0] & (m[1] >> 2))
                 | (board[col + 1] & (m[2] >> 2));
 
-            let np = ((p0 | (p0 << 1) | (p0 << 2)) & 0x9248)
-                | ((p1 | (p1 << 1) | (p1 << 2)) & 0x4924)
-                | ((p2 | (p2 << 1) | (p2 << 2)) & 0x2492);
+            let np = ((p0 | (p0 << 1) | (p0 << 2)) & 0o111110)  // 1_001_001..000
+                | ((p1 | (p1 << 1) | (p1 << 2)) & 0o44444)      // 0_100_100..
+                | ((p2 | (p2 << 1) | (p2 << 2)) & 0o22222); // 0_010_010..
             p[col] = !np;
         }
 
@@ -30,9 +30,9 @@ pub fn collision(board: Bitmatrix, piece: usize) -> ([Bitmatrix; 4], [Bitmatrix;
             let p1 = (board[col - 0] & (m[1] >> 1)) | (board[col + 1] & (m[2] >> 1));
             let p2 = (board[col - 0] & (m[1] >> 2)) | (board[col + 1] & (m[2] >> 2));
 
-            let np = ((p0 | (p0 << 1) | (p0 << 2)) & 0x9248)
-                | ((p1 | (p1 << 1) | (p1 << 2)) & 0x4924)
-                | ((p2 | (p2 << 1) | (p2 << 2)) & 0x2492);
+            let np = ((p0 | (p0 << 1) | (p0 << 2)) & 0o111110)  // 1_001_001..000
+                | ((p1 | (p1 << 1) | (p1 << 2)) & 0o44444)      // 0_100_100..
+                | ((p2 | (p2 << 1) | (p2 << 2)) & 0o22222); // 0_010_010..
             p[col] = !np;
         }
 
@@ -43,9 +43,9 @@ pub fn collision(board: Bitmatrix, piece: usize) -> ([Bitmatrix; 4], [Bitmatrix;
             let p1 = (board[col - 1] & (m[0] >> 1)) | (board[col - 0] & (m[1] >> 1));
             let p2 = (board[col - 1] & (m[0] >> 2)) | (board[col - 0] & (m[1] >> 2));
 
-            let np = ((p0 | (p0 << 1) | (p0 << 2)) & 0x9248)
-                | ((p1 | (p1 << 1) | (p1 << 2)) & 0x4924)
-                | ((p2 | (p2 << 1) | (p2 << 2)) & 0x2492);
+            let np = ((p0 | (p0 << 1) | (p0 << 2)) & 0o111110)  // 1_001_001..000
+                | ((p1 | (p1 << 1) | (p1 << 2)) & 0o44444)      // 0_100_100..
+                | ((p2 | (p2 << 1) | (p2 << 2)) & 0o22222); // 0_010_010..
             p[col] = !np;
         }
 
