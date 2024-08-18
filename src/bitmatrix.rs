@@ -150,18 +150,18 @@ impl Bitmatrix {
             return *self;
         }
 
+        let l = re.leading_zeros();
+        let fc = (re << l).leading_ones(); // num lines in the First Clear group
+        let ones = re.count_ones();
+
+        let mbot = COL::MAX - (re.wrapping_next_power_of_two().wrapping_sub(1)); // no shift (bottom rows)
+        let mtop = (re ^ (re - 1)) >> 1; // full shift (top rows)
+        let mmid = !(mbot | mtop | re); // "half" shift (middle rows)
+
         Self {
-            data: self.data.map(|c| {
-                let l = re.leading_zeros();
-                let t = re.trailing_zeros();
-                let fc = (re << l).leading_ones(); // num lines in the First Clear group
-
-                let mbot = !(!0 << l >> l); // no shift (bottom rows)
-                let mtop = !(!0 >> t << t); // full shift (top rows)
-                let mmid = !(mbot | mtop | re); // "half" shift (middle rows)
-
-                (c & mbot) | (c & mmid) << fc | (c & mtop) << re.count_ones()
-            }),
+            data: self
+                .data
+                .map(|c| (c & mbot) | ((c & mmid) << fc) | ((c & mtop) << ones)),
         }
     }
 
@@ -179,12 +179,14 @@ impl Bitmatrix {
 
     pub fn lshift(&self, n: usize) -> Self {
         let mut data = self.data;
+        data[0] = 0;
         data.rotate_left(n);
         Self { data }
     }
 
     pub fn rshift(&self, n: usize) -> Self {
         let mut data = self.data;
+        data[W - 1] = 0;
         data.rotate_right(n);
         Self { data }
     }
@@ -255,8 +257,8 @@ pub mod tests {
             "ooxx.ooooo",
         ];
 
-        let mut game = game_from_string(&board_str, 0x0);
-        let sol = game_from_string(&sol_str, 0x0);
+        let mut game = game_from_string(&board_str, 0x1);
+        let sol = game_from_string(&sol_str, 0x1);
         // TODO this will become a function somewhere, use it!
         let to_clear: COL = game.board.data.iter().fold(!0, |a, n| a & n);
 
