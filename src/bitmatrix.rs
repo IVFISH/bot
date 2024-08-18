@@ -132,8 +132,11 @@ impl Bitmatrix {
     }
 
     pub fn softdrop(&self, c: Self) -> Self {
+        // MUST have c|r == c
         Self {
             data: self.zip(c).map(|(r, c)| {
+                // find the first 0 to the left of each target position
+                // this is done by finding which bits change from 0 to 1 when r is added to c
                 let (c, r) = (c >> 1, r >> 1);
                 (c + r) & !c
             }),

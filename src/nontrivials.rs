@@ -2,8 +2,8 @@ use crate::bitmatrix::*;
 use crate::game::*;
 
 /// generate collision map and the trivials
-pub fn collision(board: Bitmatrix, piece: usize) -> (Vec<Bitmatrix>, Vec<Bitmatrix>) {
-    let (mut c, mut t) = (Vec::new(), Vec::new());
+pub fn collision(board: Bitmatrix, piece: usize) -> ([Bitmatrix; 4], [Bitmatrix; 4]) {
+    let (mut c, mut t) = ([Bitmatrix::new(); 4], [Bitmatrix::new(); 4]);
     for rot in 0..4 {
         let m = MASKS[piece][rot];
         let mut p = [0u16; W];
@@ -62,20 +62,18 @@ pub fn collision(board: Bitmatrix, piece: usize) -> (Vec<Bitmatrix>, Vec<Bitmatr
 
         let trivials = Bitmatrix { data: p };
 
-        c.push(collisions);
-        t.push(trivials);
+        c[rot] = collisions;
+        t[rot] = trivials;
     }
 
     (c, t)
 }
 
 pub fn reachable(
-    collision: Vec<Bitmatrix>,
-    trivials: Vec<Bitmatrix>,
+    collision: [Bitmatrix; 4],
+    trivials: [Bitmatrix; 4],
     piece: usize,
-) -> Vec<Bitmatrix> {
-    assert_eq!(collision.len(), 4);
-    assert_eq!(trivials.len(), 4);
+) -> [Bitmatrix; 4] {
 
     // find the initial possible matrix
     // then iterate the actions
@@ -93,6 +91,8 @@ pub fn reachable(
             let mut q = r | (p & (r.lshift(1) | r.rshift(1) | r.softdrop(p)));
 
             // get the reachable with rotation
+            // new_rot is (rot - dir) % 4
+            // addition by (4 - dir) is done instead
             let new_rot = (rot + 3) % 4;
             q |= rotate_kick(reachable[new_rot], p, &KICKS[piece][new_rot][0]);
             let new_rot = (rot + 2) % 4;
@@ -109,7 +109,7 @@ pub fn reachable(
         }
     }
 
-    reachable.into_iter().map(|r| r & !r.ushift(1)).collect()
+    reachable.map(|r| r & !r.ushift(1))
 }
 
 #[inline(always)]
@@ -124,8 +124,7 @@ pub fn rotate_kick(mut t: Bitmatrix, p: Bitmatrix, offsets: &[[i32; 2]]) -> Bitm
     })
 }
 
-pub fn to_game_vec(game: Game, reachable: Vec<Bitmatrix>) -> Vec<Game> {
-    assert_eq!(reachable.len(), 4);
+pub fn to_game_vec(game: Game, reachable: [Bitmatrix; 4]) -> Vec<Game> {
 
     let mut ret = Vec::with_capacity(reachable.iter().map(|d| d.count_ones()).sum());
     let (p, q) = Game::next(game.queue);
