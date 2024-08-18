@@ -146,6 +146,9 @@ impl Bitmatrix {
     pub fn clearrows(&self, re: COL) -> Self {
         // PRECONDITION: re can have no more than 2 groups of 1s
         // re: a COL where 1s represent rows to clear
+        if re == 0 {
+            return *self;
+        }
 
         Self {
             data: self.data.map(|c| {
@@ -208,13 +211,16 @@ pub mod tests {
 
     #[test]
     fn test_lineclear() {
+        // NOTE while these test cases only clear full lines,
+        // the function clearrows does not require full lines :)
+        // it shouldn't make a difference, but feel free to add more tests
         #[rustfmt::skip]
         let board_str = [
             "oooo.ooooo",
-            "ooooxooooo",
+            "ooooxooooo", // clear
             "ooo.xooooo",
-            "ooooxooooo",
-            "ooooxooooo",
+            "ooooxooooo", // clear
+            "ooooxooooo", // clear
             "ooo.oooooo"
         ];
 
@@ -227,11 +233,31 @@ pub mod tests {
 
         let mut game = game_from_string(&board_str, 0x3);
         let sol = game_from_string(&sol_str, 0x3);
-
         // TODO this will become a function somewhere, use it!
         let to_clear: COL = game.board.data.iter().fold(!0, |a, n| a & n);
-        game.board = game.board.clearrows(to_clear);
 
-        assert!(game.board == sol.board);
+        assert_eq!(game.board.clearrows(to_clear), sol.board);
+        assert_eq!(game.board.clearrows(0), game.board);
+
+        #[rustfmt::skip]
+        let board_str = [ // misdropped tsd
+            "oo...ooooo",
+            "oooxoooooo", // clear
+            "ooxx.ooooo",
+            "oooxoooooo", // clear
+        ];
+
+        #[rustfmt::skip]
+        let sol_str = [ // tragic outcome
+            "oo...ooooo",
+            "ooxx.ooooo",
+        ];
+
+        let mut game = game_from_string(&board_str, 0x0);
+        let sol = game_from_string(&sol_str, 0x0);
+        // TODO this will become a function somewhere, use it!
+        let to_clear: COL = game.board.data.iter().fold(!0, |a, n| a & n);
+
+        assert_eq!(game.board.clearrows(to_clear), sol.board);
     }
 }
