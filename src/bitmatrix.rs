@@ -240,16 +240,18 @@ pub mod tests {
         assert_eq!(game.board.clearrows(0), game.board);
 
         #[rustfmt::skip]
-        let board_str = [ // misdropped tsd
-            "oo...ooooo",
+        let board_str = [
+            "o..ooooooo",
+            "o...oooooo",
             "oooxoooooo", // clear
             "ooxx.ooooo",
             "oooxoooooo", // clear
         ];
 
         #[rustfmt::skip]
-        let sol_str = [ // tragic outcome
-            "oo...ooooo",
+        let sol_str = [
+            "o..ooooooo",
+            "o...oooooo",
             "ooxx.ooooo",
         ];
 
