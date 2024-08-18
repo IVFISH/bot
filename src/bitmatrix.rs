@@ -143,6 +143,25 @@ impl Bitmatrix {
         }
     }
 
+    pub fn clearrows(&self, re: COL) -> Self {
+        // PRECONDITION: re can have no more than 2 groups of 1s
+        // re: a COL where 1s represent rows to clear
+
+        Self {
+            data: self.data.map(|c| {
+                let l = re.leading_zeros();
+                let t = re.trailing_zeros();
+                let fc = (re << l).leading_ones(); // # lines in the First Clear group
+
+                let m0 = !((!0 << l) >> l); // no shift (bottom rows)
+                let m2 = !((!0 >> t) << t); // full shift (top rows)
+                let m1 = !(m0 | m2 | re); // fc shift (middle rows)
+
+                (c & m0) | (c & m1) << fc | (c & m2) << re.count_ones()
+            }),
+        }
+    }
+
     pub fn dshift(&self, n: usize) -> Self {
         Self {
             data: self.data.map(|c| c << n),
@@ -179,5 +198,40 @@ impl Bitmatrix {
         // SAFETY: At this point we've properly initialized the whole array
         // and we just need to cast it to the correct type.
         unsafe { core::mem::transmute::<[MaybeUninit<(COL, COL)>; W], [(COL, COL); W]>(dst) }
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use crate::game::COL;
+    use crate::test_api::test_api::*;
+
+    #[test]
+    fn test_lineclear() {
+        #[rustfmt::skip]
+        let board_str = [
+            "oooo.ooooo",
+            "ooooxooooo",
+            "ooo.xooooo",
+            "ooooxooooo",
+            "ooooxooooo",
+            "ooo.oooooo"
+        ];
+
+        #[rustfmt::skip]
+        let sol_str = [
+            "oooo.ooooo",
+            "ooo.xooooo",
+            "ooo.oooooo",
+        ];
+
+        let mut game = game_from_string(&board_str, 0x3);
+        let sol = game_from_string(&sol_str, 0x3);
+
+        // TODO this will become a function somewhere, use it!
+        let to_clear: COL = game.board.data.iter().fold(!0, |a, n| a & n);
+        game.board = game.board.clearrows(to_clear);
+
+        assert!(game.board == sol.board);
     }
 }

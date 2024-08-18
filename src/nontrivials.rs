@@ -74,7 +74,6 @@ pub fn reachable(
     trivials: [Bitmatrix; 4],
     piece: usize,
 ) -> [Bitmatrix; 4] {
-
     // find the initial possible matrix
     // then iterate the actions
     const N: usize = 20;
@@ -125,7 +124,6 @@ pub fn rotate_kick(mut t: Bitmatrix, p: Bitmatrix, offsets: &[[i32; 2]]) -> Bitm
 }
 
 pub fn to_game_vec(game: Game, reachable: [Bitmatrix; 4]) -> Vec<Game> {
-
     let mut ret = Vec::with_capacity(reachable.iter().map(|d| d.count_ones()).sum());
     let (p, q) = Game::next(game.queue);
 
