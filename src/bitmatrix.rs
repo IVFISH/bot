@@ -154,13 +154,13 @@ impl Bitmatrix {
             data: self.data.map(|c| {
                 let l = re.leading_zeros();
                 let t = re.trailing_zeros();
-                let fc = (re << l).leading_ones(); // # lines in the First Clear group
+                let fc = (re << l).leading_ones(); // num lines in the First Clear group
 
-                let m0 = !((!0 << l) >> l); // no shift (bottom rows)
-                let m2 = !((!0 >> t) << t); // full shift (top rows)
-                let m1 = !(m0 | m2 | re); // fc shift (middle rows)
+                let mbot = !(!0 << l >> l); // no shift (bottom rows)
+                let mtop = !(!0 >> t << t); // full shift (top rows)
+                let mmid = !(mbot | mtop | re); // "half" shift (middle rows)
 
-                (c & m0) | (c & m1) << fc | (c & m2) << re.count_ones()
+                (c & mbot) | (c & mmid) << fc | (c & mtop) << re.count_ones()
             }),
         }
     }
