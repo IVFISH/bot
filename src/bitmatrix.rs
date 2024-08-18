@@ -151,12 +151,12 @@ impl Bitmatrix {
         }
 
         let l = re.leading_zeros();
-        let fc = (re << l).leading_ones(); // num lines in the First Clear group
-        let ones = re.count_ones();
+        let fc = (re << l).leading_ones(); // # lines in the First Clear group
+        let ones = re.count_ones(); // num lines cleared
 
-        let mbot = COL::MAX - (re.wrapping_next_power_of_two().wrapping_sub(1)); // no shift (bottom rows)
-        let mtop = (re ^ (re - 1)) >> 1; // full shift (top rows)
-        let mmid = !(mbot | mtop | re); // "half" shift (middle rows)
+        let mbot = !(COL::MAX << l >> l); // no shift
+        let mtop = (re - 1) & !re; // full shift
+        let mmid = !(mbot | mtop | re); // "half" (fc) shift
 
         Self {
             data: self
@@ -255,6 +255,26 @@ pub mod tests {
             "o..ooooooo",
             "o...oooooo",
             "ooxx.ooooo",
+        ];
+
+        let mut game = game_from_string(&board_str, 0x1);
+        let sol = game_from_string(&sol_str, 0x1);
+        // TODO this will become a function somewhere, use it!
+        let to_clear: COL = game.board.data.iter().fold(!0, |a, n| a & n);
+
+        assert_eq!(game.board.clearrows(to_clear), sol.board);
+
+        #[rustfmt::skip]
+        let board_str = [
+            "ooo..ooooo",
+            "oooxxooooo",
+            "oooxx.oooo",
+        ];
+
+        #[rustfmt::skip]
+        let sol_str = [
+            "ooo..ooooo",
+            "oooxx.oooo",
         ];
 
         let mut game = game_from_string(&board_str, 0x1);

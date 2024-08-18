@@ -116,10 +116,13 @@ pub fn rotate_kick(t: Bitmatrix, p: Bitmatrix, offsets: &[[i32; 2]]) -> Bitmatri
     // t: reachables in (rot - dir) to try kicking from, updated each iter
     // p: possibles in (rot)
 
-    offsets.iter().fold((Bitmatrix::new(), t), |(o, t), &[dc, dr]| {
-        let o1 = t.shift(dr, dc) & p; // new places found this iteration
-        (o | o1, t ^ o1.shift(-dr, -dc)) // remove places that successfully kicked
-    }).0
+    offsets
+        .iter()
+        .fold((Bitmatrix::new(), t), |(o, t), &[dc, dr]| {
+            let o1 = t.shift(dr, dc) & p; // new places found this iteration
+            (o | o1, t ^ o1.shift(-dr, -dc)) // remove places that successfully kicked
+        })
+        .0
 }
 
 pub fn to_game_vec(game: Game, reachable: [Bitmatrix; 4]) -> Vec<Game> {
