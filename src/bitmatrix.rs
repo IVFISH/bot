@@ -166,9 +166,7 @@ impl Bitmatrix {
     }
 
     pub fn grounded(&self) -> Self {
-        Self {
-            data: self.data.map(|c| c & !(c >> 1)),
-        }
+        *self & !self.ushift(1)
     }
 
     pub fn dshift(&self, n: usize) -> Self {

@@ -74,8 +74,15 @@ pub fn reachable(
     trivials: [Bitmatrix; 4],
     piece: usize,
 ) -> [Bitmatrix; 4] {
-    // find the initial possible matrix
-    // then iterate the actions
+    if collision.map(|cmap| cmap.grounded()) == trivials {
+        // no grounded nontrivials
+        return trivials;
+    }
+
+    // NONTRIVIALS:
+    // from the trivials, iterate each action
+    // and-ing with possibles every iter
+    // until nothing new is found
     const N: usize = 20;
     let mut reachable = trivials;
 
@@ -108,7 +115,7 @@ pub fn reachable(
         }
     }
 
-    reachable.map(|r| r & !r.ushift(1))
+    reachable.map(|r| r.grounded())
 }
 
 #[inline(always)]
