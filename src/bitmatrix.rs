@@ -152,7 +152,7 @@ impl Bitmatrix {
 
         let l = re.leading_zeros();
         let fc = (re << l).leading_ones(); // # lines in the First Clear group
-        let ones = re.count_ones(); // num lines cleared
+        let ones = re.count_ones(); // # lines cleared
 
         let mbot = !(COL::MAX << l >> l); // no shift
         let mtop = (re - 1) & !re; // full shift
