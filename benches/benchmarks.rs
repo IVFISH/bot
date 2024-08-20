@@ -17,6 +17,12 @@ pub fn atomics(c: &mut Criterion) {
     c.bench_function("find grounded: l_spin_board_2 cmap(L)", |b| {
         b.iter(|| black_box(cmap.grounded()))
     });
+
+    let to_clear = 0b10110000;
+    let board = l_spin_board_2().board;
+    c.bench_function("clear lines: l_spin_board_2", |b| {
+        b.iter(|| board.clearrows(black_box(to_clear)))
+    });
 }
 
 pub fn movegen_1d(c: &mut Criterion) {
