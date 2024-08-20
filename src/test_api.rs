@@ -1,15 +1,23 @@
 #![allow(dead_code)]
 
 pub mod test_api {
+    use crate::bitmatrix::*;
     use crate::game::*;
+
+    pub fn bitmatrix_from_string(boardstr: &[&str]) -> Bitmatrix {
+        let mut board = Bitmatrix::new();
+        for (row, rowstr) in boardstr.iter().rev().enumerate() {
+            for (col, char) in rowstr.chars().take(W).enumerate() {
+                board[col] |= ((char.is_alphanumeric() as COL) << row).reverse_bits();
+            }
+        }
+
+        board
+    }
 
     pub fn game_from_string(boardstr: &[&str], queue: usize) -> Game {
         let mut game = Game::new(queue);
-        for (row, rowstr) in boardstr.iter().rev().enumerate() {
-            for (col, char) in rowstr.chars().take(W).enumerate() {
-                game.board[col] |= ((char.is_alphanumeric() as COL) << row).reverse_bits();
-            }
-        }
+        game.board = bitmatrix_from_string(boardstr);
 
         game
     }

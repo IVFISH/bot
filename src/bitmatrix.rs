@@ -165,6 +165,12 @@ impl Bitmatrix {
         }
     }
 
+    pub fn grounded(&self) -> Self {
+        Self {
+            data: self.data.map(|c| c & !(c >> 1)),
+        }
+    }
+
     pub fn dshift(&self, n: usize) -> Self {
         Self {
             data: self.data.map(|c| c << n),
@@ -212,7 +218,7 @@ pub mod tests {
     use crate::test_api::test_api::*;
 
     #[test]
-    fn test_lineclear() {
+    fn lineclear() {
         // NOTE while these test cases only clear full lines,
         // the function clearrows does not require full lines :)
         // it shouldn't make a difference, but feel free to add more tests
@@ -233,13 +239,13 @@ pub mod tests {
             "ooo.oooooo",
         ];
 
-        let mut game = game_from_string(&board_str, 0x3);
-        let sol = game_from_string(&sol_str, 0x3);
+        let board = bitmatrix_from_string(&board_str);
+        let sol = bitmatrix_from_string(&sol_str);
         // TODO this will become a function somewhere, use it!
-        let to_clear: COL = game.board.data.iter().fold(!0, |a, n| a & n);
+        let to_clear: COL = board.data.iter().fold(COL::MAX, |a, n| a & n);
 
-        assert_eq!(game.board.clearrows(to_clear), sol.board);
-        assert_eq!(game.board.clearrows(0), game.board);
+        assert_eq!(board.clearrows(to_clear), sol);
+        assert_eq!(board.clearrows(0), board);
 
         #[rustfmt::skip]
         let board_str = [
@@ -257,12 +263,12 @@ pub mod tests {
             "ooxx.ooooo",
         ];
 
-        let mut game = game_from_string(&board_str, 0x1);
-        let sol = game_from_string(&sol_str, 0x1);
+        let board = bitmatrix_from_string(&board_str);
+        let sol = bitmatrix_from_string(&sol_str);
         // TODO this will become a function somewhere, use it!
-        let to_clear: COL = game.board.data.iter().fold(!0, |a, n| a & n);
+        let to_clear: COL = board.data.iter().fold(!0, |a, n| a & n);
 
-        assert_eq!(game.board.clearrows(to_clear), sol.board);
+        assert_eq!(board.clearrows(to_clear), sol);
 
         #[rustfmt::skip]
         let board_str = [
@@ -277,11 +283,37 @@ pub mod tests {
             "oooxx.oooo",
         ];
 
-        let mut game = game_from_string(&board_str, 0x1);
-        let sol = game_from_string(&sol_str, 0x1);
+        let board = bitmatrix_from_string(&board_str);
+        let sol = bitmatrix_from_string(&sol_str);
         // TODO this will become a function somewhere, use it!
-        let to_clear: COL = game.board.data.iter().fold(!0, |a, n| a & n);
+        let to_clear: COL = board.data.iter().fold(!0, |a, n| a & n);
 
-        assert_eq!(game.board.clearrows(to_clear), sol.board);
+        assert_eq!(board.clearrows(to_clear), sol);
+    }
+
+    #[test]
+    fn grounded() {
+        #[rustfmt::skip]
+        let collision_str = [
+            "xx.xxx....",
+            "x.x..x.xxx",
+            "xxxxxxx...",
+            ".xxx.x..x.",
+            "..xxx...x.",
+        ];
+
+        #[rustfmt::skip]
+        let sol_str = [
+            ".x.xx.....",
+            ".......xxx",
+            "x...x.x...",
+            ".x...x....",
+            "..xxx...x.",
+        ];
+
+        let collision = bitmatrix_from_string(&collision_str);
+        let sol = bitmatrix_from_string(&sol_str);
+
+        assert_eq!(collision.grounded(), sol);
     }
 }
