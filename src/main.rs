@@ -60,15 +60,13 @@ fn test() {
     let queue: Vec<u8> = (0..d + 1).map(|x| bot.game.queue.peek_ahead(x)).collect();
     println!("{}, {:?}", bot.game.active.r#type, queue);
     let now = Instant::now();
-    let movegen = bot.move_gen(d.into()).placements;
-    let mut placements = movegen.iter();
+    let mut placements = bot.move_gen(d.into()).collect::<Vec<_>>();
+
     let t = now.elapsed().as_millis();
     println!("time elapsed: {} ms", t);
-    println!("placements generated: {}", placements.clone().count());
-    println!(
-        "placements per ms: {}",
-        placements.clone().count() as u128 / (t + 1)
-    );
+    println!("placements generated: {}", placements.len());
+    println!("placements per ms: {}", placements.len() as u128 / (t + 1));
+
     for placement in placements {
         //println!("{}", placement.game.board);
     }

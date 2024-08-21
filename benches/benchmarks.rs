@@ -10,19 +10,19 @@ use tetris::test_api::functions::*;
 pub fn movegen_benchmark_no_pruning(c: &mut Criterion) {
     let mut bot = Bot::<NoPruner>::with_seed(3);
     let mut group1 = c.benchmark_group("depth 1");
-    group1.bench_function("movegen empty board depth=1", |b| {
-        b.iter(|| black_box(bot.move_gen(1)))
-    });
+    // group1.bench_function("movegen empty board depth=1", |b| {
+    //     b.iter(|| black_box(bot.move_gen(1)))
+    // });
 
-    bot.game.board = versus_board_tall();
-    group1.bench_function("movegen versus board depth=1", |b| {
-        b.iter(|| black_box(bot.move_gen(1)))
-    });
+    // bot.game.board = versus_board_tall();
+    // group1.bench_function("movegen versus board depth=1", |b| {
+    //     b.iter(|| black_box(bot.move_gen(1)))
+    // });
 
-    bot.game.board = versus_board_speculative();
-    group1.bench_function("movegen speculative board depth=1", |b| {
-        b.iter(|| black_box(bot.move_gen(1)))
-    });
+    // bot.game.board = versus_board_speculative();
+    // group1.bench_function("movegen speculative board depth=1", |b| {
+    //     b.iter(|| black_box(bot.move_gen(1)))
+    // });
 
     bot.game.board = l_spin_board_5();
     group1.bench_function("movegen l-spin-fuckery board depth=1", |b| {
@@ -31,25 +31,25 @@ pub fn movegen_benchmark_no_pruning(c: &mut Criterion) {
     group1.finish();
 
     let mut group2 = c.benchmark_group("depth 3");
-    group2.sample_size(60);
-    bot.game.board = Board::new();
-    group2.bench_function("movegen empty board depth=3", |b| {
-        b.iter(|| black_box(bot.move_gen(3)))
-    });
+    // group2.sample_size(60);
+    // bot.game.board = Board::new();
+    // group2.bench_function("movegen empty board depth=3", |b| {
+    //     b.iter(|| black_box(bot.move_gen(3).count()))
+    // });
 
-    bot.game.board = versus_board_tall();
-    group2.bench_function("movegen versus board depth=3", |b| {
-        b.iter(|| black_box(bot.move_gen(3)))
-    });
+    // bot.game.board = versus_board_tall();
+    // group2.bench_function("movegen versus board depth=3", |b| {
+    //     b.iter(|| black_box(bot.move_gen(3).count()))
+    // });
 
-    bot.game.board = versus_board_speculative();
-    group2.bench_function("movegen speculative board depth=3", |b| {
-        b.iter(|| black_box(bot.move_gen(3)))
-    });
+    // bot.game.board = versus_board_speculative();
+    // group2.bench_function("movegen speculative board depth=3", |b| {
+    //     b.iter(|| black_box(bot.move_gen(3).count()))
+    // });
 
     bot.game.board = l_spin_board_5();
     group2.bench_function("movegen l-spin-fuckery board depth=3", |b| {
-        b.iter(|| black_box(bot.move_gen(3)))
+        b.iter(|| black_box(bot.move_gen(3).count()))
     });
     group2.finish();
 }
@@ -58,19 +58,19 @@ pub fn movegen_benchmark_pc_pruning(c: &mut Criterion) {
     let mut bot = Bot::<AllClearPruner>::with_seed(4);
     bot.game.board = pco_board();
     c.bench_function("pco start find-pcs depth=3", |b| {
-        b.iter(|| black_box(bot.move_gen(3)))
+        b.iter(|| black_box(bot.move_gen(3).count()))
     });
 
     bot.game.board = pco_board_1();
     c.bench_function("pco start find-pcs depth=5", |b| {
-        b.iter(|| black_box(bot.move_gen(5)))
+        b.iter(|| black_box(bot.move_gen(5).count()))
     });
 
     bot.game.board = pco_board_2();
     let mut group = c.benchmark_group("pco");
     group.sample_size(10);
     group.bench_function("pco start find-pcs depth=7", |b| {
-        b.iter(|| black_box(bot.move_gen(7)))
+        b.iter(|| black_box(bot.move_gen(7).count()))
     });
     group.finish();
 }
@@ -188,8 +188,8 @@ where
     group.finish();
 }
 
-// criterion_group!(benches, movegen_benchmark_no_pruning);
+criterion_group!(benches, movegen_benchmark_no_pruning);
 // criterion_group!(benches, movegen_benchmark_pc_pruning);
 // criterion_group!(benches, clearlines_benchmark);
-criterion_group!(benches, eval_benchmark);
+// criterion_group!(benches, eval_benchmark);
 criterion_main!(benches);

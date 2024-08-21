@@ -4,8 +4,9 @@ pub mod functions {
     use crate::constants::board_constants::BOARD_WIDTH;
     use crate::game::*;
     use crate::piece::*;
-
+    use crate::placement::Placement;
     use crate::placement_list::*;
+
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
 
@@ -31,15 +32,16 @@ pub mod functions {
         }
     }
 
-    pub fn assert_placement_contains(placements: &PlacementList, piece: Piece) {
-        placements
-            .placements
-            .iter()
-            .for_each(|p| println!("{:?}", p.get_last_piece()));
-        assert!(placements
-            .placements
-            .iter()
-            .any(|p| p.get_last_piece() == piece));
+    pub fn assert_placement_contains<I>(placements: PlacementList<I>, piece: Piece)
+    where
+        I: Iterator<Item = Placement>,
+    {
+        let mut placements = placements.map(|p| {
+            let p = p.get_last_piece();
+            println!("{:?}", p);
+            p
+        });
+        assert!(placements.any(|p| p == piece));
     }
 
     pub fn assert_location_eq(locations: Option<[[usize; 2]; 4]>, sols: [[usize; 2]; 4]) {

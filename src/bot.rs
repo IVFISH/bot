@@ -54,7 +54,7 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
     /// this also updates the bot to whatever it did
     pub fn r#do(&mut self, depth: usize) {
         // todo fix magic numbers
-        let chosen = self.move_gen(depth).placements.first().unwrap().clone(); // check for out of bounds!
+        let chosen = self.move_gen(depth).next().unwrap().clone(); // check for out of bounds!
         let piece_encoding = (chosen.game.history >> (16 * (depth - 1)) & 0xFFFF) as u16;
         let piece = Piece::decode(piece_encoding);
         let held = (piece_encoding >> 14 & 1) != 0;
@@ -65,40 +65,51 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
 
     /// the API function for generating all current moves of depth
     /// for the current active piece, as well as after holding
-    pub fn move_gen(&self, depth: usize) -> PlacementList {
+    pub fn move_gen<'a>(
+        &'a self,
+        depth: usize,
+    ) -> PlacementList<Box<dyn Iterator<Item = Placement> + 'a>> {
         let start = Placement::new(self.game);
 
-        let mut placements = PlacementList {
-            placements: Self::get_base_placements(&start),
-        }; // depth 1
+        let placements = Self::get_base_placements(&start)
+            .into_iter()
+            .into_placements();
 
-        // placements = (1..depth).fold(placements, |p, _| {
-        //     Self::iterate_move_gen(p, &self.pruner)
-        // });
-        for _ in 1..depth {
-            placements = Self::iterate_move_gen(placements, &self.pruner);
+        if depth <= 1 {
+            return PlacementList(Box::new(placements.0));
         }
 
-        placements
+        let mut next = Self::iterate_move_gen(placements, &self.pruner);
+        for _ in 2..depth {
+            next = Self::iterate_move_gen(next, &self.pruner);
+        }
+
+        next
     }
 
     /// helper method for move gen that takes in a placementlist
     /// of generated placements (depth i) and returns a new
     /// placement list of depth i+1 (with and without hold)
-    fn iterate_move_gen(placements: PlacementList, pruner: &P) -> PlacementList {
-        let placements = placements
-            .placements
-            .into_par_iter()
-            .flat_map_iter(|p| Self::extend_placement(&p, pruner))
-            .collect();
-        PlacementList::new(placements, pruner)
+    fn iterate_move_gen<'a>(
+        placements: PlacementList<impl Iterator<Item = Placement> + 'a>,
+        pruner: &'a P,
+        // ) -> PlacementList<impl Iterator<Item = Placement> + 'a>
+    ) -> PlacementList<Box<dyn Iterator<Item = Placement> + 'a>> {
+        // let placements = placements
+        //     .into_par_iter()
+        //     .flat_map_iter(|p| Self::extend_placement(&p, pruner));
+        let placements = placements.flat_map(|p| Self::extend_placement(p, pruner));
+        PlacementList(Box::new(PlacementList::new(placements, pruner).0))
     }
 
     /// helper method 2 for movegen
     /// given a starting placement (of depth i), returns a new list of placements
     /// of depth i+1 (with and without hold)
     /// note that this ruins placement
-    fn extend_placement(placement: &Placement, pruner: &P) -> Vec<Placement> {
+    fn extend_placement<'a>(
+        placement: Placement,
+        pruner: &'a P,
+    ) -> PlacementList<Box<dyn Iterator<Item = Placement> + 'a>> {
         let mut piece = placement.game.active;
         let mut controller = Controller::new(&mut piece, &placement.game.board);
         let mut seen = Vec::new();
@@ -106,13 +117,15 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         Self::add_trivials(&mut seen, &mut controller);
         Self::add_nontrivials(&mut seen, &mut controller);
 
+        let placement_cpy = placement.clone();
         let out = seen // turn the pieces into placements
             .into_iter()
-            .map(|piece| Self::make_placement(piece, false, placement))
+            .map(move |piece| Self::make_placement(piece, false, placement_cpy.clone()))
             .filter(|piece| pruner.precondition(piece));
 
         if placement.game.get_hold_piece().r#type == placement.game.active.r#type {
-            return out.collect();
+            // i have no idea why into_placements() doesn't work here
+            return PlacementList(Box::new(out));
         }
 
         let mut piece = placement.game.get_hold_piece();
@@ -122,22 +135,19 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         Self::add_trivials(&mut seen, &mut controller);
         Self::add_nontrivials(&mut seen, &mut controller);
 
-        out.chain(
-            // turn the pieces into placements
-            seen.into_iter()
-                .map(|piece| Self::make_placement(piece, true, placement))
-                .filter(|piece| pruner.precondition(piece)),
-        )
-        .collect()
+        PlacementList(Box::new(
+            out.chain(
+                // turn the pieces into placements
+                seen.into_iter()
+                    .map(move |piece| Self::make_placement(piece, true, placement.clone()))
+                    .filter(|piece| pruner.precondition(piece)),
+            ),
+        ))
     }
 
-    fn make_placement(piece: Piece, held: bool, place_before: &Placement) -> Placement {
-        let mut new_placement = place_before.clone();
-        new_placement
-            .game
-            .set_active(piece, held)
-            .place_active(held);
-        new_placement
+    fn make_placement(piece: Piece, held: bool, mut place_before: Placement) -> Placement {
+        place_before.game.set_active(piece, held).place_active(held);
+        place_before
     }
 
     fn get_dropped_piece(controller: &mut Controller) -> Piece {
@@ -200,7 +210,7 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         Self::get_base_nontrivials(pairs, controller);
 
         let out = pairs.iter().map(|(p, cmds)| Placement {
-            game: Self::make_placement(*p, false, start).game,
+            game: Self::make_placement(*p, false, start.clone()).game,
             base_command: Arc::new(cmds.clone()),
         });
 
@@ -215,7 +225,7 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
         Self::get_base_nontrivials(pairs, controller);
 
         out.chain(pairs.iter().map(|(p, cmds)| Placement {
-            game: Self::make_placement(*p, true, start).game,
+            game: Self::make_placement(*p, true, start.clone()).game,
             base_command: Arc::new(cmds.clone()),
         }))
         .collect()
@@ -296,6 +306,8 @@ impl<P: Pruner + std::marker::Sync> Bot<P> {
 
 #[cfg(test)]
 mod tests {
+    use itertools::Itertools;
+
     use super::*;
     use crate::test_api::functions::*;
 
@@ -309,8 +321,6 @@ mod tests {
         // remove all held pieces (not t)
         let pieces: Vec<_> = bot
             .move_gen(1)
-            .placements
-            .iter()
             .map(|p| p.get_last_piece())
             .filter(|p| p.r#type == PIECE_T)
             .collect();
@@ -334,8 +344,6 @@ mod tests {
         // remove all held pieces (not o)
         let pieces: Vec<_> = bot
             .move_gen(1)
-            .placements
-            .iter()
             .map(|p| p.get_last_piece())
             .filter(|p| p.r#type == PIECE_O)
             .collect();
@@ -361,7 +369,7 @@ mod tests {
             row: 1,
             col: 4,
         };
-        assert_placement_contains(&placements, piece);
+        assert_placement_contains(placements, piece);
     }
 
     #[test]
@@ -376,7 +384,7 @@ mod tests {
             row: 1,
             col: 3,
         };
-        assert_placement_contains(&placements, piece);
+        assert_placement_contains(placements, piece);
     }
 
     #[test]
@@ -392,7 +400,7 @@ mod tests {
             row: 1,
             col: 1,
         };
-        assert_placement_contains(&placements, piece);
+        assert_placement_contains(placements, piece);
     }
 
     #[test]
@@ -406,7 +414,7 @@ mod tests {
             .into_iter()
             .enumerate()
             .all(|(i, p)| p == bot.game.queue.peek_ahead(i as u8)));
-        assert_eq!(bot.move_gen(3).placements.len(), 118_151);
+        assert_eq!(bot.move_gen(3).count(), 118_151);
 
         let bot = Bot::<NoPruner>::with_seed(19);
         let desired_q = [3, 6, 5, 1];
@@ -415,7 +423,7 @@ mod tests {
             .into_iter()
             .enumerate()
             .all(|(i, p)| p == bot.game.queue.peek_ahead(i as u8)));
-        assert!(bot.move_gen(3).placements.len() == 333_078);
+        assert!(bot.move_gen(3).count() == 333_078);
         // add some more stuff to test :D
     }
 }
