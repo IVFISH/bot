@@ -7,6 +7,7 @@ pub mod functions {
     use crate::placement::Placement;
     use crate::placement_list::*;
 
+    use rayon::prelude::*;
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
 
@@ -34,13 +35,15 @@ pub mod functions {
 
     pub fn assert_placement_contains<I>(placements: PlacementList<I>, piece: Piece)
     where
-        I: Iterator<Item = Placement>,
+        I: ParallelIterator<Item = Placement>,
     {
-        let mut placements = placements.map(|p| {
+        let placements = placements.collect::<Vec<_>>();
+        let mut placements = placements.into_iter().map(|p| {
             let p = p.get_last_piece();
             println!("{:?}", p);
             p
         });
+
         assert!(placements.any(|p| p == piece));
     }
 

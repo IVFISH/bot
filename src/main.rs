@@ -14,8 +14,10 @@ mod suggestion;
 mod test_api;
 
 use crate::bot::*;
+use crate::placement_list::*;
 use crate::pruner::*;
 use crate::test_api::functions::*;
+use rayon::prelude::ParallelIterator;
 use std::time::Instant;
 
 #[allow(unused)]
@@ -60,7 +62,7 @@ fn test() {
     let queue: Vec<u8> = (0..d + 1).map(|x| bot.game.queue.peek_ahead(x)).collect();
     println!("{}, {:?}", bot.game.active.r#type, queue);
     let now = Instant::now();
-    let mut placements = bot.move_gen(d.into()).collect::<Vec<_>>();
+    let mut placements = bot.move_gen(d.into()).into_placements().collect::<Vec<_>>();
 
     let t = now.elapsed().as_millis();
     println!("time elapsed: {} ms", t);

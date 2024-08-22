@@ -1,9 +1,11 @@
 use std::sync::Arc;
 
+use rayon::prelude::*;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use tetris::board::*;
 use tetris::bot::*;
 use tetris::constants::board_constants::*;
+use tetris::placement_list::IntoPlacements;
 use tetris::pruner::*;
 use tetris::test_api::functions::*;
 
@@ -49,7 +51,7 @@ pub fn movegen_benchmark_no_pruning(c: &mut Criterion) {
 
     bot.game.board = l_spin_board_5();
     group2.bench_function("movegen l-spin-fuckery board depth=3", |b| {
-        b.iter(|| black_box(bot.move_gen(3).count()))
+        b.iter(|| black_box(bot.move_gen(3).into_placements().count()))
     });
     group2.finish();
 }
@@ -58,19 +60,19 @@ pub fn movegen_benchmark_pc_pruning(c: &mut Criterion) {
     let mut bot = Bot::<AllClearPruner>::with_seed(4);
     bot.game.board = pco_board();
     c.bench_function("pco start find-pcs depth=3", |b| {
-        b.iter(|| black_box(bot.move_gen(3).count()))
+        b.iter(|| black_box(bot.move_gen(3).into_placements().count()))
     });
 
     bot.game.board = pco_board_1();
     c.bench_function("pco start find-pcs depth=5", |b| {
-        b.iter(|| black_box(bot.move_gen(5).count()))
+        b.iter(|| black_box(bot.move_gen(5).into_placements().count()))
     });
 
     bot.game.board = pco_board_2();
     let mut group = c.benchmark_group("pco");
     group.sample_size(10);
     group.bench_function("pco start find-pcs depth=7", |b| {
-        b.iter(|| black_box(bot.move_gen(7).count()))
+        b.iter(|| black_box(bot.move_gen(7).into_placements().count()))
     });
     group.finish();
 }
