@@ -4,8 +4,10 @@ use std::fmt::{Display, Formatter};
 
 use crate::board::Board;
 use crate::command::Command;
-use crate::constants::board_constants::{BOARD_WIDTH, VISIBLE_BOARD_HEIGHT};
-use crate::constants::piece_constants::{SpinType, NUM_ROTATE_STATES, PIECE_ROTATIONS, PIECE_T};
+use crate::constants::board_constants::{BOARD_HEIGHT, BOARD_WIDTH, VISIBLE_BOARD_HEIGHT};
+use crate::constants::piece_constants::{
+    SpinType, NUM_ROTATE_STATES, PIECE_ROTATIONS, PIECE_T, T_CORNERS,
+};
 use crate::piece::Piece;
 
 #[derive(Debug)]
@@ -72,14 +74,13 @@ impl<'a> Controller<'a> {
             }
             Command::Rotate(dir) => {
                 for [dir_row, dir_col] in self.piece.get_kicks(dir).iter() {
-                    if self.cmaps.not_obstructed(
-                        (self.piece.dir + dir) % 4,
-                        self.piece.row as i8 + dir_row,
-                        self.piece.col as i8 + dir_col,
-                    ) {
+                    let new_dir = (self.piece.dir + dir) % 4;
+                    let row = self.piece.row as i8 + dir_row;
+                    let col = self.piece.col as i8 + dir_col;
+                    if self.cmaps.not_obstructed(new_dir, row, col) {
                         let spin = match self.piece.r#type {
-                            PIECE_T => SpinType::Full,
-                            _ => match self.cmaps.immobile(dir, *dir_row, *dir_col) {
+                            PIECE_T => self.tspin_type(new_dir, row, col),
+                            _ => match self.cmaps.immobile(new_dir, row, col) {
                                 true => SpinType::Mini,
                                 false => SpinType::None,
                             },
@@ -97,6 +98,33 @@ impl<'a> Controller<'a> {
                 *self.piece = self.pieces[self.size() - mag - 1]; // revert piece
                 true
             }
+        }
+    }
+
+    fn tspin_type(&self, dir: u8, row: i8, col: i8) -> SpinType {
+        // TODO: optimize this
+        let [front_cells, back_cells] = T_CORNERS[dir as usize];
+        let front = front_cells
+            .iter()
+            .filter(|[r, c]| self.cell_or_wall(*r + row, *c + col))
+            .count();
+        let back = back_cells
+            .iter()
+            .filter(|[r, c]| self.cell_or_wall(*r + row, *c + col))
+            .count();
+        match (front, back) {
+            (1, 2) => SpinType::Mini,
+            (2, 0) => SpinType::None,
+            (2, _) => SpinType::Full,
+            _ => SpinType::None,
+        }
+    }
+
+    fn cell_or_wall(&self, row: i8, col: i8) -> bool {
+        if col < 0 || col >= BOARD_WIDTH as i8 || row < 0 || row >= BOARD_HEIGHT as i8 {
+            true
+        } else {
+            self.board.get(row as usize, col as usize)
         }
     }
 

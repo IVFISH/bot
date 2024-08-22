@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use crate::board::Board;
+use crate::constants::piece_constants::SpinType;
 use crate::constants::piece_constants::PIECE_NAME;
 use crate::piece::Piece;
 use crate::piece_queue::PieceQueue;
@@ -102,8 +103,7 @@ impl Game {
     /// (this does not check for validity of placement)
     pub fn place_active(&mut self) -> &mut Self {
         // check if the piece is a spin
-        let is_spin = false; // TODO: figure this out somehow. controller method??
-                             // update the board
+        let is_spin = self.active.spin != SpinType::None;
         self.board.set_piece(&self.active);
         let cleared = self.board.clear_lines();
         self.versus.clear_lines(cleared.count_ones() as u8, is_spin);
