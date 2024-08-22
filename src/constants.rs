@@ -29,7 +29,7 @@ pub mod piece_constants {
 
     pub const PIECE_NAME: [char; 7] = ['Z', 'L', 'O', 'S', 'I', 'J', 'T'];
 
-    #[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize)]
+    #[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
     pub enum SpinType {
         None,
         Mini,

@@ -17,7 +17,7 @@ impl PlacementList {
     }
 
     /// extends each vector field within the placement list
-    pub fn extend(&mut self, other: PlacementList) {
+    pub fn extend(&mut self, other: Self) {
         self.placements.extend(other.placements);
     }
 

@@ -120,7 +120,7 @@ impl<'a> Controller<'a> {
         }
     }
 
-    fn cell_or_wall(&self, row: i8, col: i8) -> bool {
+    const fn cell_or_wall(&self, row: i8, col: i8) -> bool {
         if col < 0 || col >= BOARD_WIDTH as i8 || row < 0 || row >= BOARD_HEIGHT as i8 {
             true
         } else {
@@ -229,7 +229,7 @@ impl CollisionMaps {
                 }
             }
         }
-        CollisionMaps { boards }
+        Self { boards }
     }
 
     fn not_obstructed(&self, dir: u8, row: i8, col: i8) -> bool {
@@ -249,7 +249,7 @@ impl CollisionMaps {
             | self.not_obstructed(dir, row, col - 1))
     }
 
-    fn max_down(&self, dir: u8, row: usize, col: usize) -> i8 {
+    const fn max_down(&self, dir: u8, row: usize, col: usize) -> i8 {
         row as i8
             - (u32::BITS - (self.boards[dir as usize][col] & !(u32::MAX << row)).leading_zeros())
                 as i8

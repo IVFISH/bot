@@ -47,19 +47,19 @@ impl Board {
 
     /// returns the index of the first empty row in column col
     #[inline]
-    pub fn get_height(&self, col: usize) -> usize {
+    pub const fn get_height(&self, col: usize) -> usize {
         Self::height(self.arr[col])
     }
 
     /// returns the index of the first empty row in a col below the given row
     #[inline]
-    pub fn get_height_below(&self, col: usize, row: usize) -> usize {
+    pub const fn get_height_below(&self, col: usize, row: usize) -> usize {
         Self::height(self.arr[col] & !(u32::MAX << row))
     }
 
     /// returns the state (0 or 1) at the grid's row and col
     #[inline]
-    pub fn get(&self, row: usize, col: usize) -> bool {
+    pub const fn get(&self, row: usize, col: usize) -> bool {
         (self.arr[col] >> row & 1) == 1
     }
 
@@ -110,22 +110,18 @@ impl Board {
     /// returns whether the piece minos can be shifted downwards
     #[inline]
     pub fn piece_grounded(&self, piece: &Piece) -> bool {
-        if let Some(locs) = piece.abs_locations() {
+        piece.abs_locations().map_or(false, |locs| {
             locs.iter()
                 .any(|&[row, col]| row == 0 || self.get(row - 1, col))
-        } else {
-            false
-        }
+        })
     }
 
     /// returns whether the piece has a collision inside the grid
     #[inline]
     pub fn piece_collision(&self, piece: &Piece) -> bool {
-        if let Some(locs) = piece.abs_locations() {
+        piece.abs_locations().map_or(false, |locs| {
             locs.iter().any(|&[row, col]| self.get(row, col))
-        } else {
-            false
-        }
+        })
     }
 
     /// returns whether the piece has no collision and is grounded
@@ -138,14 +134,12 @@ impl Board {
     /// (as a negative number), output is from (-height, 0]
     #[inline]
     pub fn piece_max_down(&self, piece: &Piece) -> i8 {
-        if let Some(locs) = piece.abs_locations() {
+        piece.abs_locations().map_or(0, |locs| {
             locs.into_iter()
                 .map(|[row, col]| (row - self.get_height_below(col, row)) as i8)
                 .min()
                 .unwrap()
-        } else {
-            0
-        }
+        })
     }
 
     // statistics -------------------------------
@@ -398,7 +392,7 @@ impl Board {
 
     /// the height of a col
     #[inline]
-    fn height(col: u32) -> usize {
+    const fn height(col: u32) -> usize {
         (u32::BITS - col.leading_zeros()) as usize
     }
 }

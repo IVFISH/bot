@@ -40,7 +40,7 @@ impl Placement {
         }
     }
 
-    pub fn new_base(game: Game, base_piece: Piece) -> Self {
+    pub const fn new_base(game: Game, base_piece: Piece) -> Self {
         Self {
             game,
             base_piece,

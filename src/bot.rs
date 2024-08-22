@@ -223,16 +223,12 @@ impl<P: Pruner + std::marker::Sync, E: Evaluator + std::marker::Sync> Bot<P, E> 
             if !controller.do_command_mut(Command::Rotate(rotation as u8)) {
                 continue;
             }
-            let mut commands: Vec<Command> = vec![Command::Rotate(rotation as u8)];
             out.push(Self::get_dropped_piece(controller));
             while controller.do_command(&Command::MoveHorizontal(1)) {
-                commands.push(Command::MoveHorizontal(1));
                 out.push(Self::get_dropped_piece(controller));
             }
             controller.update_piece(controller.peek().unwrap().1); // reset the piece
-            let mut commands: Vec<Command> = vec![Command::Rotate(rotation as u8)];
             while controller.do_command(&Command::MoveHorizontal(-1)) {
-                commands.push(Command::MoveHorizontal(-1));
                 out.push(Self::get_dropped_piece(controller));
             }
             controller.undo();

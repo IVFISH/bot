@@ -86,19 +86,17 @@ impl Piece {
 
     /// returns a sorted version of the ['Piece.abs_locations']
     pub fn sorted_abs_locations(&self) -> Option<[[usize; 2]; PIECE_SIZE]> {
-        if let Some(mut locs) = self.abs_locations() {
+        self.abs_locations().map(|mut locs| {
             locs.sort();
-            Some(locs)
-        } else {
-            None
-        }
+            locs
+        })
     }
 
     /// returns the kicks for a piece
     /// when the piece is rotated direction dir
     /// this must be used with the initial rotation state
     /// (call this before doing rotate)
-    pub fn get_kicks(&self, dir: u8) -> &[[i8; 2]] {
+    pub const fn get_kicks(&self, dir: u8) -> &[[i8; 2]] {
         let d = self.dir as usize;
         let dir = dir as usize;
 
@@ -202,12 +200,11 @@ impl Piece {
     // static -----------------------------------
     /// whether a piece can be moved by a vector
     pub fn can_move(piece: &Self, dir_row: i8, dir_col: i8) -> bool {
-        match piece.abs_locations() {
-            None => false,
-            Some(locations) => locations
+        piece.abs_locations().map_or(false, |locations| {
+            locations
                 .into_iter()
-                .all(|[row, col]| Self::in_bounds(row as i8 + dir_row, col as i8 + dir_col)),
-        }
+                .all(|[row, col]| Self::in_bounds(row as i8 + dir_row, col as i8 + dir_col))
+        })
     }
 
     /// whether a piece can be rotated in a direction
@@ -232,27 +229,27 @@ impl Piece {
     }
 
     // private helpers --------------------------
-    fn u_in_bounds(row: usize, col: usize) -> bool {
+    const fn u_in_bounds(row: usize, col: usize) -> bool {
         Self::u_row_in_bounds(row) && Self::u_col_in_bounds(col)
     }
 
-    fn u_row_in_bounds(row: usize) -> bool {
+    const fn u_row_in_bounds(row: usize) -> bool {
         row < BOARD_HEIGHT
     }
 
-    fn u_col_in_bounds(col: usize) -> bool {
+    const fn u_col_in_bounds(col: usize) -> bool {
         col < BOARD_WIDTH
     }
 
-    fn in_bounds(row: i8, col: i8) -> bool {
+    const fn in_bounds(row: i8, col: i8) -> bool {
         Self::row_in_bounds(row) && Self::col_in_bounds(col)
     }
 
-    fn row_in_bounds(row: i8) -> bool {
+    const fn row_in_bounds(row: i8) -> bool {
         0 <= row && row < (BOARD_HEIGHT as i8)
     }
 
-    fn col_in_bounds(col: i8) -> bool {
+    const fn col_in_bounds(col: i8) -> bool {
         0 <= col && col < (BOARD_WIDTH as i8)
     }
 }

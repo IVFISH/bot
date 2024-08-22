@@ -62,12 +62,12 @@ impl PieceQueue {
     }
 
     /// returns the type of the next piece without mutating self
-    pub fn peek(&self) -> u8 {
+    pub const fn peek(&self) -> u8 {
         self.peek_ahead(0)
     }
 
     /// returns the type of the piece n ahead of index without mutating self
-    pub fn peek_ahead(&self, n: u8) -> u8 {
+    pub const fn peek_ahead(&self, n: u8) -> u8 {
         (self.data >> ((self.index + n) as usize * PIECE_BITS) & 0b111) as u8
     }
 
