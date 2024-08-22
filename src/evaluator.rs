@@ -45,16 +45,17 @@ impl Evaluator for SimpleEvaluator {
 
         let tslot = Board::t_slot(&board);
 
-        // let combo = versus.combo;
+        let combo = versus.combo;
         // let attk = versus.total_attack;
-        let combo = 0;
-        let attk = 0;
+        // let combo = 0;
+        // let attk = 0;
 
         (
             5 * (max + min + messiness + adj_diff + stack_diff - 5 * tslot
-                + (holes + coveredness) as usize
-                - 2 * (combo + attk) as usize) as i16,
-            -((2 * versus.combo + versus.attack_chain) as i16),
+                + 3 * (holes + coveredness) as usize
+                - 2 * combo as usize) as i16
+                - 2 * versus.b2b as i16,
+            -20 * versus.attack_chain as i16,
         )
     }
 }

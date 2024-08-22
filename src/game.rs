@@ -3,6 +3,7 @@
 use crate::board::Board;
 use crate::constants::piece_constants::SpinType;
 use crate::constants::piece_constants::PIECE_NAME;
+use crate::constants::versus_constants::*;
 use crate::piece::Piece;
 use crate::piece_queue::PieceQueue;
 use std::fmt::{Display, Formatter};
@@ -38,19 +39,52 @@ impl Display for VersusStats {
 impl VersusStats {
     /// Updates versus stats using the amount of lines cleared and the type
     #[inline]
-    fn clear_lines(&mut self, amt: u8, b2b: bool) {
+    fn clear_lines(&mut self, amt: u8, spin: SpinType) {
         if amt == 0 {
             self.combo = 0;
             self.attack_chain = 0;
         } else {
-            // TODO: IMPLEMENT ATTACK TABLE
-            let attk = amt + self.combo - 1;
-            // let attk = (self.combo as i8 - 2).clamp(0, 100) as u8;
+            // 0: ????  |  S, TMS
+            // 1: 0.25  |  D, TMD, B2B-TMS
+            // 2: 0.50  |  T, TS, TMT, B2B-TMD,
+            // 3: 0.75  |  B2B-TMT, B2B-TS
+            // 4: 1.00  |  Q, TD
+            // 5: 1.25  |  B2B-Q, B2B-TD
+            // 6: 1.50  |  TT
+            // 7: 1.75  |  B2B-TT
+            let attack_table = if self.b2b == 0 {
+                match (spin, amt) {
+                    (SpinType::Full, 1) => ATTACK2, // TSS
+                    (SpinType::Full, 2) => ATTACK4, // TSD
+                    (SpinType::Full, 3) => ATTACK6, // TST
+                    (_, 1) => ATTACK0,
+                    (_, 2) => ATTACK1,
+                    (_, 3) => ATTACK2,
+                    (_, 4) => ATTACK4,
+                    _ => panic!("Can't calculate garbage: {}", amt),
+                }
+            } else {
+                match (spin, amt) {
+                    (_, 4) => ATTACK5,              // Quad
+                    (SpinType::Full, 1) => ATTACK3, // TSS
+                    (SpinType::Full, 2) => ATTACK5, // TSD
+                    (SpinType::Full, 3) => ATTACK7, // TST
+                    (SpinType::Mini, 1) => ATTACK1,
+                    (SpinType::Mini, 2) => ATTACK2,
+                    (SpinType::Mini, 3) => ATTACK3,
+                    (SpinType::None, 1) => ATTACK0,
+                    (SpinType::None, 2) => ATTACK1,
+                    (SpinType::None, 3) => ATTACK2,
+                    _ => panic!("Can't calculate b2b garbage: {}", amt),
+                }
+            };
+            let attk = attack_table[self.combo as usize];
             self.attack_chain = attk;
             self.last_attack += attk;
             self.combo += 1;
 
-            if b2b {
+            // Check if b2b clear
+            if spin != SpinType::None || amt == 4 {
                 self.b2b += 1;
             } else {
                 self.b2b = 0;
@@ -103,10 +137,9 @@ impl Game {
     /// (this does not check for validity of placement)
     pub fn place_active(&mut self) -> &mut Self {
         // check if the piece is a spin
-        let is_spin = self.active.spin != SpinType::None;
         self.board.set_piece(&self.active);
-        let cleared = self.board.clear_lines();
-        self.versus.clear_lines(cleared.count_ones() as u8, is_spin);
+        let cleared = self.board.clear_lines().count_ones();
+        self.versus.clear_lines(cleared as u8, self.active.spin);
         // update the active
         self.active = self.queue.next();
         self
