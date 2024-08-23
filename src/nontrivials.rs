@@ -2,8 +2,8 @@ use crate::bitmatrix::*;
 use crate::game::*;
 
 /// generate collision map and the trivials
-pub fn collision(board: Bitmatrix, piece: usize) -> ([Bitmatrix; 4], [Bitmatrix; 4]) {
-    let (mut c, mut t) = ([Bitmatrix::new(); 4], [Bitmatrix::new(); 4]);
+pub fn collision(board: Bitmatrix, piece: usize) -> [Bitmatrix; 4] {
+    let mut cmaps = [Bitmatrix::new(); 4];
     for rot in 0..4 {
         let m = MASKS[piece][rot];
         let mut p = [0u16; W];
@@ -49,33 +49,29 @@ pub fn collision(board: Bitmatrix, piece: usize) -> ([Bitmatrix; 4], [Bitmatrix;
             p[col] = !np;
         }
 
-        let collisions = Bitmatrix { data: p };
-
-        for col in 0..W {
-            if p[col] == 0 {
-                continue;
-            }
-
-            let l = p[col].trailing_ones();
-            p[col] = 1 << (l - 1);
-        }
-
-        let trivials = Bitmatrix { data: p };
-
-        c[rot] = collisions;
-        t[rot] = trivials;
+        cmaps[rot] = Bitmatrix { data: p };
     }
 
-    (c, t)
+    cmaps
 }
 
-pub fn reachable(
-    collision: [Bitmatrix; 4],
-    trivials: [Bitmatrix; 4],
-    piece: usize,
-) -> [Bitmatrix; 4] {
+pub fn trivial(cmap: Bitmatrix) -> Bitmatrix {
+    let data = cmap.data.map(|c| {
+        if c == 0 {
+            0
+        } else {
+            1 << (c.trailing_ones() - 1)
+        }
+    });
+
+    Bitmatrix { data }
+}
+
+pub fn reachable(collision: [Bitmatrix; 4], piece: usize) -> [Bitmatrix; 4] {
+    let trivials = collision.map(|c| trivial(c));
+
+    // no grounded nontrivials
     if collision.map(|cmap| cmap.grounded()) == trivials {
-        // no grounded nontrivials
         return trivials;
     }
 
@@ -165,8 +161,8 @@ pub fn to_game_vec(mut game: Game, reachable: [Bitmatrix; 4]) -> Vec<Game> {
 
 pub fn movegen(game: Game) -> Vec<Game> {
     let piece = game.peek() - 1;
-    let (c, t) = collision(game.board, piece);
-    to_game_vec(game, reachable(c, t, piece))
+    let c = collision(game.board, piece);
+    to_game_vec(game, reachable(c, piece))
 }
 
 #[cfg(test)]
