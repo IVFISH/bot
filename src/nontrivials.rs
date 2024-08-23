@@ -4,6 +4,10 @@ use crate::game::*;
 
 /// generate collision map and the trivials
 pub fn collision(board: Bitmatrix, piece: usize) -> [Bitmatrix; 4] {
+    if piece == PIECE_I {
+        return i_collision(board);
+    }
+
     let mut cmaps = [Bitmatrix::new(); 4];
     for rot in 0..4 {
         let m = MASKS[piece][rot];
@@ -54,6 +58,13 @@ pub fn collision(board: Bitmatrix, piece: usize) -> [Bitmatrix; 4] {
     }
 
     cmaps
+}
+
+fn i_collision(board: Bitmatrix) -> [Bitmatrix; 4] {
+    let vert = !(board | board.dshift(1) | board.dshift(2) | board.dshift(3));
+    let hor = !(board.rshift(2) | board.rshift(1) | board | board.lshift(1));
+
+    [hor, vert, hor, vert.rshift(1)]
 }
 
 pub fn trivial(cmap: Bitmatrix) -> Bitmatrix {
