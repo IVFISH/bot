@@ -13,12 +13,13 @@ use std::time;
 use test_api::test_api::*;
 
 fn main() {
-    let mut game = Game::new(1);
-    let reps = 20;
-    for _ in 0..reps {
-        game = movegen(game)[0];
-        println!("{}", game);
-    }
+   let mut game = Game::new(1);
+   let reps = 5;
+   for _ in 0..reps {
+       println!("{}", game.peek());
+       game = movegen(game)[11];
+       println!("{}", game);
+   }
 }
 
 fn main1() {

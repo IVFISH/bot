@@ -5,8 +5,8 @@ use bot::game::*;
 use bot::nontrivials::*;
 use bot::test_api::test_api::*;
 
-pub fn atomics(c: &mut Criterion) {
-    let game = game_from_string(&[""], 1); // T PIECE
+pub fn board(c: &mut Criterion) {
+    let game = game_from_string(&[""], 5); // T PIECE
     let piece = game.peek() as usize;
     let (cmaps, trivials) = collision(game.board, piece);
     c.bench_function("rotate with kick: 180 T kicks, blank board", |b| {
@@ -26,7 +26,7 @@ pub fn atomics(c: &mut Criterion) {
 }
 
 pub fn movegen_1d(c: &mut Criterion) {
-    let game = game_from_string(&[""], 1); // T PIECE
+    let game = game_from_string(&[""], 5); // T PIECE
     let piece = game.peek() as usize;
     let (cmaps, trivials) = collision(game.board, piece);
 
@@ -59,5 +59,5 @@ pub fn movegen_1d(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, atomics, movegen_1d);
+criterion_group!(benches, board, movegen_1d);
 criterion_main!(benches);
