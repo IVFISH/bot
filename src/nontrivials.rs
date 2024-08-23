@@ -2,6 +2,8 @@ use crate::bitmatrix::*;
 use crate::constants::*;
 use crate::game::*;
 
+use std::cmp::min;
+
 /// generate collision map and the trivials
 pub fn collision(board: Bitmatrix, piece: usize) -> [Bitmatrix; 4] {
     if piece == PIECE_I - 1 {
@@ -157,8 +159,6 @@ pub fn to_game_vec(mut game: Game, reachable: [Bitmatrix; 4]) -> Vec<Game> {
                 .min()
                 .unwrap() as usize);
 
-        let copy = game.clone();
-
         for i in reachable[rot].iter_ones() {
             let (r, c) = (i % H, i / H);
 
@@ -166,36 +166,27 @@ pub fn to_game_vec(mut game: Game, reachable: [Bitmatrix; 4]) -> Vec<Game> {
                 continue;
             }
 
-            let mut cpy = copy;
+            let mut cpy = game.clone();
 
+            let mut len = 3; // # cols of piece
+            let mut c_idx = 1; // col of the piece's canonical center
             if is_i_piece {
-                // offset to place in right location (because we are placing from top-down)
-                let d = 3;
-
-                if piece[0] != 0 {
-                    cpy.board[c - 2] |= piece[0] << r - d;
-                }
-                if piece[1] != 0 {
-                    cpy.board[c - 1] |= piece[1] << r - d;
-                }
-                if piece[2] != 0 {
-                    cpy.board[c] |= piece[2] << r - d;
-                }
-                if piece[3] != 0 {
-                    cpy.board[c + 1] |= piece[3] << r - d;
-                }
-            } else {
-                // offset to place in right location (because we are placing from top-down)
-                let d = 2;
-
-                if piece[0] != 0 {
-                    cpy.board[c - 1] |= piece[0] << r - d;
-                }
-                cpy.board[c - 0] |= piece[1] << r - d;
-                if piece[2] != 0 {
-                    cpy.board[c + 1] |= piece[2] << r - d;
-                }
+                len = 4;
+                c_idx = 2;
             }
+
+            let d = len - 1; // row of the piece's canonical center from the TOP
+
+            // apply in-bounds cols of the piece to the board
+            //for i in c_idx.saturating_sub(c)..min(len, W + c_idx - c){
+            //    cpy.board[c + i - c_idx] |= piece[i] << (r - d);
+            //}
+
+            // apply nonzero cols of the piece to the board
+            for (i, x) in piece.iter().enumerate().filter(|(i, &x)| x != 0) {
+                cpy.board[c + i - c_idx] |= x << (r - d);
+            }
+
             ret.push(cpy);
         }
     }
