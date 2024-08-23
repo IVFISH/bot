@@ -143,7 +143,7 @@ const fn generate_masks() -> [[[COL; 3]; 4]; NUM_PIECES] {
             let mut col = 0;
             while col < 3 {
                 let p = PIECES[piece][rot][col];
-                masks[piece][rot][col] = (p << 1) + (p << 4) + (p << 7) + (p << 10) + (p << 13);
+                masks[piece][rot][col] = (p << 1) | (p << 4) | (p << 7) | (p << 10) | (p << 13);
 
                 col += 1;
             }
