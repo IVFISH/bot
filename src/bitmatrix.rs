@@ -1,7 +1,7 @@
 use std::fmt::*;
 use std::ops;
 
-use crate::game::{COL, H, W};
+use crate::constants::*;
 use bitvec::prelude::*;
 
 #[derive(Clone, PartialEq, Eq, Copy, Debug)]
@@ -212,7 +212,7 @@ impl Bitmatrix {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::game::COL;
+    use crate::constants::COL;
     use crate::test_api::test_api::*;
 
     #[test]

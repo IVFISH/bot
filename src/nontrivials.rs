@@ -1,4 +1,5 @@
 use crate::bitmatrix::*;
+use crate::constants::*;
 use crate::game::*;
 
 /// generate collision map and the trivials
@@ -96,11 +97,11 @@ pub fn reachable(collision: [Bitmatrix; 4], piece: usize) -> [Bitmatrix; 4] {
             // new_rot is (rot - dir) % 4
             // addition by (4 - dir) is done instead
             let new_rot = (rot + 3) % 4;
-            q |= rotate_kick(reachable[new_rot], p, &KICKS[piece][new_rot][0]);
+            q |= rotate_kick(reachable[new_rot], p, KICKS[piece][new_rot][0]);
             let new_rot = (rot + 2) % 4;
-            q |= rotate_kick(reachable[new_rot], p, &KICKS_180[piece][new_rot]);
+            q |= rotate_kick(reachable[new_rot], p, KICKS[piece][new_rot][1]);
             let new_rot = (rot + 1) % 4;
-            q |= rotate_kick(reachable[new_rot], p, &KICKS[piece][new_rot][1]);
+            q |= rotate_kick(reachable[new_rot], p, KICKS[piece][new_rot][2]);
 
             changed |= r != q;
             reachable[rot] = q;

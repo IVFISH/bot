@@ -3,6 +3,7 @@
 pub mod test_api {
     use crate::bitmatrix::*;
     use crate::game::*;
+    use crate::constants::*;
 
     pub fn bitmatrix_from_string(boardstr: &[&str]) -> Bitmatrix {
         let mut board = Bitmatrix::new();
@@ -40,7 +41,7 @@ pub mod test_api {
             "ooo...oooo",
             "ooo.oooooo",
         ];
-        game_from_string(&boardstr, 0o2)
+        game_from_string(&boardstr, PIECE_L as u64)
     }
 
     pub fn l_spin_board_2() -> Game {
@@ -62,7 +63,7 @@ pub mod test_api {
             "o.oooooooo",
             "o..ooooooo",
         ];
-        game_from_string(&boardstr, 0o2)
+        game_from_string(&boardstr, PIECE_L as u64)
     }
 
     pub fn l_spin_board_3() -> Game {
@@ -72,7 +73,7 @@ pub mod test_api {
             "ooo...oooo",
             "ooo.oooooo",
         ];
-        game_from_string(&boardstr, 0o2)
+        game_from_string(&boardstr, PIECE_L as u64)
     }
 
     pub fn l_spin_board_4() -> Game {
@@ -81,7 +82,7 @@ pub mod test_api {
             "ooooo...oo",
             "oooo...ooo",
         ];
-        game_from_string(&boardstr, 0o2)
+        game_from_string(&boardstr, PIECE_L as u64)
     }
 
     pub fn versus_board_medium() -> Game {
@@ -97,6 +98,6 @@ pub mod test_api {
             "x.xxxxxxxx",
             "xxxxxxx.xx",
         ];
-        game_from_string(&boardstr, 0o1)
+        game_from_string(&boardstr, PIECE_T as u64)
     }
 }
