@@ -4,7 +4,7 @@ use crate::game::*;
 
 /// generate collision map and the trivials
 pub fn collision(board: Bitmatrix, piece: usize) -> [Bitmatrix; 4] {
-    if piece == PIECE_I {
+    if piece == PIECE_I - 1 {
         return i_collision(board);
     }
 
@@ -60,9 +60,11 @@ pub fn collision(board: Bitmatrix, piece: usize) -> [Bitmatrix; 4] {
     cmaps
 }
 
-fn i_collision(board: Bitmatrix) -> [Bitmatrix; 4] {
+pub fn i_collision(board: Bitmatrix) -> [Bitmatrix; 4] {
+    let nboard = !board;
+
     let vert = !(board | board.dshift(1) | board.dshift(2) | board.dshift(3));
-    let hor = !(board.rshift(2) | board.rshift(1) | board | board.lshift(1));
+    let hor = nboard.rshift(2) & nboard.rshift(1) & nboard & nboard.lshift(1);
 
     [hor, vert, hor, vert.rshift(1)]
 }
@@ -81,23 +83,23 @@ pub fn trivial(cmap: Bitmatrix) -> Bitmatrix {
 
 pub fn reachable(collision: [Bitmatrix; 4], piece: usize) -> [Bitmatrix; 4] {
     let trivials = collision.map(|c| trivial(c));
-
-    // no grounded nontrivials
-    if collision.map(|cmap| cmap.grounded()) == trivials {
-        return trivials;
-    }
+    let grounded = collision.map(|c| c.grounded());
 
     // NONTRIVIALS:
     // from the trivials, iterate each action
     // and-ing with possibles every iter
     // until nothing new is found
     const N: usize = 20;
-    let mut reachable = trivials;
+    let mut reachables = trivials;
 
     for _ in 0..N {
+        if reachables == grounded {
+            return reachables;
+        }
+
         let mut changed = false;
         for rot in 0..4 {
-            let r = reachable[rot];
+            let r = reachables[rot];
             let p = collision[rot];
 
             // get the reachable without rotation
@@ -108,14 +110,14 @@ pub fn reachable(collision: [Bitmatrix; 4], piece: usize) -> [Bitmatrix; 4] {
             // new_rot is (rot - dir) % 4
             // addition by (4 - dir) is done instead
             let new_rot = (rot + 3) % 4;
-            q |= rotate_kick(reachable[new_rot], p, KICKS[piece][new_rot][0]);
+            q |= rotate_kick(reachables[new_rot], p, KICKS[piece][new_rot][0]);
             let new_rot = (rot + 2) % 4;
-            q |= rotate_kick(reachable[new_rot], p, KICKS[piece][new_rot][1]);
+            q |= rotate_kick(reachables[new_rot], p, KICKS[piece][new_rot][1]);
             let new_rot = (rot + 1) % 4;
-            q |= rotate_kick(reachable[new_rot], p, KICKS[piece][new_rot][2]);
+            q |= rotate_kick(reachables[new_rot], p, KICKS[piece][new_rot][2]);
 
             changed |= r != q;
-            reachable[rot] = q;
+            reachables[rot] = q;
         }
 
         if !changed {
@@ -123,7 +125,7 @@ pub fn reachable(collision: [Bitmatrix; 4], piece: usize) -> [Bitmatrix; 4] {
         }
     }
 
-    reachable.map(|r| r.grounded())
+    reachables.map(|r| r.grounded())
 }
 
 #[inline(always)]
@@ -142,27 +144,57 @@ pub fn rotate_kick(t: Bitmatrix, p: Bitmatrix, offsets: &[[i32; 2]]) -> Bitmatri
 
 pub fn to_game_vec(mut game: Game, reachable: [Bitmatrix; 4]) -> Vec<Game> {
     let mut ret = Vec::with_capacity(reachable.iter().map(|d| d.count_ones()).sum());
-    let p = game.next();
+    let p = game.next() - 1;
+
+    let is_i_piece = p == PIECE_I - 1;
 
     for rot in 0..4 {
-        let piece = PIECES[p - 1][rot];
+        let piece = PIECES[p][rot];
+        let piece_height = H
+            - (piece
+                .iter()
+                .map(|p| p.leading_zeros() + p.trailing_zeros())
+                .min()
+                .unwrap() as usize);
 
         let copy = game.clone();
 
         for i in reachable[rot].iter_ones() {
             let (r, c) = (i % H, i / H);
 
-            if r < 2 {
+            if r < piece_height - 1 {
                 continue;
             }
 
             let mut cpy = copy;
-            if piece[0] != 0 {
-                cpy.board[c - 1] |= piece[0] << r - 2;
-            }
-            cpy.board[c - 0] |= piece[1] << r - 2;
-            if piece[2] != 0 {
-                cpy.board[c + 1] |= piece[2] << r - 2;
+
+            if is_i_piece {
+                // offset to place in right location (because we are placing from top-down)
+                let d = 3;
+
+                if piece[0] != 0 {
+                    cpy.board[c - 2] |= piece[0] << r - d;
+                }
+                if piece[1] != 0 {
+                    cpy.board[c - 1] |= piece[1] << r - d;
+                }
+                if piece[2] != 0 {
+                    cpy.board[c] |= piece[2] << r - d;
+                }
+                if piece[3] != 0 {
+                    cpy.board[c + 1] |= piece[3] << r - d;
+                }
+            } else {
+                // offset to place in right location (because we are placing from top-down)
+                let d = 2;
+
+                if piece[0] != 0 {
+                    cpy.board[c - 1] |= piece[0] << r - d;
+                }
+                cpy.board[c - 0] |= piece[1] << r - d;
+                if piece[2] != 0 {
+                    cpy.board[c + 1] |= piece[2] << r - d;
+                }
             }
             ret.push(cpy);
         }
@@ -181,6 +213,78 @@ pub fn movegen(game: Game) -> Vec<Game> {
 pub mod tests {
     use crate::nontrivials::movegen;
     use crate::test_api::test_api::*;
+
+    #[test]
+    fn i_spin_1() {
+        let game = i_spin_board_1();
+        #[rustfmt::skip]
+        let sol_str = [
+            "........o.",
+            "..........",
+            "oooooo.oo.",
+            "oooxxxxooo",
+        ];
+
+        // for g in movegen(game) {
+        //     println!("{}", g);
+        // }
+
+        let gen = movegen(game);
+        assert_contains(&gen, game_from_string(&sol_str, 0));
+    }
+
+    #[test]
+    fn i_spin_2() {
+        let game = i_spin_board_2();
+        #[rustfmt::skip]
+        let sol_str = [
+            ".o........",
+            "..........",
+            ".oo.ooooo.",
+            "oooxxxxooo",
+        ];
+
+        // for g in movegen(game) {
+        //     println!("{}", g);
+        // }
+
+        let gen = movegen(game);
+        assert_contains(&gen, game_from_string(&sol_str, 0));
+    }
+
+    #[test]
+    fn i_spin_3() {
+        let game = i_spin_board_3();
+        #[rustfmt::skip]
+        let sol_str = [
+            "oooo.ooooo",
+            "oooxxxxooo",
+        ];
+
+        for g in movegen(game) {
+            println!("{}", g);
+        }
+
+        let gen = movegen(game);
+        assert_not_contains(&gen, game_from_string(&sol_str, 0));
+    }
+
+    #[test]
+    fn i_spin_4() {
+        let game = i_spin_board_4();
+        #[rustfmt::skip]
+        let sol_str = [
+            "oooooo.oo.",
+            "oooxxxxooo",
+        ];
+
+        // for g in movegen(game) {
+        //     println!("{}", g);
+        // }
+
+        let gen = movegen(game);
+        assert_not_contains(&gen, game_from_string(&sol_str, 0));
+    }
 
     #[test]
     fn l_spin_1() {

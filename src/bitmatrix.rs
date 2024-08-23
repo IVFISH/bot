@@ -183,14 +183,18 @@ impl Bitmatrix {
 
     pub fn lshift(&self, n: usize) -> Self {
         let mut data = self.data;
-        data[0] = 0;
+        for i in 0..n {
+            data[i] = 0;
+        }
         data.rotate_left(n);
         Self { data }
     }
 
     pub fn rshift(&self, n: usize) -> Self {
         let mut data = self.data;
-        data[W - 1] = 0;
+        for i in 1..=n {
+            data[W - i] = 0;
+        }
         data.rotate_right(n);
         Self { data }
     }

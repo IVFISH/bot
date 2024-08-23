@@ -2,8 +2,8 @@
 
 pub mod test_api {
     use crate::bitmatrix::*;
-    use crate::game::*;
     use crate::constants::*;
+    use crate::game::*;
 
     pub fn bitmatrix_from_string(boardstr: &[&str]) -> Bitmatrix {
         let mut board = Bitmatrix::new();
@@ -32,6 +32,46 @@ pub mod test_api {
     pub fn assert_not_contains(movegen: &Vec<Game>, game: Game) {
         let contains = movegen.iter().any(|g| g.board == game.board);
         assert!(!contains);
+    }
+
+    pub fn i_spin_board_1() -> Game {
+        #[rustfmt::skip]
+        let boardstr = [
+            "........o.",
+            "..........",
+            "oooooo.oo.",
+            "ooo....ooo",
+        ];
+        game_from_string(&boardstr, PIECE_I as u64)
+    }
+
+    pub fn i_spin_board_2() -> Game {
+        #[rustfmt::skip]
+        let boardstr = [
+            ".o........",
+            "..........",
+            ".oo.ooooo.",
+            "ooo....ooo",
+        ];
+        game_from_string(&boardstr, PIECE_I as u64)
+    }
+
+    pub fn i_spin_board_3() -> Game {
+        #[rustfmt::skip]
+        let boardstr = [
+            "oooo.ooooo",
+            "ooo....ooo",
+        ];
+        game_from_string(&boardstr, PIECE_I as u64)
+    }
+
+    pub fn i_spin_board_4() -> Game {
+        #[rustfmt::skip]
+        let boardstr = [
+            "oooooo.oo.",
+            "ooo....ooo",
+        ];
+        game_from_string(&boardstr, PIECE_I as u64)
     }
 
     pub fn l_spin_board_1() -> Game {
