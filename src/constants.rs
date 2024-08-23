@@ -11,6 +11,12 @@ pub const PIECE_I: usize = 5;
 pub const PIECE_J: usize = 6;
 pub const PIECE_T: usize = 7;
 
+pub const CANON_COL: usize = 1;
+pub const I_CANON_COL: usize = 2;
+pub const CANON_ROW: usize = 0;
+pub const PIECE_GRID_SIZE: usize = 3;
+pub const I_PIECE_GRID_SIZE: usize = 4;
+
 pub const PIECES: [[&[COL]; 4]; NUM_PIECES] = [
     // Z
     [

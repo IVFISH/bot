@@ -168,24 +168,24 @@ pub fn to_game_vec(mut game: Game, reachable: [Bitmatrix; 4]) -> Vec<Game> {
 
             let mut cpy = game.clone();
 
-            let mut len = 3; // # cols of piece
-            let mut c_idx = 1; // col of the piece's canonical center
+            let mut sz = PIECE_GRID_SIZE;
+            let mut c_col = CANON_COL;
             if is_i_piece {
-                len = 4;
-                c_idx = 2;
+                sz = I_PIECE_GRID_SIZE;
+                c_col = I_CANON_COL;
             }
 
-            let d = len - 1; // row of the piece's canonical center from the TOP
-
-            // apply in-bounds cols of the piece to the board
-            //for i in c_idx.saturating_sub(c)..min(len, W + c_idx - c){
-            //    cpy.board[c + i - c_idx] |= piece[i] << (r - d);
-            //}
+            let c_row = sz - 1 - CANON_ROW; // row of the piece's canonical center from the TOP
 
             // apply nonzero cols of the piece to the board
             for (i, x) in piece.iter().enumerate().filter(|(i, &x)| x != 0) {
-                cpy.board[c + i - c_idx] |= x << (r - d);
+                cpy.board[c + i - c_col] |= x << (r - c_row);
             }
+            // ALTERNATIVE:
+            // apply in-bounds cols of the piece to the board
+            //for i in c_col.saturating_sub(c)..min(sz, W + c_col - c){
+            //    cpy.board[c + i - c_col] |= piece[i] << (r - c_row);
+            //}
 
             ret.push(cpy);
         }
