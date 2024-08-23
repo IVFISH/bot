@@ -81,9 +81,9 @@ pub fn trivial(cmap: Bitmatrix) -> Bitmatrix {
     Bitmatrix { data }
 }
 
-pub fn reachable(collision: [Bitmatrix; 4], piece: usize) -> [Bitmatrix; 4] {
-    let trivials = collision.map(|c| trivial(c));
-    let grounded = collision.map(|c| c.grounded());
+pub fn reachable(collisions: [Bitmatrix; 4], piece: usize) -> [Bitmatrix; 4] {
+    let trivials = collisions.map(|c| trivial(c));
+    let grounded = collisions.map(|c| c.grounded());
 
     // NONTRIVIALS:
     // from the trivials, iterate each action
@@ -100,7 +100,7 @@ pub fn reachable(collision: [Bitmatrix; 4], piece: usize) -> [Bitmatrix; 4] {
         let mut changed = false;
         for rot in 0..4 {
             let r = reachables[rot];
-            let p = collision[rot];
+            let p = collisions[rot];
 
             // get the reachable without rotation
             // next iteration of r
@@ -216,7 +216,7 @@ pub mod tests {
 
     #[test]
     fn i_spin_1() {
-        let game = i_spin_board_1();
+        let game = i_spin_game_1();
         #[rustfmt::skip]
         let sol_str = [
             "........o.",
@@ -235,7 +235,7 @@ pub mod tests {
 
     #[test]
     fn i_spin_2() {
-        let game = i_spin_board_2();
+        let game = i_spin_game_2();
         #[rustfmt::skip]
         let sol_str = [
             ".o........",
@@ -254,7 +254,7 @@ pub mod tests {
 
     #[test]
     fn i_spin_3() {
-        let game = i_spin_board_3();
+        let game = i_spin_game_3();
         #[rustfmt::skip]
         let sol_str = [
             "oooo.ooooo",
@@ -271,7 +271,7 @@ pub mod tests {
 
     #[test]
     fn i_spin_4() {
-        let game = i_spin_board_4();
+        let game = i_spin_game_4();
         #[rustfmt::skip]
         let sol_str = [
             "oooooo.oo.",
@@ -288,7 +288,7 @@ pub mod tests {
 
     #[test]
     fn l_spin_1() {
-        let game = l_spin_board_1();
+        let game = l_spin_game_1();
         #[rustfmt::skip]
         let sol_str_1 = [
             "oooo..oooo",
@@ -314,7 +314,7 @@ pub mod tests {
 
     #[test]
     fn l_spin_2() {
-        let game = l_spin_board_2();
+        let game = l_spin_game_2();
         #[rustfmt::skip]
         let sol_str = [
             "oo........",
@@ -347,7 +347,7 @@ pub mod tests {
 
     #[test]
     fn l_spin_3() {
-        let game = l_spin_board_3();
+        let game = l_spin_game_3();
         #[rustfmt::skip]
         let sol_str = [
             "oooo.ooooo",
@@ -365,7 +365,7 @@ pub mod tests {
 
     #[test]
     fn l_spin_4() {
-        let game = l_spin_board_4();
+        let game = l_spin_game_4();
         #[rustfmt::skip]
         let sol_str = [
             "ooooo.x.oo",

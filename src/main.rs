@@ -5,6 +5,7 @@ pub mod bitmatrix;
 pub mod constants;
 pub mod game;
 pub mod nontrivials;
+pub mod suggestion;
 pub mod test_api;
 
 use bitmatrix::Bitmatrix;
@@ -12,21 +13,39 @@ use constants::*;
 use game::*;
 use nontrivials::*;
 use std::time;
+use suggestion::*;
 use test_api::test_api::*;
 
 fn main() {
-    let mut game = Game::new(1);
-    game.queue = PIECE_I as u64;
+    // let mut game = Game::new(1);
+    // game.queue = PIECE_I as u64;
 
-    let collisions = i_collision(game.board);
-    let trivials = collisions.map(|cmap| trivial(cmap));
-    let reachable = reachable(collisions, PIECE_I - 1);
+    // let collisions = i_collision(game.board);
+    // let trivials = collisions.map(|cmap| trivial(cmap));
+    // let reachable = reachable(collisions, PIECE_I - 1);
 
-    println!("{}", collisions[0]);
-    println!("{}", trivials[0]);
-    println!("{}", reachable[0]);
+    // println!("{}", collisions[0]);
+    // println!("{}", trivials[0]);
+    // println!("{}", reachable[0]);
 
-    for g in movegen(game) {
+    // for g in movegen(game) {
+    //     println!("{}", g);
+    // }
+
+    let before = l_spin_game_1();
+    let gen = movegen(before);
+
+    println!("{}", before);
+    // println!("{}", after);
+
+    // let piece = before.peek() - 1;
+    // let placed = after.board ^ before.board;
+    // for (r, c, rot) in get_location(placed, piece) {
+    //     println!("{} {} {}", r, c, rot);
+    // }
+
+    for g in gen {
+        println!("{:?}", to_command_list(before, g, false));
         println!("{}", g);
     }
 

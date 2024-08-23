@@ -6,3 +6,4 @@ pub mod bitmatrix;
 pub mod game;
 pub mod nontrivials;
 pub mod test_api;
+pub mod suggestion;

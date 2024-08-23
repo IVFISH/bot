@@ -11,9 +11,9 @@ pub struct Bitmatrix {
 
 impl Display for Bitmatrix {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        for row in 0..H {
+        for row in (0..H).rev() {
             for col in 0..W {
-                if self.data[col] >> row & 1 == 1 {
+                if self.get(row, col) {
                     write!(f, "■ ")?
                 } else {
                     write!(f, "□ ")?
@@ -102,6 +102,18 @@ impl Bitmatrix {
         Self {
             data: [0; W].into(),
         }
+    }
+
+    pub fn get(&self, r: usize, c: usize) -> bool {
+        (self[c] >> (COL::BITS as usize - r - 1) & 1) == 1
+    }
+
+    pub fn set(&mut self, r: usize, c: usize) {
+        self[c] |= 1 << (COL::BITS as usize - r - 1)
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.data.into_iter().all(|x| x == 0)
     }
 
     pub fn iter_ones<'a>(&'a self) -> impl Iterator<Item = usize> + 'a {

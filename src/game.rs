@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 
 use crate::bitmatrix::Bitmatrix;
-use crate::constants::*;
 use itertools::chain;
 use std::fmt::Display;
 
