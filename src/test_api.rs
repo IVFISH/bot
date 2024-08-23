@@ -15,11 +15,12 @@ pub mod test_api {
         board
     }
 
-    pub fn game_from_string(boardstr: &[&str], queue: usize) -> Game {
-        let mut game = Game::new(queue);
-        game.board = bitmatrix_from_string(boardstr);
-
-        game
+    pub fn game_from_string(boardstr: &[&str], queue: u64) -> Game {
+        Game {
+            queue,
+            seed: 1,
+            board: bitmatrix_from_string(boardstr),
+        }
     }
 
     pub fn assert_contains(movegen: &Vec<Game>, game: Game) {
@@ -39,7 +40,7 @@ pub mod test_api {
             "ooo...oooo",
             "ooo.oooooo",
         ];
-        game_from_string(&boardstr, 0x2)
+        game_from_string(&boardstr, 0o2)
     }
 
     pub fn l_spin_board_2() -> Game {
@@ -61,7 +62,7 @@ pub mod test_api {
             "o.oooooooo",
             "o..ooooooo",
         ];
-        game_from_string(&boardstr, 0x2)
+        game_from_string(&boardstr, 0o2)
     }
 
     pub fn l_spin_board_3() -> Game {
@@ -71,7 +72,7 @@ pub mod test_api {
             "ooo...oooo",
             "ooo.oooooo",
         ];
-        game_from_string(&boardstr, 0x2)
+        game_from_string(&boardstr, 0o2)
     }
 
     pub fn l_spin_board_4() -> Game {
@@ -80,7 +81,7 @@ pub mod test_api {
             "ooooo...oo",
             "oooo...ooo",
         ];
-        game_from_string(&boardstr, 0x2)
+        game_from_string(&boardstr, 0o2)
     }
 
     pub fn versus_board_medium() -> Game {
@@ -96,6 +97,6 @@ pub mod test_api {
             "x.xxxxxxxx",
             "xxxxxxx.xx",
         ];
-        game_from_string(&boardstr, 0x1)
+        game_from_string(&boardstr, 0o1)
     }
 }

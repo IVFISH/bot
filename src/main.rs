@@ -15,7 +15,7 @@ use test_api::test_api::*;
 fn main() {
     let mut game = Game::new(1);
     let reps = 20;
-    for _ in 0..reps{
+    for _ in 0..reps {
         game = movegen(game)[0];
         println!("{}", game);
     }

@@ -132,17 +132,14 @@ pub fn rotate_kick(t: Bitmatrix, p: Bitmatrix, offsets: &[[i32; 2]]) -> Bitmatri
         .0
 }
 
-pub fn to_game_vec(game: Game, reachable: [Bitmatrix; 4]) -> Vec<Game> {
+pub fn to_game_vec(mut game: Game, reachable: [Bitmatrix; 4]) -> Vec<Game> {
     let mut ret = Vec::with_capacity(reachable.iter().map(|d| d.count_ones()).sum());
-    let (p, q) = Game::next(game.queue);
+    let p = game.next();
 
     for rot in 0..4 {
         let piece = PIECES[p - 1][rot];
 
-        let copy = Game {
-            board: game.board,
-            queue: q,
-        };
+        let copy = game.clone();
 
         for i in reachable[rot].iter_ones() {
             let (r, c) = (i % H, i / H);
@@ -167,7 +164,7 @@ pub fn to_game_vec(game: Game, reachable: [Bitmatrix; 4]) -> Vec<Game> {
 }
 
 pub fn movegen(game: Game) -> Vec<Game> {
-    let piece = Game::next(game.queue).0 - 1;
+    let piece = game.peek() - 1;
     let (c, t) = collision(game.board, piece);
     to_game_vec(game, reachable(c, t, piece))
 }
@@ -287,8 +284,8 @@ pub mod tests {
             "ooo..........",
         ];
 
-        let game = game_from_string(&board_str, 0x3);
-        let sol = game_from_string(&sol_str, 0x3);
+        let game = game_from_string(&board_str, 0o3);
+        let sol = game_from_string(&sol_str, 0o3);
 
         for g in movegen(game) {
             println!("{}", g);
