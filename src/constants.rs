@@ -222,7 +222,7 @@ const I_KICKS: [[&[[i32; 2]]; 3]; 4] = [
     ],
 ];
 
-// [+X, +Y] = KICKS[piece][rot][ {CW, CCW} ][test#]
+// [+X, +Y] = KICKS[piece][rot][ {CW, 180, CCW} ][test#]
 pub const KICKS: [[[&[[i32; 2]]; 3]; 4]; NUM_PIECES] = [
     // Z
     TLJSZ_KICKS,

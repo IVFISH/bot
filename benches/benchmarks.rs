@@ -1,17 +1,16 @@
+use bot::constants::*;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-use bot::bitmatrix::Bitmatrix;
-use bot::game::*;
 use bot::nontrivials::*;
 use bot::test_api::test_api::*;
 
-pub fn board(c: &mut Criterion) {
-    let game = game_from_string(&[""], 5); // T PIECE
-    let piece = game.peek() as usize;
+pub fn movegen_components(c: &mut Criterion) {
+    let game = game_from_string(&[""], PIECE_T as u64); // T PIECE
+    let piece = game.peek() - 1 as usize;
     let cmaps = collision(game.board, piece);
     let trivials = cmaps.map(|x| trivial(x));
     c.bench_function("rotate with kick: 180 T kicks, blank board", |b| {
-        b.iter(|| rotate_kick(trivials[0], cmaps[2], &KICKS_180[0][0]))
+        b.iter(|| rotate_kick(trivials[0], cmaps[2], &KICKS[0][0][2]))
     });
 
     let cmap = collision(l_spin_board_2().board, 1)[0];
@@ -27,8 +26,8 @@ pub fn board(c: &mut Criterion) {
 }
 
 pub fn movegen_1d(c: &mut Criterion) {
-    let game = game_from_string(&[""], 5); // T PIECE
-    let piece = game.peek() as usize;
+    let game = game_from_string(&[""], PIECE_T as u64);
+    let piece = game.peek() - 1 as usize;
     let cmaps = collision(game.board, piece);
 
     c.bench_function("collision map gen: T, blank board", |b| {
@@ -44,7 +43,7 @@ pub fn movegen_1d(c: &mut Criterion) {
     });
 
     let game = l_spin_board_2();
-    let piece = game.peek() as usize;
+    let piece = game.peek() - 1 as usize;
     let cmaps = collision(game.board, piece);
 
     c.bench_function("collision map gen: L, L spin board 2", |b| {
@@ -60,5 +59,5 @@ pub fn movegen_1d(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, board, movegen_1d);
+criterion_group!(benches, movegen_components, movegen_1d);
 criterion_main!(benches);
