@@ -92,7 +92,9 @@ impl Display for Game {
     }
 }
 
-pub const PIECES: [[[COL; 3]; 4]; 3] = [
+const NUM_PIECES: usize = 3;
+
+pub const PIECES: [[[COL; 3]; 4]; NUM_PIECES] = [
     // T
     [
         // N
@@ -128,41 +130,30 @@ pub const PIECES: [[[COL; 3]; 4]; 3] = [
     ],
 ];
 
-pub const MASKS: [[[COL; 3]; 4]; 3] = [
-    // T
-    [
-        // N
-        [0x9248, 0xdb6c, 0x9248],
-        // E
-        [0x0000, 0xfffe, 0x4924],
-        // S
-        [0x4924, 0xdb6c, 0x4924],
-        // W
-        [0x4924, 0xfffe, 0x0000],
-    ],
-    // L
-    [
-        // N
-        [0x9248, 0x9248, 0xdb6c],
-        // E
-        [0x0000, 0xfffe, 0x9248],
-        // S
-        [0xdb6c, 0x4924, 0x4924],
-        // W
-        [0x2492, 0xfffe, 0x0000],
-    ],
-    // O
-    [
-        // N
-        [0xdb6c, 0xdb6c, 0x000],
-        // E
-        [0xdb6c, 0xdb6c, 0x000],
-        // S
-        [0xdb6c, 0xdb6c, 0x000],
-        // W
-        [0xdb6c, 0xdb6c, 0x000],
-    ],
-];
+pub const MASKS: [[[COL; 3]; 4]; NUM_PIECES] = generate_masks();
+
+const fn generate_masks() -> [[[COL; 3]; 4]; NUM_PIECES] {
+    let mut masks = PIECES;
+
+    // https://rust-lang.github.io/rfcs/2344-const-looping.html
+    let mut piece = 0;
+    while piece < NUM_PIECES {
+        let mut rot = 0;
+        while rot < 4 {
+            let mut col = 0;
+            while col < 3 {
+                let p = PIECES[piece][rot][col];
+                masks[piece][rot][col] = (p << 1) + (p << 4) + (p << 7) + (p << 10) + (p << 13);
+
+                col += 1;
+            }
+            rot += 1;
+        }
+        piece += 1;
+    }
+
+    masks
+}
 
 // [+X, +Y] = KICKS[piece][rot][ {CW, CCW} ][test#]
 pub const KICKS: [[[[[i32; 2]; 5]; 2]; 4]; 3] = [
