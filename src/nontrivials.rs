@@ -178,7 +178,7 @@ pub fn to_game_vec(mut game: Game, reachable: [Bitmatrix; 4]) -> Vec<Game> {
             let c_row = sz - 1 - CANON_ROW; // row of the piece's canonical center from the TOP
 
             // apply nonzero cols of the piece to the board
-            for (i, x) in piece.iter().enumerate().filter(|(i, &x)| x != 0) {
+            for (i, x) in piece.iter().enumerate().filter(|(_, &x)| x != 0) {
                 cpy.board[c + i - c_col] |= x << (r - c_row);
             }
             // ALTERNATIVE:
