@@ -13,6 +13,7 @@ const MODULUS: usize = 2147483647;
 pub struct Game {
     pub board: Bitmatrix,
     pub queue: u64,
+    pub hold: u8,
     pub seed: usize,
 }
 
@@ -21,6 +22,7 @@ impl Game {
         let mut out = Self {
             board: Bitmatrix::new(),
             seed,
+            hold: 0,
             queue: 0,
         };
         // set the first 21 pieces
@@ -46,13 +48,36 @@ impl Game {
         out
     }
 
+    /// if hold is empty, sets hold to the first piece in queue and advances queue
+    /// else, swaps hold with the first piece in queue
+    /// returns the first piece in queue after holding
+    pub fn hold(&mut self) -> usize {
+        if self.hold == 0 {
+            self.hold = self.next() as u8;
+        } else {
+            let temp = self.peek() as u8;
+            self.queue |= self.hold as u64;
+            self.hold = temp;
+        }
+        return self.peek();
+    }
+    
+    /// returns what hold() would return without mutating self
+    pub const fn peek_hold(&self) -> usize {
+        if self.hold == 0 {
+            return self.peek_ahead(1);
+        } else {
+            return self.hold as usize;
+        }
+    }
+
     pub const fn peek(&self) -> usize {
         self.peek_ahead(0)
     }
 
     /// returns the type of the piece at index n without mutating self
     pub const fn peek_ahead(&self, n: usize) -> usize {
-        (self.queue >> (n * PIECE_BITS)) as usize & 0b111
+        (self.queue >> (n * PIECE_BITS)) as usize & ((1 << PIECE_BITS) - 1)
     }
 
     /// appends to the back of the queue 7 pieces

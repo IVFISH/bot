@@ -1,5 +1,6 @@
 #![feature(maybe_uninit_uninit_array)]
 #![feature(wrapping_next_power_of_two)]
+#![feature(is_sorted)]
 
 pub mod bitmatrix;
 pub mod constants;

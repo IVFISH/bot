@@ -20,6 +20,7 @@ pub mod test_api {
         Game {
             queue,
             seed: 1,
+            hold: 0,
             board: bitmatrix_from_string(gamestr),
         }
     }

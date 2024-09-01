@@ -144,9 +144,9 @@ pub fn rotate_kick(t: Bitmatrix, p: Bitmatrix, offsets: &[[i32; 2]]) -> Bitmatri
         .0
 }
 
-pub fn to_game_vec(mut game: Game, reachable: [Bitmatrix; 4]) -> Vec<Game> {
+pub fn to_game_vec(game: Game, reachable: [Bitmatrix; 4]) -> Vec<Game> {
     let mut ret = Vec::with_capacity(reachable.iter().map(|d| d.count_ones()).sum());
-    let p = game.next() - 1;
+    let p = game.peek() - 1;
 
     let is_i_piece = p == PIECE_I - 1;
 
@@ -197,6 +197,7 @@ pub fn to_game_vec(mut game: Game, reachable: [Bitmatrix; 4]) -> Vec<Game> {
 pub fn movegen(game: Game) -> Vec<Game> {
     let piece = game.peek() - 1;
     let c = collision(game.board, piece);
+
     to_game_vec(game, reachable(c, piece))
 }
 
