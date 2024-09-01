@@ -17,3 +17,4 @@ rustflags = ["-C", "target-feature='+avx2,+avx,+sse2,+avx512f,+avx512bw,+avx512v
 bitvec = "1.0.1"
 tinyvec = "1.8.0"
 itertools = "0.13.0"
+contracts = "0.6.3"

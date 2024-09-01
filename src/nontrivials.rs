@@ -162,7 +162,7 @@ pub fn to_game_vec(mut game: Game, reachable: [Bitmatrix; 4]) -> Vec<Game> {
         for i in reachable[rot].iter_ones() {
             let (r, c) = (i % H, i / H);
 
-            if r < piece_height - 1 {
+            if r > H - piece_height {
                 continue;
             }
 
@@ -175,11 +175,11 @@ pub fn to_game_vec(mut game: Game, reachable: [Bitmatrix; 4]) -> Vec<Game> {
                 c_col = I_CANON_COL;
             }
 
-            let c_row = sz - 1 - CANON_ROW; // row of the piece's canonical center from the TOP
+            let c_row = r + CANON_ROW; // row of the piece's canonical center from the TOP
 
             // apply nonzero cols of the piece to the board
             for (i, x) in piece.iter().enumerate().filter(|(_, &x)| x != 0) {
-                cpy.board[c + i - c_col] |= x << (r - c_row);
+                cpy.board[c + i - c_col] |= x << H - sz - c_row;
             }
             // ALTERNATIVE:
             // apply in-bounds cols of the piece to the board
